@@ -8,6 +8,11 @@ import {
   ZoomInControl,
   ZoomOutControl
 } from './Toolbar';
+import {
+  isAbsoluteAssetUrl,
+  joinAssetPath,
+  resolveRelativeAssetPath
+} from './utils/assetPaths';
 
 const CSS_RESOURCES = ['stylesheet/3dhop.css'];
 
@@ -34,6 +39,17 @@ type PresenterInstance = {
   zoomOut: () => void;
   enableLightTrackball: (enabled: boolean) => void;
   isLightTrackballEnabled: () => boolean;
+  enableSceneLighting?: (enabled: boolean) => void;
+  isSceneLightingEnabled?: () => boolean;
+  toggleCameraType?: () => void;
+  toggleInstanceSolidColor?: (target: unknown, updateUi?: boolean) => void;
+  enableMeasurementTool?: (enabled: boolean) => void;
+  isMeasurementToolEnabled?: () => boolean;
+  enablePickpointMode?: (enabled: boolean) => void;
+  isPickpointModeEnabled?: () => boolean;
+  saveScreenshot?: () => void;
+  _onEndMeasurement?: (measure: number) => void;
+  _onEndPickingPoint?: (point: number[]) => void;
   destroy?: () => void;
 } & Record<string, unknown>;
 
@@ -43,15 +59,28 @@ declare global {
     TurnTableTrackball: unknown;
     init3dhop?: () => void;
     lightSwitch?: (on?: boolean) => void;
+    lightingSwitch?: (on?: boolean) => void;
+    cameraSwitch?: (on?: boolean) => void;
+    colorSwitch?: (on?: boolean) => void;
+    measureSwitch?: (on?: boolean) => void;
+    pickpointSwitch?: (on?: boolean) => void;
     fullscreenSwitch?: () => void;
     actionsToolbar?: (action: string) => void;
     presenter: PresenterInstance | null | undefined;
+    sectiontoolSwitch?: (on?: boolean) => void;
+    sectiontoolReset?: () => void;
+    sectiontoolInit?: () => void;
+    sectionxSwitch?: (on?: boolean) => void;
+    sectionySwitch?: (on?: boolean) => void;
+    sectionzSwitch?: (on?: boolean) => void;
   }
+  const HOP_ALL: unknown;
 }
 
 export type ThreeDHopViewerProps = {
   assetBaseUrl?: string;
   modelUrl?: string;
+  backgroundUrl?: string | null;
   className?: string;
   style?: React.CSSProperties;
   width?: number | string;
@@ -118,9 +147,24 @@ async function ensureAssets(baseUrl: string): Promise<void> {
   }
 }
 
+function resolveBackgroundUrl(provided: string | null | undefined, baseUrl: string): string | null {
+  const fallback = joinAssetPath(baseUrl, 'skins/backgrounds/light.jpg');
+  if (provided === null) return null;
+  if (provided === undefined) return fallback;
+  if (isAbsoluteAssetUrl(provided)) {
+    return provided;
+  }
+  const sanitized = provided.replace(/^\/+/, '');
+  if (!sanitized) {
+    return fallback;
+  }
+  return joinAssetPath(baseUrl, sanitized);
+}
+
 export const ThreeDHopViewer: React.FC<ThreeDHopViewerProps> = ({
   assetBaseUrl = '/node_modules/react-3dhop/dist/3dhop',
   modelUrl,
+  backgroundUrl,
   className,
   style,
   width = '100%',
@@ -131,6 +175,8 @@ export const ThreeDHopViewer: React.FC<ThreeDHopViewerProps> = ({
   const presenterRef = useRef<PresenterInstance | null>(null);
   const previousActionsRef = useRef<typeof window.actionsToolbar>();
   const previousPresenterRef = useRef<typeof window.presenter>();
+  const previousOnEndMeasurementRef = useRef<PresenterInstance['_onEndMeasurement']>();
+  const previousOnEndPickingPointRef = useRef<PresenterInstance['_onEndPickingPoint']>();
 
   const normalizedBaseUrl = useMemo(() => {
     if (assetBaseUrl.endsWith('/') && assetBaseUrl !== '/') {
@@ -140,8 +186,13 @@ export const ThreeDHopViewer: React.FC<ThreeDHopViewerProps> = ({
   }, [assetBaseUrl]);
 
   const resolvedModelUrl = useMemo(
-    () => modelUrl ?? `${normalizedBaseUrl}/models/gargo.nxz`,
+    () => resolveRelativeAssetPath(modelUrl, normalizedBaseUrl, joinAssetPath(normalizedBaseUrl, 'models/gargo.nxz')),
     [modelUrl, normalizedBaseUrl]
+  );
+
+  const resolvedBackgroundUrl = useMemo(
+    () => resolveBackgroundUrl(backgroundUrl, normalizedBaseUrl),
+    [backgroundUrl, normalizedBaseUrl]
   );
 
   const hasCustomToolbar = React.Children.count(children ?? []) > 0;
@@ -167,6 +218,45 @@ export const ThreeDHopViewer: React.FC<ThreeDHopViewerProps> = ({
         case 'light_on':
           presenter.enableLightTrackball(!presenter.isLightTrackballEnabled());
           window.lightSwitch?.();
+          break;
+        case 'lighting':
+        case 'lighting_off':
+          if (typeof presenter.enableSceneLighting === 'function' && typeof presenter.isSceneLightingEnabled === 'function') {
+            presenter.enableSceneLighting(!presenter.isSceneLightingEnabled());
+          }
+          window.lightingSwitch?.();
+          break;
+        case 'perspective':
+        case 'orthographic':
+          presenter.toggleCameraType?.();
+          window.cameraSwitch?.();
+          break;
+        case 'color':
+        case 'color_on':
+          presenter.toggleInstanceSolidColor?.(typeof HOP_ALL !== 'undefined' ? HOP_ALL : 'HOP_ALL', true);
+          window.colorSwitch?.();
+          break;
+        case 'measure':
+        case 'measure_on':
+          if (typeof presenter.enableMeasurementTool === 'function' && typeof presenter.isMeasurementToolEnabled === 'function') {
+            presenter.enableMeasurementTool(!presenter.isMeasurementToolEnabled());
+          }
+          window.measureSwitch?.();
+          break;
+        case 'pick':
+        case 'pick_on':
+          if (typeof presenter.enablePickpointMode === 'function' && typeof presenter.isPickpointModeEnabled === 'function') {
+            presenter.enablePickpointMode(!presenter.isPickpointModeEnabled());
+          }
+          window.pickpointSwitch?.();
+          break;
+        case 'sections':
+        case 'sections_on':
+          window.sectiontoolReset?.();
+          window.sectiontoolSwitch?.();
+          break;
+        case 'screenshot':
+          presenter.saveScreenshot?.();
           break;
         case 'full':
         case 'full_on':
@@ -214,6 +304,32 @@ export const ThreeDHopViewer: React.FC<ThreeDHopViewerProps> = ({
             }
           }
         });
+
+        previousOnEndMeasurementRef.current = presenter._onEndMeasurement;
+        previousOnEndPickingPointRef.current = presenter._onEndPickingPoint;
+
+        presenter._onEndMeasurement = (measure: number) => {
+          const output = document.getElementById('measure-output');
+          if (output) {
+            output.textContent = `${measure.toFixed(2)}mm`;
+          }
+        };
+
+        presenter._onEndPickingPoint = (point: number[]) => {
+          if (!Array.isArray(point) || point.length < 3) {
+            return;
+          }
+          const output = document.getElementById('pickpoint-output');
+          if (output) {
+            const [x, y, z] = point;
+            output.textContent = `[ ${x.toFixed(2)} , ${y.toFixed(2)} , ${z.toFixed(2)} ]`;
+          }
+        };
+
+        if (document.getElementById('sections-box')) {
+          window.sectiontoolInit?.();
+          window.sectiontoolReset?.();
+        }
       } catch (error) {
         // eslint-disable-next-line no-console
         console.error('Failed to initialize 3DHOP viewer', error);
@@ -225,15 +341,29 @@ export const ThreeDHopViewer: React.FC<ThreeDHopViewerProps> = ({
     return () => {
       disposed = true;
 
-      if (presenterRef.current && typeof presenterRef.current.destroy === 'function') {
-        presenterRef.current.destroy();
+      const presenter = presenterRef.current;
+
+      if (presenter) {
+        if (typeof previousOnEndMeasurementRef.current !== 'undefined') {
+          presenter._onEndMeasurement = previousOnEndMeasurementRef.current;
+          previousOnEndMeasurementRef.current = undefined;
+        }
+
+        if (typeof previousOnEndPickingPointRef.current !== 'undefined') {
+          presenter._onEndPickingPoint = previousOnEndPickingPointRef.current;
+          previousOnEndPickingPointRef.current = undefined;
+        }
+
+        if (typeof presenter.destroy === 'function') {
+          presenter.destroy();
+        }
       }
 
       if (window.actionsToolbar === toolbarHandler) {
         window.actionsToolbar = previousActionsRef.current;
       }
 
-      if (window.presenter === presenterRef.current) {
+      if (window.presenter === presenter) {
         window.presenter = previousPresenterRef.current ?? null;
       }
 
@@ -308,7 +438,9 @@ export const ThreeDHopViewer: React.FC<ThreeDHopViewerProps> = ({
         ) : null}
         <canvas
           id="draw-canvas"
-          style={{ backgroundImage: `url(${normalizedBaseUrl}/skins/backgrounds/light.jpg)` }}
+          style={
+            resolvedBackgroundUrl ? { backgroundImage: `url(${resolvedBackgroundUrl})` } : undefined
+          }
         />
       </div>
     </div>
