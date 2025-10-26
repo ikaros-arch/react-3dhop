@@ -5,10 +5,15 @@ export type {
 	PresenterInstance,
 	ThreeDHopViewerContextValue,
 	ToolbarActionHandler,
-	SceneObserver
+	SceneObserver,
+	TrackballObserver
 } from './ThreeDHopViewer.js';
 export { Annotations } from './Annotations.js';
 export type { AnnotationDefinition, AnnotationsProps } from './Annotations.js';
+export { CompassNavigation } from './CompassNavigation.js';
+export type { CompassNavigationProps, CompassNavigationPosition } from './CompassNavigation.js';
+export { CubeNavigation } from './CubeNavigation.js';
+export type { CubeNavigationProps, CubeNavigationPosition } from './CubeNavigation.js';
 export {
 	Toolbar,
 	ToolbarAssetsProvider,

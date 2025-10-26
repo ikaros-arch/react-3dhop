@@ -3,6 +3,7 @@ import React, {
   useCallback,
   useContext,
   useEffect,
+  useId,
   useMemo,
   useRef,
   useState
@@ -50,6 +51,8 @@ export type ToolbarProps = {
 
 export const Toolbar: React.FC<ToolbarProps> = ({ position, style, children, ...rest }) => {
   const [sidecars, setSidecars] = useState<Map<string, React.ReactNode>>(new Map());
+  const reactId = useId();
+  const toolbarInstanceId = useMemo(() => `toolbar-${reactId.replace(/[:]/g, '')}`, [reactId]);
 
   const register = useCallback((key: string, element: React.ReactNode) => {
     setSidecars((prev) => {
@@ -70,17 +73,31 @@ export const Toolbar: React.FC<ToolbarProps> = ({ position, style, children, ...
   const sidecarContext = useMemo<SidecarRegistry>(() => ({ register, unregister }), [register, unregister]);
 
   const inlineStyle: React.CSSProperties | undefined = position
-    ? { position: 'absolute', ...POSITION_STYLES[position], ...style }
-    : style;
+    ? { position: 'absolute', pointerEvents: 'auto', ...POSITION_STYLES[position], ...style }
+    : { pointerEvents: 'auto', ...style };
 
   return (
     <ToolbarSidecarContext.Provider value={sidecarContext}>
-      <div id="toolbar" {...rest} style={inlineStyle}>
+      <div data-hop-toolbar={toolbarInstanceId} {...rest} style={inlineStyle}>
         {children}
       </div>
-      {Array.from(sidecars.entries()).map(([key, element]) => (
-        <React.Fragment key={key}>{element}</React.Fragment>
-      ))}
+      {Array.from(sidecars.entries()).map(([key, element]) => {
+        if (!React.isValidElement(element)) {
+          return <React.Fragment key={key}>{element}</React.Fragment>;
+        }
+
+        const mergedStyle: React.CSSProperties = {
+          ...(element.props.style as React.CSSProperties | undefined),
+          position: 'absolute',
+          pointerEvents: 'auto'
+        };
+
+        return React.cloneElement(element, {
+          key,
+          'data-hop-toolbar-owner': toolbarInstanceId,
+          style: mergedStyle
+        });
+      })}
     </ToolbarSidecarContext.Provider>
   );
 };
@@ -91,8 +108,8 @@ type BasicControlProps = {
   imgProps?: React.ImgHTMLAttributes<HTMLImageElement>;
 };
 
-const ToolbarImage: React.FC<React.ImgHTMLAttributes<HTMLImageElement>> = ({ alt, ...rest }) => (
-  <img alt={alt ?? ''} {...rest} />
+const ToolbarImage: React.FC<React.ImgHTMLAttributes<HTMLImageElement>> = ({ alt, id, ...rest }) => (
+  <img alt={alt ?? ''} id={id} data-hop-id={id} {...rest} />
 );
 
 export const ToolbarSeparator: React.FC = () => <br />;
@@ -331,7 +348,6 @@ export const FullscreenControl: React.FC<FullscreenControlProps> = ({
     <ToggleImagePair
       primary={{ id: 'full_on', title: enabledTitle, src: enabledIcon, imgProps: enabledImgProps }}
       secondary={{ id: 'full', title: disabledTitle, src: disabledIcon, imgProps: disabledImgProps }}
-      includeSeparator={false}
     />
   );
 };
@@ -473,7 +489,12 @@ export const MeasureControl: React.FC<MeasureControlProps> = ({
   useToolbarSidecar(
     'measure-box',
     (
-      <div id="measure-box" className="output-box">
+      <div
+        id="measure-box"
+        data-hop-sidecar="measure-box"
+        className="output-box"
+        style={{ pointerEvents: 'auto' }}
+      >
         {label ?? 'Measured length'}
         <hr />
         <CopyableOutput id="measure-output" value={displayValue} />
@@ -518,7 +539,12 @@ export const PickControl: React.FC<PickControlProps> = ({
   useToolbarSidecar(
     'pickpoint-box',
     (
-      <div id="pickpoint-box" className="output-box">
+      <div
+        id="pickpoint-box"
+        data-hop-sidecar="pickpoint-box"
+        className="output-box"
+        style={{ pointerEvents: 'auto' }}
+      >
         {label ?? 'XYZ picked point'}
         <hr />
         <CopyableOutput id="pickpoint-output" value={displayValue} />
@@ -566,7 +592,12 @@ export const SectionsControl: React.FC<SectionsControlProps> = ({
   useToolbarSidecar(
     'sections-box',
     (
-      <div id="sections-box" className="output-box">
+      <div
+        id="sections-box"
+        data-hop-sidecar="sections-box"
+        className="output-box"
+        style={{ pointerEvents: 'auto' }}
+      >
         <table className="output-table" onMouseDown={(event) => event.stopPropagation()}>
           <tbody>
             <tr>

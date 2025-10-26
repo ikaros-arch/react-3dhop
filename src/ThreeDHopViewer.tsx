@@ -58,6 +58,7 @@ export type PresenterInstance = {
   getTrackballPosition?: () => number[];
   setTrackballPosition?: (state: number[]) => void;
   saveScreenshot?: () => void;
+  animateToTrackballPosition?: (newPosition: number[], newTime?: number) => void;
   _onEndMeasurement?: (measure: number) => void;
   _onEndPickingPoint?: (point: number[]) => void;
   _onPickedSpot?: (id: string) => void;
@@ -76,6 +77,7 @@ export type SceneContribution = {
 
 export type ToolbarActionHandler = (presenter: PresenterInstance, action: string) => boolean | void;
 export type SceneObserver = (presenter: PresenterInstance) => void;
+export type TrackballObserver = (trackState: number[]) => void;
 
 export type CoordinateCorrections = {
   x?: number;
@@ -89,6 +91,7 @@ export type ThreeDHopViewerContextValue = {
   registerSceneContribution: (key: string, contribution: SceneContribution | null) => () => void;
   registerToolbarAction: (actions: string | string[], handler: ToolbarActionHandler) => () => void;
   registerSceneObserver: (observer: SceneObserver) => () => void;
+  registerTrackballObserver: (observer: TrackballObserver) => () => void;
   hasHotspotContribution: boolean;
   measurementUnits: string;
   measurementValue: number | null;
@@ -129,6 +132,7 @@ declare global {
     sectionxSwitch?: (on?: boolean) => void;
     sectionySwitch?: (on?: boolean) => void;
     sectionzSwitch?: (on?: boolean) => void;
+    onTrackballUpdate?: (trackState: number[]) => void;
   }
   const HOP_ALL: unknown;
 }
@@ -231,6 +235,20 @@ async function ensureAssets(baseUrl: string): Promise<void> {
   }
 }
 
+function queryToolbarElements<T extends HTMLElement = HTMLElement>(dataId: string): T[] {
+  if (typeof document === 'undefined') {
+    return [];
+  }
+  return Array.from(document.querySelectorAll<T>(`[data-hop-id="${dataId}"]`));
+}
+
+function queryToolbarSidecars<T extends HTMLElement = HTMLElement>(dataId: string): T[] {
+  if (typeof document === 'undefined') {
+    return [];
+  }
+  return Array.from(document.querySelectorAll<T>(`[data-hop-sidecar="${dataId}"]`));
+}
+
 function resolveBackgroundUrl(provided: string | null | undefined, baseUrl: string): string | null {
   const fallback = joinAssetPath(baseUrl, 'skins/backgrounds/light.jpg');
   if (provided === null) return null;
@@ -265,11 +283,19 @@ export const ThreeDHopViewer: React.FC<ThreeDHopViewerProps> = ({
   const previousOnEndPickingPointRef = useRef<PresenterInstance['_onEndPickingPoint']>();
   const previousMeasureSwitchRef = useRef<typeof window.measureSwitch>();
   const previousPickpointSwitchRef = useRef<typeof window.pickpointSwitch>();
+  const previousOnTrackballUpdateRef = useRef<typeof window.onTrackballUpdate>();
   const [presenterState, setPresenterState] = useState<PresenterInstance | null>(null);
+  const previousLightSwitchRef = useRef<typeof window.lightSwitch>();
+  const previousLightingSwitchRef = useRef<typeof window.lightingSwitch>();
+  const previousCameraSwitchRef = useRef<typeof window.cameraSwitch>();
+  const previousColorSwitchRef = useRef<typeof window.colorSwitch>();
+  const previousHotspotSwitchRef = useRef<typeof window.hotspotSwitch>();
+  const previousSectiontoolSwitchRef = useRef<typeof window.sectiontoolSwitch>();
   const sceneContributionsRef = useRef<Map<string, SceneContribution>>(new Map());
   const [sceneContributionsVersion, setSceneContributionsVersion] = useState(0);
   const toolbarHandlersRef = useRef<Map<string, Set<ToolbarActionHandler>>>(new Map());
   const sceneObserversRef = useRef<Set<SceneObserver>>(new Set());
+  const trackballObserversRef = useRef<Set<TrackballObserver>>(new Set());
   const [hasHotspotContribution, setHasHotspotContribution] = useState(false);
   const [measurementValue, setMeasurementValue] = useState<number | null>(null);
   const [pickpointValue, setPickpointValue] = useState<[number, number, number] | null>(null);
@@ -279,6 +305,72 @@ export const ThreeDHopViewer: React.FC<ThreeDHopViewerProps> = ({
   useEffect(() => {
     activeInteractiveToolRef.current = activeInteractiveTool;
   }, [activeInteractiveTool]);
+
+  const alignToolbarSidecars = useCallback(() => {
+    if (typeof document === 'undefined') {
+      return;
+    }
+
+    const container = document.querySelector<HTMLElement>('[data-hop-toolbar-container="true"]');
+    if (!container) {
+      return;
+    }
+
+    const containerRect = container.getBoundingClientRect();
+    const containerMidX = containerRect.left + containerRect.width / 2;
+    const toolbars = Array.from(container.querySelectorAll<HTMLElement>('[data-hop-toolbar]'));
+
+    toolbars.forEach((toolbar) => {
+      const toolbarId = toolbar.getAttribute('data-hop-toolbar');
+      if (!toolbarId) {
+        return;
+      }
+
+      const toolbarRect = toolbar.getBoundingClientRect();
+      const toolbarCenterX = toolbarRect.left + toolbarRect.width / 2;
+      const isRightAligned = toolbarCenterX >= containerMidX;
+
+      const anchorMap: Record<string, string[]> = {
+        'measure-box': ['measure', 'measure_on'],
+        'pickpoint-box': ['pick', 'pick_on'],
+        'sections-box': ['sections', 'sections_on']
+      };
+
+      Object.entries(anchorMap).forEach(([sidecarId, anchorIds]) => {
+        const sidecar = container.querySelector<HTMLElement>(
+          `[data-hop-sidecar="${sidecarId}"][data-hop-toolbar-owner="${toolbarId}"]`
+        );
+        if (!sidecar) {
+          return;
+        }
+
+        const anchor = anchorIds
+          .map((candidate) => toolbar.querySelector<HTMLElement>(`[data-hop-id="${candidate}"]`))
+          .find((element): element is HTMLElement => Boolean(element));
+        if (!anchor) {
+          return;
+        }
+
+  const anchorRect = anchor.getBoundingClientRect();
+  const anchorTop = anchorRect.top - containerRect.top;
+  const anchorRight = anchorRect.right - containerRect.left;
+
+        sidecar.style.left = 'auto';
+        sidecar.style.right = 'auto';
+
+        if (isRightAligned) {
+          const rightOffset = containerRect.right - anchorRect.left + 5;
+          sidecar.style.right = `${Math.max(rightOffset, 0)}px`;
+        } else {
+          const leftOffset = anchorRight + 5;
+          sidecar.style.left = `${Math.max(leftOffset, 0)}px`;
+        }
+
+        const top = anchorTop;
+        sidecar.style.top = `${top}px`;
+      });
+    });
+  }, []);
 
   const measurementUnitLabel = useMemo(() => {
     const trimmed = measurementUnits.trim();
@@ -310,6 +402,28 @@ export const ThreeDHopViewer: React.FC<ThreeDHopViewerProps> = ({
     legacySelection?.empty?.();
   }, []);
 
+  const setControlVisibility = useCallback((controlId: string, visible: boolean) => {
+    queryToolbarElements<HTMLElement>(controlId).forEach((element) => {
+      element.style.visibility = visible ? 'visible' : 'hidden';
+    });
+  }, []);
+
+  const setTogglePairVisibility = useCallback(
+    (enabledControlId: string, disabledControlId: string, enabled: boolean) => {
+      setControlVisibility(enabledControlId, enabled);
+      setControlVisibility(disabledControlId, !enabled);
+    },
+    [setControlVisibility]
+  );
+
+  const isControlVisible = useCallback((controlId: string): boolean | null => {
+    const element = queryToolbarElements<HTMLElement>(controlId)[0];
+    if (!element) {
+      return null;
+    }
+    return getComputedStyle(element).visibility !== 'hidden';
+  }, []);
+
   const syncMeasurementUi = useCallback(
     (override?: boolean) => {
       const presenter = presenterRef.current;
@@ -318,30 +432,42 @@ export const ThreeDHopViewer: React.FC<ThreeDHopViewerProps> = ({
           ? override
           : presenter?.isMeasurementToolEnabled?.() ?? activeInteractiveToolRef.current === 'measure';
 
-      const measure = document.getElementById('measure');
-      const measureOn = document.getElementById('measure_on');
-      const box = document.getElementById('measure-box');
+      const measureElements = queryToolbarElements<HTMLImageElement>('measure');
+      const measureOnElements = queryToolbarElements<HTMLImageElement>('measure_on');
+      const measureBoxes = queryToolbarSidecars<HTMLDivElement>('measure-box');
       const canvas = document.getElementById('draw-canvas') as HTMLCanvasElement | null;
 
       if (shouldEnable) {
-        if (measure) measure.style.visibility = 'hidden';
-        if (measureOn) measureOn.style.visibility = 'visible';
-        if (box) box.style.display = 'table';
+        measureElements.forEach((element) => {
+          element.style.visibility = 'hidden';
+        });
+        measureOnElements.forEach((element) => {
+          element.style.visibility = 'visible';
+        });
+        measureBoxes.forEach((element) => {
+          element.style.display = 'table';
+        });
         if (canvas) canvas.style.cursor = 'crosshair';
       } else {
         clearSelectionRange();
-        if (measureOn) measureOn.style.visibility = 'hidden';
-        if (measure) measure.style.visibility = 'visible';
-        if (box) box.style.display = 'none';
+        measureOnElements.forEach((element) => {
+          element.style.visibility = 'hidden';
+        });
+        measureElements.forEach((element) => {
+          element.style.visibility = 'visible';
+        });
+        measureBoxes.forEach((element) => {
+          element.style.display = 'none';
+        });
         const anyMeasurementEnabled = presenter?.isAnyMeasurementEnabled?.() ?? false;
         if (canvas && !anyMeasurementEnabled) {
           canvas.style.cursor = 'default';
         }
         setMeasurementValue(null);
       }
-
+      alignToolbarSidecars();
     },
-    [clearSelectionRange]
+    [alignToolbarSidecars, clearSelectionRange]
   );
 
   const syncPickpointUi = useCallback(
@@ -352,30 +478,147 @@ export const ThreeDHopViewer: React.FC<ThreeDHopViewerProps> = ({
           ? override
           : presenter?.isPickpointModeEnabled?.() ?? activeInteractiveToolRef.current === 'pick';
 
-      const pick = document.getElementById('pick');
-      const pickOn = document.getElementById('pick_on');
-      const box = document.getElementById('pickpoint-box');
+      const pickElements = queryToolbarElements<HTMLImageElement>('pick');
+      const pickOnElements = queryToolbarElements<HTMLImageElement>('pick_on');
+      const pickBoxes = queryToolbarSidecars<HTMLDivElement>('pickpoint-box');
       const canvas = document.getElementById('draw-canvas') as HTMLCanvasElement | null;
 
       if (shouldEnable) {
-        if (pick) pick.style.visibility = 'hidden';
-        if (pickOn) pickOn.style.visibility = 'visible';
-        if (box) box.style.display = 'table';
+        pickElements.forEach((element) => {
+          element.style.visibility = 'hidden';
+        });
+        pickOnElements.forEach((element) => {
+          element.style.visibility = 'visible';
+        });
+        pickBoxes.forEach((element) => {
+          element.style.display = 'table';
+        });
         if (canvas) canvas.style.cursor = 'crosshair';
       } else {
         clearSelectionRange();
-        if (pickOn) pickOn.style.visibility = 'hidden';
-        if (pick) pick.style.visibility = 'visible';
-        if (box) box.style.display = 'none';
+        pickOnElements.forEach((element) => {
+          element.style.visibility = 'hidden';
+        });
+        pickElements.forEach((element) => {
+          element.style.visibility = 'visible';
+        });
+        pickBoxes.forEach((element) => {
+          element.style.display = 'none';
+        });
         const anyMeasurementEnabled = presenter?.isAnyMeasurementEnabled?.() ?? false;
         if (canvas && !anyMeasurementEnabled) {
           canvas.style.cursor = 'default';
         }
         setPickpointValue(null);
       }
-
+      alignToolbarSidecars();
     },
-    [clearSelectionRange]
+    [alignToolbarSidecars, clearSelectionRange]
+  );
+
+  const syncSectionsUi = useCallback(() => {
+    if (typeof document === 'undefined') {
+      return;
+    }
+
+    const reference = document.querySelector<HTMLElement>('[data-hop-id="sections_on"]');
+    const isActive = reference ? getComputedStyle(reference).visibility !== 'hidden' : false;
+
+    setTogglePairVisibility('sections_on', 'sections', isActive);
+
+    const sectionBoxes = queryToolbarSidecars<HTMLDivElement>('sections-box');
+    sectionBoxes.forEach((element) => {
+      element.style.display = isActive ? 'table' : 'none';
+    });
+
+    alignToolbarSidecars();
+  }, [alignToolbarSidecars, setTogglePairVisibility]);
+
+  const syncLightSwitch = useCallback(
+    (override?: boolean) => {
+      const presenter = presenterRef.current;
+      const enabled =
+        typeof override === 'boolean'
+          ? override
+          : presenter?.isLightTrackballEnabled?.() ?? false;
+
+      setTogglePairVisibility('light_on', 'light', enabled);
+      if (enabled) {
+        setControlVisibility('lighting_off', false);
+        setControlVisibility('lighting', true);
+      }
+
+      return enabled;
+    },
+    [setControlVisibility, setTogglePairVisibility]
+  );
+
+  const syncLightingSwitch = useCallback(
+    (override?: boolean) => {
+      const presenter = presenterRef.current;
+      const enabled =
+        typeof override === 'boolean'
+          ? override
+          : presenter?.isSceneLightingEnabled?.() ?? (isControlVisible('lighting') ?? false);
+
+      setTogglePairVisibility('lighting', 'lighting_off', enabled);
+      if (!enabled) {
+        setControlVisibility('light_on', false);
+        setControlVisibility('light', true);
+      }
+
+      return enabled;
+    },
+    [isControlVisible, setControlVisibility, setTogglePairVisibility]
+  );
+
+  const syncColorSwitch = useCallback(
+    (override?: boolean) => {
+      const fallback = isControlVisible('color');
+      const enabled = typeof override === 'boolean' ? override : fallback ?? true;
+
+      setControlVisibility('color', !enabled);
+      setControlVisibility('color_on', enabled);
+
+      return enabled;
+    },
+    [isControlVisible, setControlVisibility]
+  );
+
+  const syncCameraSwitch = useCallback(
+    (override?: boolean) => {
+      const fallback = isControlVisible('perspective');
+      const enabled = typeof override === 'boolean' ? override : fallback ?? true;
+
+      setControlVisibility('perspective', !enabled);
+      setControlVisibility('orthographic', enabled);
+
+      return enabled;
+    },
+    [isControlVisible, setControlVisibility]
+  );
+
+  const syncHotspotSwitch = useCallback(
+    (override?: boolean) => {
+      const presenter = presenterRef.current;
+      const enabled =
+        typeof override === 'boolean'
+          ? override
+          : presenter?.isSpotVisibilityEnabled?.() ?? (isControlVisible('hotspot_on') ?? false);
+
+      setTogglePairVisibility('hotspot_on', 'hotspot', enabled);
+
+      return enabled;
+    },
+    [isControlVisible, setTogglePairVisibility]
+  );
+
+  const syncFullscreenUi = useCallback(
+    (isFullscreen: boolean) => {
+      setControlVisibility('full', !isFullscreen);
+      setControlVisibility('full_on', isFullscreen);
+    },
+    [setControlVisibility]
   );
 
   const interactiveToolConfigs = useMemo(() => {
@@ -517,6 +760,19 @@ export const ThreeDHopViewer: React.FC<ThreeDHopViewerProps> = ({
     };
   }, []);
 
+  const notifyTrackballObservers = useCallback((trackState: number[]) => {
+    trackballObserversRef.current.forEach((observer) => {
+      observer(trackState);
+    });
+  }, []);
+
+  const registerTrackballObserver = useCallback((observer: TrackballObserver) => {
+    trackballObserversRef.current.add(observer);
+    return () => {
+      trackballObserversRef.current.delete(observer);
+    };
+  }, []);
+
   const dispatchToolbarAction = useCallback((action: string, presenter: PresenterInstance) => {
     const handlers = toolbarHandlersRef.current.get(action);
     if (!handlers || handlers.size === 0) {
@@ -603,21 +859,34 @@ export const ThreeDHopViewer: React.FC<ThreeDHopViewerProps> = ({
         presenter.setTrackballPosition(trackballState);
       }
 
+      const nextTrackball = presenter.getTrackballPosition?.();
+      if (Array.isArray(nextTrackball)) {
+        notifyTrackballObservers(nextTrackball);
+      }
+
       const hasHotspots = Boolean(sceneOptions.spots && Object.keys(sceneOptions.spots).length > 0);
       setHasHotspotContribution(hasHotspots);
 
       sceneObserversRef.current.forEach((observer) => observer(presenter));
 
-      if (document.getElementById('sections-box')) {
+      if (queryToolbarSidecars('sections-box').length > 0) {
         window.sectiontoolInit?.();
         window.sectiontoolReset?.();
       }
     },
-    [buildSceneOptions]
+    [buildSceneOptions, notifyTrackballObservers]
   );
 
   useEffect(() => {
     let disposed = false;
+
+    const trackballUpdateHandler = (trackState: number[]) => {
+      notifyTrackballObservers(trackState);
+      const previous = previousOnTrackballUpdateRef.current;
+      if (previous && previous !== trackballUpdateHandler) {
+        previous(trackState);
+      }
+    };
 
     const toolbarHandler = (action: string) => {
       const presenter = presenterRef.current;
@@ -686,10 +955,33 @@ export const ThreeDHopViewer: React.FC<ThreeDHopViewerProps> = ({
       }
     };
 
+    const fullscreenEvents = ['fullscreenchange', 'webkitfullscreenchange', 'mozfullscreenchange', 'MSFullscreenChange'] as const;
+
+    const getFullscreenElement = () =>
+      document.fullscreenElement ??
+      (document as Document & { webkitFullscreenElement?: Element | null }).webkitFullscreenElement ??
+      (document as Document & { mozFullScreenElement?: Element | null }).mozFullScreenElement ??
+      (document as Document & { msFullscreenElement?: Element | null }).msFullscreenElement ??
+      null;
+
+    const handleFullscreenChange = () => {
+      const isActive = Boolean(getFullscreenElement());
+      syncFullscreenUi(isActive);
+    };
+
+    const sectiontoolSwitchProxy = (state?: boolean) => {
+      const previous = previousSectiontoolSwitchRef.current;
+      const result = previous?.(state);
+      syncSectionsUi();
+      return result;
+    };
+
     const setup = async () => {
       try {
-        previousActionsRef.current = window.actionsToolbar;
-        previousPresenterRef.current = window.presenter;
+    previousActionsRef.current = window.actionsToolbar;
+    previousPresenterRef.current = window.presenter;
+    previousOnTrackballUpdateRef.current = window.onTrackballUpdate;
+    window.onTrackballUpdate = trackballUpdateHandler;
 
     await ensureAssets(normalizedBaseUrl);
     if (disposed) return;
@@ -698,6 +990,48 @@ export const ThreeDHopViewer: React.FC<ThreeDHopViewerProps> = ({
     previousPickpointSwitchRef.current = window.pickpointSwitch;
     window.measureSwitch = syncMeasurementUi;
     window.pickpointSwitch = syncPickpointUi;
+
+  previousSectiontoolSwitchRef.current = window.sectiontoolSwitch;
+  window.sectiontoolSwitch = sectiontoolSwitchProxy;
+
+  previousLightSwitchRef.current = window.lightSwitch;
+  previousLightingSwitchRef.current = window.lightingSwitch;
+  previousColorSwitchRef.current = window.colorSwitch;
+  previousCameraSwitchRef.current = window.cameraSwitch;
+  previousHotspotSwitchRef.current = window.hotspotSwitch;
+
+    window.lightSwitch = (state?: boolean) => {
+      syncLightSwitch(state);
+    };
+
+    window.lightingSwitch = (state?: boolean) => {
+      syncLightingSwitch(state);
+    };
+
+    window.colorSwitch = (state?: boolean) => {
+      syncColorSwitch(state);
+    };
+
+    window.cameraSwitch = (state?: boolean) => {
+      syncCameraSwitch(state);
+    };
+
+    window.hotspotSwitch = (state?: boolean) => {
+      syncHotspotSwitch(state);
+    };
+
+    syncLightSwitch();
+    syncLightingSwitch();
+    syncColorSwitch();
+    syncCameraSwitch();
+    syncHotspotSwitch();
+    syncSectionsUi();
+
+    fullscreenEvents.forEach((eventName) => {
+      document.addEventListener(eventName as unknown as keyof DocumentEventMap, handleFullscreenChange as EventListener);
+    });
+
+    handleFullscreenChange();
 
         window.actionsToolbar = toolbarHandler;
 
@@ -711,6 +1045,11 @@ export const ThreeDHopViewer: React.FC<ThreeDHopViewerProps> = ({
         setPresenterState(presenter);
 
         applyScene(presenter);
+
+        const initialTrackball = presenter.getTrackballPosition?.();
+        if (Array.isArray(initialTrackball)) {
+          notifyTrackballObservers(initialTrackball);
+        }
 
         previousOnEndMeasurementRef.current = presenter._onEndMeasurement;
         previousOnEndPickingPointRef.current = presenter._onEndPickingPoint;
@@ -731,9 +1070,10 @@ export const ThreeDHopViewer: React.FC<ThreeDHopViewerProps> = ({
           ]);
         };
 
-        if (document.getElementById('sections-box')) {
+        if (queryToolbarSidecars('sections-box').length > 0) {
           window.sectiontoolInit?.();
           window.sectiontoolReset?.();
+          syncSectionsUi();
         }
       } catch (error) {
         // eslint-disable-next-line no-console
@@ -772,6 +1112,11 @@ export const ThreeDHopViewer: React.FC<ThreeDHopViewerProps> = ({
         window.presenter = previousPresenterRef.current ?? null;
       }
 
+      if (window.onTrackballUpdate === trackballUpdateHandler) {
+        window.onTrackballUpdate = previousOnTrackballUpdateRef.current;
+      }
+      previousOnTrackballUpdateRef.current = undefined;
+
       if (window.measureSwitch === syncMeasurementUi) {
         window.measureSwitch = previousMeasureSwitchRef.current;
       }
@@ -779,6 +1124,22 @@ export const ThreeDHopViewer: React.FC<ThreeDHopViewerProps> = ({
       if (window.pickpointSwitch === syncPickpointUi) {
         window.pickpointSwitch = previousPickpointSwitchRef.current;
       }
+
+      if (window.sectiontoolSwitch === sectiontoolSwitchProxy) {
+        window.sectiontoolSwitch = previousSectiontoolSwitchRef.current;
+      }
+
+      window.lightSwitch = previousLightSwitchRef.current;
+      window.lightingSwitch = previousLightingSwitchRef.current;
+      window.colorSwitch = previousColorSwitchRef.current;
+      window.cameraSwitch = previousCameraSwitchRef.current;
+      window.hotspotSwitch = previousHotspotSwitchRef.current;
+
+      fullscreenEvents.forEach((eventName) => {
+        document.removeEventListener(eventName as unknown as keyof DocumentEventMap, handleFullscreenChange as EventListener);
+      });
+
+      trackballObserversRef.current.clear();
 
       presenterRef.current = null;
       setPresenterState(null);
@@ -788,6 +1149,20 @@ export const ThreeDHopViewer: React.FC<ThreeDHopViewerProps> = ({
     // `assetBaseUrl` and `resolvedModelUrl` are captured intentionally for first render only.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    alignToolbarSidecars();
+  }, [alignToolbarSidecars]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+    window.addEventListener('resize', alignToolbarSidecars);
+    return () => {
+      window.removeEventListener('resize', alignToolbarSidecars);
+    };
+  }, [alignToolbarSidecars]);
 
   useEffect(() => {
     const presenter = presenterRef.current;
@@ -805,6 +1180,7 @@ export const ThreeDHopViewer: React.FC<ThreeDHopViewerProps> = ({
       registerSceneContribution,
       registerToolbarAction,
       registerSceneObserver,
+  registerTrackballObserver,
       hasHotspotContribution,
       measurementUnits: measurementUnitLabel,
       measurementValue,
@@ -819,6 +1195,7 @@ export const ThreeDHopViewer: React.FC<ThreeDHopViewerProps> = ({
       registerSceneContribution,
       registerToolbarAction,
       registerSceneObserver,
+  registerTrackballObserver,
       hasHotspotContribution,
       measurementUnitLabel,
       measurementValue,
@@ -844,6 +1221,11 @@ export const ThreeDHopViewer: React.FC<ThreeDHopViewerProps> = ({
   });
 
   const hasProvidedToolbar = toolbarChildren.length > 0;
+  const toolbarCount = toolbarChildren.length;
+
+  useEffect(() => {
+    alignToolbarSidecars();
+  }, [alignToolbarSidecars, toolbarCount, hasHotspotContribution]);
 
   return (
     <ThreeDHopViewerContext.Provider value={contextValue}>
@@ -869,18 +1251,33 @@ export const ThreeDHopViewer: React.FC<ThreeDHopViewerProps> = ({
           <div id="tdhlg" />
           {showToolbar ? (
             <ToolbarAssetsProvider assetBaseUrl={normalizedBaseUrl}>
-              {hasProvidedToolbar ? (
-                toolbarChildren
-              ) : (
-                <Toolbar>
-                  <HomeControl />
-                  <ZoomInControl />
-                  <ZoomOutControl />
-                  <LightControl />
-                  {hasHotspotContribution ? <HotspotControl /> : null}
-                  <FullscreenControl />
-                </Toolbar>
-              )}
+              <div
+                id="toolbar"
+                data-hop-toolbar-container="true"
+                style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}
+              >
+                {(hasProvidedToolbar
+                  ? toolbarChildren
+                  : [
+                      <Toolbar key="default-toolbar">
+                        <HomeControl />
+                        <ZoomInControl />
+                        <ZoomOutControl />
+                        <LightControl />
+                        {hasHotspotContribution ? <HotspotControl /> : null}
+                        <FullscreenControl />
+                      </Toolbar>
+                    ]
+                ).map((element, index) => {
+                  if (!React.isValidElement(element)) {
+                    return element;
+                  }
+                  if (element.key != null) {
+                    return element;
+                  }
+                  return React.cloneElement(element, { key: `toolbar-${index}` });
+                })}
+              </div>
             </ToolbarAssetsProvider>
           ) : null}
           <canvas

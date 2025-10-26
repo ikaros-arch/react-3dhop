@@ -16,6 +16,8 @@ import {
   FullscreenControl,
   HotspotControl,
   Annotations,
+  CompassNavigation,
+  CubeNavigation,
   type AnnotationDefinition
 } from 'react-3dhop'
 import './App.css'
@@ -111,6 +113,8 @@ function App() {
             expanded
             onAnnotationPick={({ id, annotation }) => setPicked(`${id} – ${annotation.label ?? 'Untitled'}`)}
           />
+          <CompassNavigation position="bottom-right" />
+          <CubeNavigation position="top-right" />
         </ThreeDHopViewer>
       </div>
     </div>
