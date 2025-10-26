@@ -45,6 +45,9 @@ export type PresenterInstance = {
   isSceneLightingEnabled?: () => boolean;
   toggleCameraType?: () => void;
   toggleInstanceSolidColor?: (target: unknown, updateUi?: boolean) => void;
+  setInstanceTransparency?: (tag: unknown, newState: boolean, redraw?: boolean, newAlpha?: number) => void;
+  isInstanceTransparencyEnabled?: (tag?: unknown) => boolean;
+  setInstanceSpecularity?: (tag: unknown, color: [number, number, number], hardness: number, redraw?: boolean) => void;
   enableMeasurementTool?: (enabled: boolean) => void;
   isMeasurementToolEnabled?: () => boolean;
   enablePickpointMode?: (enabled: boolean) => void;
@@ -63,8 +66,15 @@ export type PresenterInstance = {
   _onEndPickingPoint?: (point: number[]) => void;
   _onPickedSpot?: (id: string) => void;
   destroy?: () => void;
+  repaint?: () => void;
   ui?: {
     postDrawEvent?: () => void;
+  };
+  _scene?: {
+    modelInstances?: Record<string, {
+      useTransparency?: boolean;
+      specularColor?: number[];
+    }>;
   };
 } & Record<string, unknown>;
 
@@ -120,6 +130,8 @@ declare global {
     lightingSwitch?: (on?: boolean) => void;
     cameraSwitch?: (on?: boolean) => void;
     colorSwitch?: (on?: boolean) => void;
+  transparencySwitch?: (on?: boolean) => void;
+  specularSwitch?: (on?: boolean) => void;
     measureSwitch?: (on?: boolean) => void;
     pickpointSwitch?: (on?: boolean) => void;
     hotspotSwitch?: (on?: boolean) => void;
@@ -289,6 +301,8 @@ export const ThreeDHopViewer: React.FC<ThreeDHopViewerProps> = ({
   const previousLightingSwitchRef = useRef<typeof window.lightingSwitch>();
   const previousCameraSwitchRef = useRef<typeof window.cameraSwitch>();
   const previousColorSwitchRef = useRef<typeof window.colorSwitch>();
+  const previousTransparencySwitchRef = useRef<typeof window.transparencySwitch>();
+  const previousSpecularSwitchRef = useRef<typeof window.specularSwitch>();
   const previousHotspotSwitchRef = useRef<typeof window.hotspotSwitch>();
   const previousSectiontoolSwitchRef = useRef<typeof window.sectiontoolSwitch>();
   const infoBoxVisibleRef = useRef(false);
@@ -635,6 +649,65 @@ export const ThreeDHopViewer: React.FC<ThreeDHopViewerProps> = ({
     [isControlVisible, setControlVisibility]
   );
 
+  const syncTransparencySwitch = useCallback(
+    (override?: boolean) => {
+      const presenter = presenterRef.current;
+      const presenterState =
+        typeof presenter?.isInstanceTransparencyEnabled === 'function'
+          ? presenter.isInstanceTransparencyEnabled(getHopAllTag())
+          : undefined;
+
+      const enabled =
+        typeof override === 'boolean'
+          ? override
+          : typeof presenterState === 'boolean'
+            ? presenterState
+            : isControlVisible('transparency_on') ?? false;
+
+      setControlVisibility('transparency_on', enabled);
+      setControlVisibility('transparency', !enabled);
+
+      return enabled;
+    },
+    [isControlVisible, setControlVisibility]
+  );
+
+  const syncSpecularUi = useCallback(
+    (override?: boolean) => {
+      const presenter = presenterRef.current;
+      const instances = presenter?._scene?.modelInstances as
+        | Record<string, { specularColor?: number[] }>
+        | undefined;
+
+      const presenterState = instances
+        ? Object.values(instances).some((instance) => {
+            if (!instance) {
+              return false;
+            }
+            const specular = instance.specularColor;
+            if (!Array.isArray(specular) || specular.length < 3) {
+              return false;
+            }
+            const [r = 0, g = 0, b = 0] = specular;
+            return Math.abs(r) > 1e-3 || Math.abs(g) > 1e-3 || Math.abs(b) > 1e-3;
+          })
+        : undefined;
+
+      const enabled =
+        typeof override === 'boolean'
+          ? override
+          : typeof presenterState === 'boolean'
+            ? presenterState
+            : isControlVisible('specular_on') ?? false;
+
+      setControlVisibility('specular_on', enabled);
+      setControlVisibility('specular', !enabled);
+
+      return enabled;
+    },
+    [isControlVisible, setControlVisibility]
+  );
+
   const syncCameraSwitch = useCallback(
     (override?: boolean) => {
       const fallback = isControlVisible('perspective');
@@ -923,8 +996,11 @@ export const ThreeDHopViewer: React.FC<ThreeDHopViewerProps> = ({
         window.sectiontoolInit?.();
         window.sectiontoolReset?.();
       }
+
+      syncTransparencySwitch();
+      syncSpecularUi();
     },
-    [buildSceneOptions, notifyTrackballObservers]
+    [buildSceneOptions, notifyTrackballObservers, syncSpecularUi, syncTransparencySwitch]
   );
 
   useEffect(() => {
@@ -978,6 +1054,62 @@ export const ThreeDHopViewer: React.FC<ThreeDHopViewerProps> = ({
           presenter.toggleInstanceSolidColor?.(getHopAllTag(), true);
           window.colorSwitch?.();
           break;
+        case 'transparency':
+        case 'transparency_on': {
+          const presentersTransparency =
+            typeof presenter.isInstanceTransparencyEnabled === 'function'
+              ? presenter.isInstanceTransparencyEnabled(getHopAllTag())
+              : isControlVisible('transparency_on') ?? false;
+          const nextTransparency = !presentersTransparency;
+
+          if (typeof presenter.setInstanceTransparency === 'function') {
+            presenter.setInstanceTransparency(getHopAllTag(), nextTransparency, true);
+          } else if (presenter._scene?.modelInstances) {
+            Object.values(presenter._scene.modelInstances).forEach((instance) => {
+              if (instance) {
+                (instance as { useTransparency?: boolean }).useTransparency = nextTransparency;
+              }
+            });
+            presenter.repaint?.();
+          }
+          window.transparencySwitch?.(nextTransparency);
+          break;
+        }
+        case 'specular':
+        case 'specular_on': {
+          const instances = presenter._scene?.modelInstances as
+            | Record<string, { specularColor?: number[] }>
+            | undefined;
+          const isCurrentlySpecular = instances
+            ? Object.values(instances).some((instance) => {
+                if (!instance) {
+                  return false;
+                }
+                const specular = instance.specularColor;
+                if (!Array.isArray(specular) || specular.length < 3) {
+                  return false;
+                }
+                const [r = 0, g = 0, b = 0] = specular;
+                return Math.abs(r) > 1e-3 || Math.abs(g) > 1e-3 || Math.abs(b) > 1e-3;
+              })
+            : isControlVisible('specular_on') ?? false;
+          const nextSpecular = !isCurrentlySpecular;
+          const specularColor: [number, number, number] = nextSpecular ? [0.3, 0.3, 0.3] : [0.0, 0.0, 0.0];
+
+          if (typeof presenter.setInstanceSpecularity === 'function') {
+            presenter.setInstanceSpecularity(getHopAllTag(), specularColor, 256.0, true);
+          } else if (instances) {
+            const updated = [...specularColor, 256.0];
+            Object.values(instances).forEach((instance) => {
+              if (instance) {
+                instance.specularColor = updated;
+              }
+            });
+            presenter.repaint?.();
+          }
+          window.specularSwitch?.(nextSpecular);
+          break;
+        }
         case 'measure':
         case 'measure_on': {
           toggleTool('measure', presenter);
@@ -1052,6 +1184,8 @@ export const ThreeDHopViewer: React.FC<ThreeDHopViewerProps> = ({
   previousLightingSwitchRef.current = window.lightingSwitch;
   previousColorSwitchRef.current = window.colorSwitch;
   previousCameraSwitchRef.current = window.cameraSwitch;
+  previousTransparencySwitchRef.current = window.transparencySwitch;
+  previousSpecularSwitchRef.current = window.specularSwitch;
   previousHotspotSwitchRef.current = window.hotspotSwitch;
 
     window.lightSwitch = (state?: boolean) => {
@@ -1070,6 +1204,14 @@ export const ThreeDHopViewer: React.FC<ThreeDHopViewerProps> = ({
       syncCameraSwitch(state);
     };
 
+    window.transparencySwitch = (state?: boolean) => {
+      syncTransparencySwitch(state);
+    };
+
+    window.specularSwitch = (state?: boolean) => {
+      syncSpecularUi(state);
+    };
+
     window.hotspotSwitch = (state?: boolean) => {
       syncHotspotSwitch(state);
     };
@@ -1077,6 +1219,8 @@ export const ThreeDHopViewer: React.FC<ThreeDHopViewerProps> = ({
     syncLightSwitch();
     syncLightingSwitch();
     syncColorSwitch();
+    syncTransparencySwitch();
+    syncSpecularUi();
     syncCameraSwitch();
     syncHotspotSwitch();
     syncSectionsUi();
@@ -1187,6 +1331,8 @@ export const ThreeDHopViewer: React.FC<ThreeDHopViewerProps> = ({
       window.lightingSwitch = previousLightingSwitchRef.current;
       window.colorSwitch = previousColorSwitchRef.current;
       window.cameraSwitch = previousCameraSwitchRef.current;
+  window.transparencySwitch = previousTransparencySwitchRef.current;
+  window.specularSwitch = previousSpecularSwitchRef.current;
       window.hotspotSwitch = previousHotspotSwitchRef.current;
 
       fullscreenEvents.forEach((eventName) => {

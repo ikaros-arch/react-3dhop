@@ -170,6 +170,8 @@ Available controls mirror the classic 3DHOP toolbar:
 - `LightingControl` (scene lighting toggle)
 - `LightControl` (interactive light trackball)
 - `ColorControl` (solid colour toggle)
+- `TransparencyControl` (opacity toggle for all instances)
+- `SpecularControl` (toggle specular highlights across instances)
 - `CameraControl` (perspective vs orthographic)
 - `MeasureControl` (includes the measurement output panel; honours the viewer `measurementUnits` or an override passed as `units`)
 - `PickControl` (includes the XYZ pick panel)

@@ -8,6 +8,8 @@ import {
   LightingControl,
   LightControl,
   ColorControl,
+  TransparencyControl,
+  SpecularControl,
   CameraControl,
   MeasureControl,
   PickControl,
@@ -83,6 +85,12 @@ function App() {
             />
             <ColorControl
               title={{ enabled: 'Vis tekstur', disabled: 'Vis ensfarget' }}
+            />
+            <TransparencyControl
+              title={{ enabled: 'Skru av transparens', disabled: 'Skru på transparens' }}
+            />
+            <SpecularControl
+              title={{ enabled: 'Skru av speilglans', disabled: 'Skru på speilglans' }}
             />
             <CameraControl
               title={{ enabled: 'Perspektivkamera', disabled: 'Ortograft kamera' }}

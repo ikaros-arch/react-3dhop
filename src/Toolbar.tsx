@@ -417,6 +417,56 @@ export const ColorControl: React.FC<ColorControlProps> = ({ title, icon, enabled
   );
 };
 
+export type TransparencyControlProps = {
+  title?: ToggleLabels;
+  icon?: ToggleIcons;
+} & ToggleImgProps;
+
+export const TransparencyControl: React.FC<TransparencyControlProps> = ({
+  title,
+  icon,
+  enabledImgProps,
+  disabledImgProps
+}) => {
+  const { assetBaseUrl } = useToolbarAssets();
+  const enabledTitle = title?.enabled ?? 'Disable Transparency';
+  const disabledTitle = title?.disabled ?? 'Enable Transparency';
+  const enabledIcon = resolveToggleIcon(assetBaseUrl, icon?.enabled, 'skins/dark/transparency_on.svg');
+  const disabledIcon = resolveToggleIcon(assetBaseUrl, icon?.disabled, 'skins/dark/transparency.svg');
+
+  return (
+    <ToggleImagePair
+      primary={{ id: 'transparency_on', title: enabledTitle, src: enabledIcon, imgProps: enabledImgProps }}
+      secondary={{ id: 'transparency', title: disabledTitle, src: disabledIcon, imgProps: disabledImgProps }}
+    />
+  );
+};
+
+export type SpecularControlProps = {
+  title?: ToggleLabels;
+  icon?: ToggleIcons;
+} & ToggleImgProps;
+
+export const SpecularControl: React.FC<SpecularControlProps> = ({
+  title,
+  icon,
+  enabledImgProps,
+  disabledImgProps
+}) => {
+  const { assetBaseUrl } = useToolbarAssets();
+  const enabledTitle = title?.enabled ?? 'Disable Specular Highlights';
+  const disabledTitle = title?.disabled ?? 'Enable Specular Highlights';
+  const enabledIcon = resolveToggleIcon(assetBaseUrl, icon?.enabled, 'skins/dark/specular_on.svg');
+  const disabledIcon = resolveToggleIcon(assetBaseUrl, icon?.disabled, 'skins/dark/specular.svg');
+
+  return (
+    <ToggleImagePair
+      primary={{ id: 'specular_on', title: enabledTitle, src: enabledIcon, imgProps: enabledImgProps }}
+      secondary={{ id: 'specular', title: disabledTitle, src: disabledIcon, imgProps: disabledImgProps }}
+    />
+  );
+};
+
 export type CameraControlProps = {
   title?: ToggleLabels;
   icon?: ToggleIcons;
