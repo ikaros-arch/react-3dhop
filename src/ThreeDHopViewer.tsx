@@ -291,6 +291,7 @@ export const ThreeDHopViewer: React.FC<ThreeDHopViewerProps> = ({
   const previousColorSwitchRef = useRef<typeof window.colorSwitch>();
   const previousHotspotSwitchRef = useRef<typeof window.hotspotSwitch>();
   const previousSectiontoolSwitchRef = useRef<typeof window.sectiontoolSwitch>();
+  const infoBoxVisibleRef = useRef(false);
   const sceneContributionsRef = useRef<Map<string, SceneContribution>>(new Map());
   const [sceneContributionsVersion, setSceneContributionsVersion] = useState(0);
   const toolbarHandlersRef = useRef<Map<string, Set<ToolbarActionHandler>>>(new Map());
@@ -333,7 +334,8 @@ export const ThreeDHopViewer: React.FC<ThreeDHopViewerProps> = ({
       const anchorMap: Record<string, string[]> = {
         'measure-box': ['measure', 'measure_on'],
         'pickpoint-box': ['pick', 'pick_on'],
-        'sections-box': ['sections', 'sections_on']
+        'sections-box': ['sections', 'sections_on'],
+        'info-box': ['info', 'info_on']
       };
 
       Object.entries(anchorMap).forEach(([sidecarId, anchorIds]) => {
@@ -351,9 +353,9 @@ export const ThreeDHopViewer: React.FC<ThreeDHopViewerProps> = ({
           return;
         }
 
-  const anchorRect = anchor.getBoundingClientRect();
-  const anchorTop = anchorRect.top - containerRect.top;
-  const anchorRight = anchorRect.right - containerRect.left;
+    const anchorRect = anchor.getBoundingClientRect();
+    const anchorTop = anchorRect.top - containerRect.top;
+    const anchorRight = anchorRect.right - containerRect.left;
 
         sidecar.style.left = 'auto';
         sidecar.style.right = 'auto';
@@ -552,6 +554,54 @@ export const ThreeDHopViewer: React.FC<ThreeDHopViewerProps> = ({
     },
     [setControlVisibility, setTogglePairVisibility]
   );
+
+  const syncInfoUi = useCallback(
+    (override?: boolean) => {
+      const shouldShow = typeof override === 'boolean' ? override : infoBoxVisibleRef.current;
+
+      const infoElements = queryToolbarElements<HTMLImageElement>('info');
+      const infoOnElements = queryToolbarElements<HTMLImageElement>('info_on');
+      const infoBoxes = queryToolbarSidecars<HTMLDivElement>('info-box');
+
+      if (shouldShow) {
+        infoElements.forEach((element) => {
+          element.style.visibility = 'hidden';
+        });
+        infoOnElements.forEach((element) => {
+          element.style.visibility = 'visible';
+        });
+        infoBoxes.forEach((element) => {
+          element.style.display = 'table';
+        });
+      } else {
+        infoOnElements.forEach((element) => {
+          element.style.visibility = 'hidden';
+        });
+        infoElements.forEach((element) => {
+          element.style.visibility = 'visible';
+        });
+        infoBoxes.forEach((element) => {
+          element.style.display = 'none';
+        });
+      }
+
+      alignToolbarSidecars();
+      return shouldShow;
+    },
+    [alignToolbarSidecars]
+  );
+
+  const setInfoVisibility = useCallback(
+    (visible: boolean) => {
+      infoBoxVisibleRef.current = visible;
+      syncInfoUi(visible);
+    },
+    [syncInfoUi]
+  );
+
+  const toggleInfoVisibility = useCallback(() => {
+    setInfoVisibility(!infoBoxVisibleRef.current);
+  }, [setInfoVisibility]);
 
   const syncLightingSwitch = useCallback(
     (override?: boolean) => {
@@ -950,6 +1000,10 @@ export const ThreeDHopViewer: React.FC<ThreeDHopViewerProps> = ({
         case 'full_on':
           window.fullscreenSwitch?.();
           break;
+        case 'info':
+        case 'info_on':
+          toggleInfoVisibility();
+          break;
         default:
           break;
       }
@@ -1152,7 +1206,8 @@ export const ThreeDHopViewer: React.FC<ThreeDHopViewerProps> = ({
 
   useEffect(() => {
     alignToolbarSidecars();
-  }, [alignToolbarSidecars]);
+    syncInfoUi(infoBoxVisibleRef.current);
+  }, [alignToolbarSidecars, syncInfoUi]);
 
   useEffect(() => {
     if (typeof window === 'undefined') {
@@ -1225,7 +1280,8 @@ export const ThreeDHopViewer: React.FC<ThreeDHopViewerProps> = ({
 
   useEffect(() => {
     alignToolbarSidecars();
-  }, [alignToolbarSidecars, toolbarCount, hasHotspotContribution]);
+    syncInfoUi(infoBoxVisibleRef.current);
+  }, [alignToolbarSidecars, syncInfoUi, toolbarCount, hasHotspotContribution]);
 
   return (
     <ThreeDHopViewerContext.Provider value={contextValue}>

@@ -174,6 +174,7 @@ Available controls mirror the classic 3DHOP toolbar:
 - `MeasureControl` (includes the measurement output panel; honours the viewer `measurementUnits` or an override passed as `units`)
 - `PickControl` (includes the XYZ pick panel)
 - `SectionsControl` (includes the planar section UI)
+- `InfoControl` (toggles a static info panel with custom content)
 - `ScreenshotControl`
 - `HotspotControl`
 - `FullscreenControl`

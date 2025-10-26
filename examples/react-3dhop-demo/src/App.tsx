@@ -15,6 +15,7 @@ import {
   ScreenshotControl,
   FullscreenControl,
   HotspotControl,
+  InfoControl,
   Annotations,
   CompassNavigation,
   CubeNavigation,
@@ -94,6 +95,15 @@ function App() {
             <PickControl
               title={{ enabled: 'Skru av punktvalg', disabled: 'Velg punkt' }}
               label="XYZ punkt"
+            />
+            <InfoControl
+              label="Modellinfo"
+              content={(
+                <>
+                  <span>Objekt: C42183_sID-576_mID-913</span>
+                  <span>Skannet av: Kulturhistorisk Museum</span>
+                </>
+              )}
             />
             <HotspotControl />
             <SectionsControl

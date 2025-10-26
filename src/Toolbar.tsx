@@ -560,6 +560,57 @@ export const PickControl: React.FC<PickControlProps> = ({
   );
 };
 
+export type InfoControlProps = {
+  title?: ToggleLabels;
+  icon?: ToggleIcons;
+  label?: string;
+  content: React.ReactNode;
+} & ToggleImgProps;
+
+export const InfoControl: React.FC<InfoControlProps> = ({
+  title,
+  icon,
+  label,
+  content,
+  enabledImgProps,
+  disabledImgProps
+}) => {
+  const { assetBaseUrl } = useToolbarAssets();
+  const enabledTitle = title?.enabled ?? 'Hide Info Panel';
+  const disabledTitle = title?.disabled ?? 'Show Info Panel';
+  const enabledIcon = resolveToggleIcon(assetBaseUrl, icon?.enabled, 'skins/dark/help_on.png');
+  const disabledIcon = resolveToggleIcon(assetBaseUrl, icon?.disabled, 'skins/dark/help.png');
+
+  useToolbarSidecar(
+    'info-box',
+    (
+      <div
+        id="info-box"
+        data-hop-sidecar="info-box"
+        className="output-box"
+        style={{ pointerEvents: 'auto' }}
+      >
+        {label ?? 'Information'}
+        <hr />
+        <div
+          className="output-text"
+          onMouseDown={(event) => event.stopPropagation()}
+          style={{ display: 'flex', flexDirection: 'column', gap: '4px', textAlign: 'left' }}
+        >
+          {content}
+        </div>
+      </div>
+    )
+  );
+
+  return (
+    <ToggleImagePair
+      primary={{ id: 'info_on', title: enabledTitle, src: enabledIcon, imgProps: enabledImgProps }}
+      secondary={{ id: 'info', title: disabledTitle, src: disabledIcon, imgProps: disabledImgProps }}
+    />
+  );
+};
+
 export type SectionsControlProps = {
   title?: ToggleLabels;
   icon?: ToggleIcons;

@@ -30,7 +30,8 @@ export {
 	SectionsControl,
 	ScreenshotControl,
 	FullscreenControl,
-	HotspotControl
+	HotspotControl,
+	InfoControl
 } from './Toolbar.js';
 export type {
 	ToolbarProps,
@@ -43,5 +44,6 @@ export type {
 	SectionsControlProps,
 	ScreenshotControlProps,
 	FullscreenControlProps,
-	HotspotControlProps
+	HotspotControlProps,
+	InfoControlProps
 } from './Toolbar.js';
