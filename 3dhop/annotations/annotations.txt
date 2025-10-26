@@ -1,0 +1,5 @@
+label;x;y;z;type;comment;radius;color
+Skålgroper;368422.11;6439993.01;21.14;photo;Skålgroper;0.5;[1,0.76,0.04]
+Skip 2;368422.21;6439995.81;20.37;photo;Skip;0.5;[1,0.76,0.04]
+Skip og skålgroper;368420.23;6439994.54;19.93;photo;Skip og skålgroper;0.5;[1,0.76,0.04]
+Skip;368420.89;6439993.53;20.55;photo;Skip;0.5;[1,0.76,0.04]

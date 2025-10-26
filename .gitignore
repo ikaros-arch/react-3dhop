@@ -137,3 +137,5 @@ dist
 .yarn/build-state.yml
 .yarn/install-state.gz
 .pnp.*
+3dhop/3DHOP_beta.html
+3dhop/stylesheet/khm-style.css

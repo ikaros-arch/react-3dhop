@@ -1,5 +1,14 @@
-export { ThreeDHopViewer } from './ThreeDHopViewer';
-export type { ThreeDHopViewerProps } from './ThreeDHopViewer';
+export { ThreeDHopViewer, useThreeDHopViewer } from './ThreeDHopViewer.js';
+export type {
+	ThreeDHopViewerProps,
+	SceneContribution,
+	PresenterInstance,
+	ThreeDHopViewerContextValue,
+	ToolbarActionHandler,
+	SceneObserver
+} from './ThreeDHopViewer.js';
+export { Annotations } from './Annotations.js';
+export type { AnnotationDefinition, AnnotationsProps } from './Annotations.js';
 export {
 	Toolbar,
 	ToolbarAssetsProvider,
@@ -15,8 +24,9 @@ export {
 	PickControl,
 	SectionsControl,
 	ScreenshotControl,
-	FullscreenControl
-} from './Toolbar';
+	FullscreenControl,
+	HotspotControl
+} from './Toolbar.js';
 export type {
 	ToolbarProps,
 	LightControlProps,
@@ -27,5 +37,6 @@ export type {
 	PickControlProps,
 	SectionsControlProps,
 	ScreenshotControlProps,
-	FullscreenControlProps
-} from './Toolbar';
+	FullscreenControlProps,
+	HotspotControlProps
+} from './Toolbar.js';
