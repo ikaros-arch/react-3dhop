@@ -77,6 +77,12 @@ export type SceneContribution = {
 export type ToolbarActionHandler = (presenter: PresenterInstance, action: string) => boolean | void;
 export type SceneObserver = (presenter: PresenterInstance) => void;
 
+export type CoordinateCorrections = {
+  x?: number;
+  y?: number;
+  z?: number;
+};
+
 export type ThreeDHopViewerContextValue = {
   presenter: PresenterInstance | null;
   assetBaseUrl: string;
@@ -89,6 +95,7 @@ export type ThreeDHopViewerContextValue = {
   pickpointValue: [number, number, number] | null;
   setMeasurementValue: React.Dispatch<React.SetStateAction<number | null>>;
   setPickpointValue: React.Dispatch<React.SetStateAction<[number, number, number] | null>>;
+  coordinateCorrections: Required<CoordinateCorrections>;
 };
 
 const ThreeDHopViewerContext = createContext<ThreeDHopViewerContextValue | null>(null);
@@ -136,6 +143,7 @@ export type ThreeDHopViewerProps = {
   height?: number | string;
   showToolbar?: boolean;
   measurementUnits?: string;
+  coordinateCorrections?: CoordinateCorrections;
   children?: React.ReactNode;
 };
 
@@ -247,6 +255,7 @@ export const ThreeDHopViewer: React.FC<ThreeDHopViewerProps> = ({
   height = '100%',
   showToolbar = true,
   measurementUnits = 'mm',
+  coordinateCorrections,
   children
 }) => {
   const presenterRef = useRef<PresenterInstance | null>(null);
@@ -275,6 +284,15 @@ export const ThreeDHopViewer: React.FC<ThreeDHopViewerProps> = ({
     const trimmed = measurementUnits.trim();
     return trimmed.length > 0 ? trimmed : '';
   }, [measurementUnits]);
+
+  const resolvedCoordinateCorrections = useMemo<Required<CoordinateCorrections>>(
+    () => ({
+      x: coordinateCorrections?.x ?? 0,
+      y: coordinateCorrections?.y ?? 0,
+      z: coordinateCorrections?.z ?? 0
+    }),
+    [coordinateCorrections?.x, coordinateCorrections?.y, coordinateCorrections?.z]
+  );
 
   const clearSelectionRange = useCallback(() => {
     const selection = window.getSelection?.();
@@ -706,7 +724,11 @@ export const ThreeDHopViewer: React.FC<ThreeDHopViewerProps> = ({
             return;
           }
           const [x, y, z] = point;
-          setPickpointValue([x, y, z]);
+          setPickpointValue([
+            x + resolvedCoordinateCorrections.x,
+            y + resolvedCoordinateCorrections.y,
+            z + resolvedCoordinateCorrections.z
+          ]);
         };
 
         if (document.getElementById('sections-box')) {
@@ -788,7 +810,8 @@ export const ThreeDHopViewer: React.FC<ThreeDHopViewerProps> = ({
       measurementValue,
       pickpointValue,
       setMeasurementValue,
-      setPickpointValue
+      setPickpointValue,
+      coordinateCorrections: resolvedCoordinateCorrections
     }),
     [
       normalizedBaseUrl,
@@ -801,7 +824,8 @@ export const ThreeDHopViewer: React.FC<ThreeDHopViewerProps> = ({
       measurementValue,
       pickpointValue,
       setMeasurementValue,
-      setPickpointValue
+      setPickpointValue,
+      resolvedCoordinateCorrections
     ]
   );
 

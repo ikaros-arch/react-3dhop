@@ -56,6 +56,7 @@ function App() {
           width={1000}
           height={800}
           backgroundUrl="skins/backgrounds/cyan_gradient.jpg"
+          coordinateCorrections={{ x: 10000, y: 440000, z: 0 }}
         >
           <Toolbar position="top-left">
             <HomeControl
@@ -86,6 +87,7 @@ function App() {
             <MeasureControl
               title={{ enabled: 'Fjern måleverktøy', disabled: 'Aktiver måleverktøy' }}
               label="Målt lengde"
+              units='meter'
             />
             <PickControl
               title={{ enabled: 'Skru av punktvalg', disabled: 'Velg punkt' }}

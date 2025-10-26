@@ -40,7 +40,7 @@ export function Example() {
 
 The canvas background defaults to the bundled light vignette. Supply `backgroundUrl` to point at a different image (relative paths resolve against `assetBaseUrl`) or pass `null` to remove the inline background entirely.
 
-Set the `measurementUnits` prop on `ThreeDHopViewer` to change the label appended to measurement results (defaults to `mm`). Individual `MeasureControl` instances can override this with their own `units` prop when desired. Both the measurement and pick outputs include a built-in copy button for quick clipboard access.
+Set the `measurementUnits` prop on `ThreeDHopViewer` to change the label appended to measurement results (defaults to `mm`). Individual `MeasureControl` instances can override this with their own `units` prop when desired. Both the measurement and pick outputs include a built-in copy button for quick clipboard access. When your source models are stored with shortened coordinates (for example, large UTM offsets trimmed in the `.nxz`), supply `coordinateCorrections={{ x: ..., y: ..., z: ... }}` to re-apply those offsets to any exposed coordinates so the pick output reflects real-world positions.
 
 ### Optional Hotspot Annotations
 
