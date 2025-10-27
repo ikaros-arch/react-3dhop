@@ -9,170 +9,43 @@ import {
   ZoomInControl,
   ZoomOutControl
 } from './Toolbar';
-import {
-  isAbsoluteAssetUrl,
-  joinAssetPath,
-  resolveRelativeAssetPath
-} from './utils/assetPaths';
 import { getHopAllTag } from './utils/hopTags';
-import { buildAnnotations, type AnnotationDefinition } from './utils/annotations';
+import type { AnnotationDefinition } from './utils/annotations.js';
+import { joinAssetPath, resolveRelativeAssetPath } from './utils/assetPaths.js';
+import { ensureAssets } from './viewer/assets';
+import { queryToolbarElements, queryToolbarSidecars, resolveBackgroundUrl } from './viewer/dom';
+import { buildSceneConfiguration } from './viewer/sceneBuilder';
+import {
+  type AnnotationPickEvent,
+  type AnnotationPickHandler,
+  type CoordinateCorrections,
+  type ModelDefinition,
+  type ModelTransparencyOptions,
+  type ModelTransformConfig,
+  type PresenterInstance,
+  type SceneContribution,
+  type SceneObserver,
+  type ThreeDHopViewerContextValue,
+  type ThreeDHopViewerProps,
+  type ToolbarActionHandler,
+  type TrackballObserver
+} from './viewer/types';
 
-const CSS_RESOURCES = ['stylesheet/3dhop.css'];
-
-const SCRIPT_RESOURCES = [
-  'js/spidergl.js',
-  'js/jquery.js',
-  'js/presenter.js',
-  'js/nexus.js',
-  'js/ply.js',
-  'js/trackball_turntable.js',
-  'js/trackball_turntable_pan.js',
-  'js/trackball_pantilt.js',
-  'js/trackball_sphere.js',
-  'js/init.js'
-];
-
-const cssPromises = new Map<string, Promise<void>>();
-const scriptPromises = new Map<string, Promise<void>>();
-
-export type PresenterInstance = {
-  setScene: (scene: unknown) => void;
-  resetTrackball: () => void;
-  zoomIn: () => void;
-  zoomOut: () => void;
-  enableLightTrackball: (enabled: boolean) => void;
-  isLightTrackballEnabled: () => boolean;
-  enableSceneLighting?: (enabled: boolean) => void;
-  isSceneLightingEnabled?: () => boolean;
-  toggleCameraType?: () => void;
-  toggleInstanceSolidColor?: (target: unknown, updateUi?: boolean) => void;
-  setInstanceTransparency?: (tag: unknown, newState: boolean, redraw?: boolean, newAlpha?: number) => void;
-  isInstanceTransparencyEnabled?: (tag?: unknown) => boolean;
-  setInstanceSpecularity?: (tag: unknown, color: [number, number, number], hardness: number, redraw?: boolean) => void;
-  enableMeasurementTool?: (enabled: boolean) => void;
-  isMeasurementToolEnabled?: () => boolean;
-  enablePickpointMode?: (enabled: boolean) => void;
-  isPickpointModeEnabled?: () => boolean;
-  toggleSpotVisibility?: (tag: unknown, redraw?: boolean) => void;
-  setSpotVisibility?: (tag: unknown, visible: boolean, redraw?: boolean) => void;
-  isSpotVisibilityEnabled?: (tag?: unknown) => boolean;
-  enableOnHover?: (enabled: boolean) => void;
-  isOnHoverEnabled?: () => boolean;
-  isAnyMeasurementEnabled?: () => boolean;
-  getTrackballPosition?: () => number[];
-  setTrackballPosition?: (state: number[]) => void;
-  saveScreenshot?: () => void;
-  animateToTrackballPosition?: (newPosition: number[], newTime?: number) => void;
-  _onEndMeasurement?: (measure: number) => void;
-  _onEndPickingPoint?: (point: number[]) => void;
-  _onPickedSpot?: (id: string) => void;
-  destroy?: () => void;
-  repaint?: () => void;
-  ui?: {
-    postDrawEvent?: () => void;
-  };
-  _scene?: {
-    modelInstances?: Record<string, {
-      useTransparency?: boolean;
-      specularColor?: number[];
-    }>;
-  };
-} & Record<string, unknown>;
-
-type SceneMeshDefinition = {
-  url: string;
-  renderMode?: string[];
-  mType?: 'nexus' | 'ply';
-};
-
-type SceneMeshes = Record<string, SceneMeshDefinition>;
-
-export type ModelTransformConfig = {
-  translation?: [number, number, number];
-  rotation?: [number, number, number];
-  scale?: [number, number, number];
-  matrix?: number[];
-};
-
-type ModelInstanceConfiguration = {
-  mesh: string;
-  transform?: ModelTransformConfig;
-  tags?: string[];
-  visible?: boolean;
-  color?: [number, number, number];
-  backfaceColor?: [number, number, number, number];
-  specularColor?: [number, number, number, number];
-  alpha?: number;
-  useTransparency?: boolean;
-  useLighting?: boolean;
-  useSolidColor?: boolean;
-  [key: string]: unknown;
-};
-
-export type ModelTransparencyOptions = {
-  enabled?: boolean;
-  alpha?: number;
-};
-
-export type ModelDefinition = {
-  url?: string;
-  meshId?: string;
-  instanceId?: string;
-  transform?: ModelTransformConfig;
-  scale?: number | [number, number, number];
-  color?: [number, number, number];
-  backfaceColor?: [number, number, number, number];
-  specularColor?: [number, number, number, number];
-  tags?: string[];
-  visible?: boolean;
-  useSolidColor?: boolean;
-  transparency?: boolean | ModelTransparencyOptions;
-  alpha?: number;
-  annotations?: AnnotationDefinition[];
-  annotationMeshUrl?: string;
-  instance?: Omit<ModelInstanceConfiguration, 'mesh'>;
-};
-
-export type SceneContribution = {
-  meshes?: SceneMeshes;
-  modelInstances?: Record<string, ModelInstanceConfiguration>;
-  spots?: Record<string, unknown>;
-  annotations?: Record<string, AnnotationDefinition>;
-};
-
-export type ToolbarActionHandler = (presenter: PresenterInstance, action: string) => boolean | void;
-export type SceneObserver = (presenter: PresenterInstance) => void;
-export type TrackballObserver = (trackState: number[]) => void;
-
-export type AnnotationPickEvent = {
-  id: string;
-  annotation: AnnotationDefinition;
-};
-
-export type AnnotationPickHandler = (event: AnnotationPickEvent) => void;
-
-export type CoordinateCorrections = {
-  x?: number;
-  y?: number;
-  z?: number;
-};
-
-export type ThreeDHopViewerContextValue = {
-  presenter: PresenterInstance | null;
-  assetBaseUrl: string;
-  registerSceneContribution: (key: string, contribution: SceneContribution | null) => () => void;
-  registerToolbarAction: (actions: string | string[], handler: ToolbarActionHandler) => () => void;
-  registerSceneObserver: (observer: SceneObserver) => () => void;
-  registerTrackballObserver: (observer: TrackballObserver) => () => void;
-  registerAnnotationHandler: (handler: AnnotationPickHandler) => () => void;
-  hasHotspotContribution: boolean;
-  measurementUnits: string;
-  measurementValue: number | null;
-  pickpointValue: [number, number, number] | null;
-  setMeasurementValue: React.Dispatch<React.SetStateAction<number | null>>;
-  setPickpointValue: React.Dispatch<React.SetStateAction<[number, number, number] | null>>;
-  coordinateCorrections: Required<CoordinateCorrections>;
-};
+export type {
+  AnnotationPickEvent,
+  AnnotationPickHandler,
+  CoordinateCorrections,
+  ModelDefinition,
+  ModelTransparencyOptions,
+  ModelTransformConfig,
+  PresenterInstance,
+  SceneContribution,
+  SceneObserver,
+  ThreeDHopViewerContextValue,
+  ThreeDHopViewerProps,
+  ToolbarActionHandler,
+  TrackballObserver
+} from './viewer/types.js';
 
 const ThreeDHopViewerContext = createContext<ThreeDHopViewerContextValue | null>(null);
 
@@ -212,21 +85,6 @@ declare global {
   const HOP_ALL: unknown;
 }
 
-export type ThreeDHopViewerProps = {
-  assetBaseUrl?: string;
-  modelUrl?: string;
-  models?: Record<string, ModelDefinition | null | undefined>;
-  backgroundUrl?: string | null;
-  className?: string;
-  style?: React.CSSProperties;
-  width?: number | string;
-  height?: number | string;
-  showToolbar?: boolean;
-  measurementUnits?: string;
-  coordinateCorrections?: CoordinateCorrections;
-  children?: React.ReactNode;
-};
-
 type InteractiveTool = 'measure' | 'pick';
 
 type InteractiveToolConfig = {
@@ -235,153 +93,6 @@ type InteractiveToolConfig = {
   isEnabled?: (presenter: PresenterInstance) => boolean | undefined;
   syncUi: (enabled?: boolean) => void;
 };
-
-type SceneConfiguration = {
-  meshes: SceneMeshes;
-  modelInstances: Record<string, ModelInstanceConfiguration>;
-  trackball: {
-    type: unknown;
-    trackOptions: {
-      startPhi: number;
-      startTheta: number;
-      startDistance: number;
-      minMaxPhi: [number, number];
-      minMaxTheta: [number, number];
-      minMaxDist: [number, number];
-    };
-  };
-  spots?: Record<string, unknown>;
-};
-
-function sanitizeIdentifier(value: string, fallback: string): string {
-  const sanitized = value
-    .replace(/[^A-Za-z0-9_-]/g, '_')
-    .replace(/_+/g, '_')
-    .replace(/^_+|_+$/g, '');
-  return sanitized.length > 0 ? sanitized : fallback;
-}
-
-function ensureUniqueName(base: string, used: Set<string>): string {
-  let candidate = base;
-  let index = 1;
-  while (used.has(candidate)) {
-    candidate = `${base}_${index}`;
-    index += 1;
-  }
-  used.add(candidate);
-  return candidate;
-}
-
-function normalizeScale(scale?: number | [number, number, number]): [number, number, number] | undefined {
-  if (scale == null) {
-    return undefined;
-  }
-
-  if (typeof scale === 'number') {
-    const numeric = Number(scale);
-    if (!Number.isFinite(numeric)) {
-      return undefined;
-    }
-    return [numeric, numeric, numeric];
-  }
-
-  if (Array.isArray(scale) && scale.length >= 3) {
-    const values: [number, number, number] = [0, 0, 0];
-    for (let i = 0; i < 3; i += 1) {
-      const numeric = Number(scale[i]);
-      values[i] = Number.isFinite(numeric) ? numeric : 1;
-    }
-    return values;
-  }
-
-  return undefined;
-}
-
-function loadCssOnce(href: string): Promise<void> {
-  if (cssPromises.has(href)) {
-    return cssPromises.get(href)!;
-  }
-
-  const promise = new Promise<void>((resolve, reject) => {
-    if (document.querySelector(`link[data-3dhop-source="${href}"]`)) {
-      resolve();
-      return;
-    }
-
-    const link = document.createElement('link');
-    link.rel = 'stylesheet';
-    link.href = href;
-    link.setAttribute('data-3dhop-source', href);
-    link.onload = () => resolve();
-    link.onerror = () => reject(new Error(`Failed to load CSS: ${href}`));
-    document.head.appendChild(link);
-  });
-
-  cssPromises.set(href, promise);
-  return promise;
-}
-
-function loadScriptOnce(src: string): Promise<void> {
-  if (scriptPromises.has(src)) {
-    return scriptPromises.get(src)!;
-  }
-
-  const promise = new Promise<void>((resolve, reject) => {
-    if (document.querySelector(`script[data-3dhop-source="${src}"]`)) {
-      resolve();
-      return;
-    }
-
-    const script = document.createElement('script');
-    script.type = 'text/javascript';
-    script.src = src;
-    script.async = false;
-    script.setAttribute('data-3dhop-source', src);
-    script.onload = () => resolve();
-    script.onerror = () => reject(new Error(`Failed to load script: ${src}`));
-    document.head.appendChild(script);
-  });
-
-  scriptPromises.set(src, promise);
-  return promise;
-}
-
-async function ensureAssets(baseUrl: string): Promise<void> {
-  await Promise.all(CSS_RESOURCES.map((file) => loadCssOnce(`${baseUrl}/${file}`)));
-  for (const file of SCRIPT_RESOURCES) {
-    // Sequential load keeps execution order identical to the static HTML bootstrap.
-    // eslint-disable-next-line no-await-in-loop
-    await loadScriptOnce(`${baseUrl}/${file}`);
-  }
-}
-
-function queryToolbarElements<T extends HTMLElement = HTMLElement>(dataId: string): T[] {
-  if (typeof document === 'undefined') {
-    return [];
-  }
-  return Array.from(document.querySelectorAll<T>(`[data-hop-id="${dataId}"]`));
-}
-
-function queryToolbarSidecars<T extends HTMLElement = HTMLElement>(dataId: string): T[] {
-  if (typeof document === 'undefined') {
-    return [];
-  }
-  return Array.from(document.querySelectorAll<T>(`[data-hop-sidecar="${dataId}"]`));
-}
-
-function resolveBackgroundUrl(provided: string | null | undefined, baseUrl: string): string | null {
-  const fallback = joinAssetPath(baseUrl, 'skins/backgrounds/light.jpg');
-  if (provided === null) return null;
-  if (provided === undefined) return fallback;
-  if (isAbsoluteAssetUrl(provided)) {
-    return provided;
-  }
-  const sanitized = provided.replace(/^\/+/, '');
-  if (!sanitized) {
-    return fallback;
-  }
-  return joinAssetPath(baseUrl, sanitized);
-}
 
 export const ThreeDHopViewer: React.FC<ThreeDHopViewerProps> = ({
   assetBaseUrl = '/node_modules/react-3dhop/dist/3dhop',
@@ -1054,212 +765,13 @@ export const ThreeDHopViewer: React.FC<ThreeDHopViewerProps> = ({
     [backgroundUrl, normalizedBaseUrl]
   );
 
-  const buildSceneOptions = useCallback((): SceneConfiguration => {
-    const meshes: SceneMeshes = {};
-  const modelInstances: Record<string, ModelInstanceConfiguration> = {};
-  const usedMeshNames = new Set<string>();
-  const usedInstanceNames = new Set<string>();
-  const annotationDefinitions = new Map<string, AnnotationDefinition>();
-  let spots: Record<string, unknown> | undefined;
-
-    const meshUrlCounts = new Map<string, number>();
-
-    const assignUniqueMeshUrl = (url: string, meshName: string): string => {
-      const [base] = url.split('#');
-      const currentCount = meshUrlCounts.get(base) ?? 0;
-      meshUrlCounts.set(base, currentCount + 1);
-      if (currentCount === 0) {
-        return url;
-      }
-
-      const fragment = encodeURIComponent(meshName);
-      if (url.includes('#')) {
-        return `${url}_${fragment}`;
-      }
-      return `${url}#${fragment}`;
-    };
-
-    const createMeshDefinition = (url: string): SceneMeshDefinition => {
-      const lower = url.toLowerCase().split(/[?#]/)[0];
-      if (lower.endsWith('.ply')) {
-        return {
-          url,
-          renderMode: ['POINT'],
-          mType: 'ply'
-        };
-      }
-
-      // Default to Nexus meshes; 3DHOP updates renderMode asynchronously once loaded.
-      return {
-        url,
-        renderMode: ['FILL', 'POINT'],
-        mType: 'nexus'
-      };
-    };
-
-    const addMesh = (name: string, meshUrl: string) => {
-      const uniqueUrl = assignUniqueMeshUrl(meshUrl, name);
-      meshes[name] = createMeshDefinition(uniqueUrl);
-      usedMeshNames.add(name);
-    };
-
-    const modelEntries = models ? Object.entries(models) : [];
-
-    const processModelDefinition = (entryKey: string, definition: ModelDefinition | null | undefined, index: number) => {
-      if (!definition) {
-        return;
-      }
-
-      const safeKey = sanitizeIdentifier(entryKey, `model_${index + 1}`);
-
-      const meshBaseName = definition.meshId ?? `mesh_${safeKey}`;
-      const meshName = ensureUniqueName(meshBaseName, usedMeshNames);
-      const resolvedUrl = resolveRelativeAssetPath(
-        definition.url,
-        normalizedBaseUrl,
-        resolvedModelUrl
-      );
-  addMesh(meshName, resolvedUrl);
-
-      const instanceBaseName = definition.instanceId ?? `model_${safeKey}`;
-      const instanceName = ensureUniqueName(instanceBaseName, usedInstanceNames);
-
-      const instance: ModelInstanceConfiguration = {
-        mesh: meshName,
-        ...(definition.instance ? { ...definition.instance } : {})
-      };
-
-      if (definition.transform) {
-        instance.transform = {
-          ...(instance.transform ?? {}),
-          ...definition.transform
-        };
-      }
-
-      const normalizedScale = normalizeScale(definition.scale);
-      if (normalizedScale) {
-        instance.transform = {
-          ...(instance.transform ?? {}),
-          scale: normalizedScale
-        };
-      }
-
-      if (definition.color) {
-        instance.color = [...definition.color];
-      }
-      if (definition.backfaceColor) {
-        instance.backfaceColor = [...definition.backfaceColor];
-      }
-      if (definition.specularColor) {
-        instance.specularColor = [...definition.specularColor];
-      }
-      if (definition.tags) {
-        instance.tags = [...definition.tags];
-      }
-      if (typeof definition.visible === 'boolean') {
-        instance.visible = definition.visible;
-      }
-      if (typeof definition.useSolidColor === 'boolean') {
-        instance.useSolidColor = definition.useSolidColor;
-      }
-      if (typeof definition.alpha === 'number') {
-        instance.alpha = definition.alpha;
-      }
-      if (definition.transparency !== undefined) {
-        if (typeof definition.transparency === 'boolean') {
-          instance.useTransparency = definition.transparency;
-        } else if (definition.transparency) {
-          instance.useTransparency = definition.transparency.enabled ?? true;
-          if (typeof definition.transparency.alpha === 'number') {
-            instance.alpha = definition.transparency.alpha;
-          }
-        }
-      }
-
-      modelInstances[instanceName] = instance;
-
-      if (definition.annotations && definition.annotations.length > 0) {
-        const annotationMeshBase = `${instanceName}_spot`;
-        const annotationMeshName = ensureUniqueName(annotationMeshBase, usedMeshNames);
-        const resolvedAnnotationMeshUrl = resolveRelativeAssetPath(
-          definition.annotationMeshUrl,
-          normalizedBaseUrl,
-          joinAssetPath(normalizedBaseUrl, 'models-system/spot-1.ply')
-        );
-        addMesh(annotationMeshName, resolvedAnnotationMeshUrl);
-
-        const annotationData = buildAnnotations(definition.annotations, {
-          idPrefix: instanceName,
-          meshName: annotationMeshName
-        });
-
-        if (annotationData.spots) {
-          spots = {
-            ...(spots ?? {}),
-            ...annotationData.spots
-          };
-        }
-
-        annotationData.map.forEach((value, id) => {
-          annotationDefinitions.set(id, value);
-        });
-      }
-    };
-
-    if (modelEntries.length > 0) {
-      modelEntries.forEach(([key, definition], index) => {
-        processModelDefinition(key, definition, index);
-      });
-    } else {
-      const meshName = ensureUniqueName('mesh_1', usedMeshNames);
-      addMesh(meshName, resolvedModelUrl);
-      const instanceName = ensureUniqueName('model_1', usedInstanceNames);
-      modelInstances[instanceName] = { mesh: meshName };
-    }
-
-    sceneContributionsRef.current.forEach((contribution) => {
-      if (contribution.meshes) {
-        Object.assign(meshes, contribution.meshes);
-      }
-      if (contribution.modelInstances) {
-        Object.assign(modelInstances, contribution.modelInstances);
-      }
-      if (contribution.spots) {
-        spots = {
-          ...(spots ?? {}),
-          ...contribution.spots
-        };
-      }
-      if (contribution.annotations) {
-        Object.entries(contribution.annotations).forEach(([id, definition]) => {
-          annotationDefinitions.set(id, definition);
-        });
-      }
+  const buildScene = useCallback(() => {
+    return buildSceneConfiguration({
+      models,
+      normalizedBaseUrl,
+      resolvedModelUrl,
+      sceneContributions: sceneContributionsRef.current
     });
-
-    const scene: SceneConfiguration = {
-      meshes,
-      modelInstances,
-      trackball: {
-        type: window.TurnTableTrackball,
-        trackOptions: {
-          startPhi: 35.0,
-          startTheta: 15.0,
-          startDistance: 2.5,
-          minMaxPhi: [-180, 180],
-          minMaxTheta: [-30.0, 70.0],
-          minMaxDist: [0.5, 3.0]
-        }
-      }
-    };
-
-    if (spots) {
-      scene.spots = spots;
-    }
-
-    annotationDefinitionsRef.current = annotationDefinitions;
-
-    return scene;
   }, [models, normalizedBaseUrl, resolvedModelUrl, sceneContributionsVersion]);
 
   const applyScene = useCallback(
@@ -1270,8 +782,9 @@ export const ThreeDHopViewer: React.FC<ThreeDHopViewerProps> = ({
         trackballState = presenter.getTrackballPosition();
       }
 
-      const sceneOptions = buildSceneOptions();
-      presenter.setScene(sceneOptions);
+      const { scene, annotationDefinitions, hasHotspots } = buildScene();
+      presenter.setScene(scene);
+      annotationDefinitionsRef.current = annotationDefinitions;
 
       if (trackballState && typeof presenter.setTrackballPosition === 'function') {
         presenter.setTrackballPosition(trackballState);
@@ -1282,7 +795,6 @@ export const ThreeDHopViewer: React.FC<ThreeDHopViewerProps> = ({
         notifyTrackballObservers(nextTrackball);
       }
 
-      const hasHotspots = Boolean(sceneOptions.spots && Object.keys(sceneOptions.spots).length > 0);
       setHasHotspotContribution(hasHotspots);
 
       sceneObserversRef.current.forEach((observer) => observer(presenter));
@@ -1295,7 +807,7 @@ export const ThreeDHopViewer: React.FC<ThreeDHopViewerProps> = ({
       syncTransparencySwitch();
       syncSpecularUi();
     },
-    [buildSceneOptions, notifyTrackballObservers, syncSpecularUi, syncTransparencySwitch]
+    [buildScene, notifyTrackballObservers, syncSpecularUi, syncTransparencySwitch]
   );
 
   useEffect(() => {
