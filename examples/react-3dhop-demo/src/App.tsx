@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import {
   ThreeDHopViewer,
   Toolbar,
@@ -18,10 +18,12 @@ import {
   FullscreenControl,
   HotspotControl,
   InfoControl,
-  Annotations,
   CompassNavigation,
   CubeNavigation,
-  type AnnotationDefinition
+  useThreeDHopViewer,
+  type AnnotationDefinition,
+  type AnnotationPickEvent,
+  type AnnotationPickHandler
 } from 'react-3dhop'
 import './App.css'
 
@@ -44,20 +46,54 @@ const demoAnnotations: AnnotationDefinition[] = [
   }
 ]
 
+function AnnotationEventBridge({ onPick }: { onPick: AnnotationPickHandler }) {
+  const { registerAnnotationHandler } = useThreeDHopViewer()
+
+  useEffect(() => {
+    return registerAnnotationHandler(onPick)
+  }, [onPick, registerAnnotationHandler])
+
+  return null
+}
+
 function App() {
-  const [picked, setPicked] = useState<string | null>(null)
+  const [picked, setPicked] = useState<AnnotationPickEvent | null>(null)
+  const handleAnnotationPick = useCallback<AnnotationPickHandler>((event) => {
+    setPicked(event)
+  }, [])
 
   return (
     <div className="viewer-wrapper">
       <h1>react-3dhop Demo</h1>
       <p className="description">
-        Minimal integration of the 3DHOP viewer in a React + Vite environment. Use the toolbar inside the
-        viewer to interact with the sample model.
+        Minimal integration of the 3DHOP viewer in a React + Vite environment. The scene renders two
+        instances of the same mesh to showcase per-model configuration such as transforms, colors,
+        transparency and annotations.
       </p>
-      {picked ? <div className="annotation-output">Last annotation: {picked}</div> : null}
+      {picked ? (
+        <div className="annotation-output">
+          Last annotation: {picked.annotation.label ?? picked.id}
+        </div>
+      ) : null}
       <div className="viewer-container">
         <ThreeDHopViewer
-          modelUrl="/models/C42183_sID-576_mID-913.nxz"
+          models={{
+            primary: {
+              url: '/models/C42183_sID-576_mID-913.nxz',
+              annotations: demoAnnotations
+            },
+            ghost: {
+              url: '/models/C42183_sID-576_mID-913.nxz',
+              transform: {
+                translation: [0, 0, -85]
+              },
+              scale: 0.94,
+              tags: ['ghost'],
+              useSolidColor: true,
+              color: [0.6, 0.75, 1],
+              transparency: { enabled: true, alpha: 0.28 }
+            }
+          }}
           width={1000}
           height={800}
           backgroundUrl="skins/backgrounds/cyan_gradient.jpg"
@@ -126,11 +162,7 @@ function App() {
               icon={{ enabled: 'skins/dark/full_on.png', disabled: 'skins/dark/full.png' }}
             />
           </Toolbar>
-          <Annotations
-            annotations={demoAnnotations}
-            expanded
-            onAnnotationPick={({ id, annotation }) => setPicked(`${id} – ${annotation.label ?? 'Untitled'}`)}
-          />
+          <AnnotationEventBridge onPick={handleAnnotationPick} />
           <CompassNavigation position="bottom-right" />
           <CubeNavigation position="top-right" />
         </ThreeDHopViewer>

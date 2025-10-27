@@ -1,24 +1,19 @@
 import React, { useCallback, useEffect, useId, useMemo, useRef } from 'react';
-import { useThreeDHopViewer, type PresenterInstance, type SceneContribution } from './ThreeDHopViewer.js';
+import {
+  useThreeDHopViewer,
+  type AnnotationPickEvent,
+  type PresenterInstance,
+  type SceneContribution
+} from './ThreeDHopViewer.js';
 import { joinAssetPath, resolveRelativeAssetPath } from './utils/assetPaths.js';
 import { getHopAllTag } from './utils/hopTags.js';
+import {
+  buildAnnotations,
+  type AnnotationBuildResult,
+  type AnnotationDefinition
+} from './utils/annotations.js';
 
-type AnnotationColor = [number, number, number];
-
-export type AnnotationDefinition = {
-  id?: string;
-  label?: string;
-  comment?: string;
-  position: [number, number, number];
-  type?: string;
-  radius?: number;
-  color?: AnnotationColor | string;
-  alpha?: number;
-  alphaHigh?: number;
-  useTransparency?: boolean;
-  useStencil?: boolean;
-  tags?: string[];
-};
+export type { AnnotationDefinition } from './utils/annotations.js';
 
 export type AnnotationsProps = {
   annotations?: AnnotationDefinition[];
@@ -27,49 +22,7 @@ export type AnnotationsProps = {
   onAnnotationPick?: (event: { id: string; annotation: AnnotationDefinition }) => void;
 };
 
-type AnnotationData = {
-  spots?: Record<string, unknown>;
-  map: Map<string, AnnotationDefinition>;
-};
-
-const DEFAULT_ANNOTATION_COLOR: AnnotationColor = [1, 0.76, 0.04];
-const DEFAULT_ANNOTATION_RADIUS = 0.5;
-
-function normalizeColor(input: AnnotationDefinition['color']): AnnotationColor {
-  if (!input) {
-    return DEFAULT_ANNOTATION_COLOR;
-  }
-
-  const asArray = Array.isArray(input)
-    ? input
-    : (() => {
-        try {
-          const parsed = JSON.parse(input);
-          return Array.isArray(parsed) ? parsed : null;
-        } catch (error) {
-          return null;
-        }
-      })();
-
-  if (!asArray || asArray.length < 3) {
-    return DEFAULT_ANNOTATION_COLOR;
-  }
-
-  const [r, g, b] = asArray;
-  const safe = (value: unknown, fallback = 0): number => {
-    const numeric = Number(value);
-    return Number.isFinite(numeric) ? numeric : fallback;
-  };
-
-  return [safe(r, DEFAULT_ANNOTATION_COLOR[0]), safe(g, DEFAULT_ANNOTATION_COLOR[1]), safe(b, DEFAULT_ANNOTATION_COLOR[2])];
-}
-
-function safeRadius(value: AnnotationDefinition['radius']): number {
-  if (typeof value !== 'number') {
-    return DEFAULT_ANNOTATION_RADIUS;
-  }
-  return value > 0 ? value : DEFAULT_ANNOTATION_RADIUS;
-}
+type AnnotationData = AnnotationBuildResult;
 
 export const Annotations: React.FC<AnnotationsProps> = ({
   annotations,
@@ -77,62 +30,27 @@ export const Annotations: React.FC<AnnotationsProps> = ({
   expanded,
   onAnnotationPick
 }) => {
-  const { presenter, assetBaseUrl, registerSceneContribution, registerToolbarAction, registerSceneObserver } =
-    useThreeDHopViewer();
+  const {
+    presenter,
+    assetBaseUrl,
+    registerSceneContribution,
+    registerToolbarAction,
+    registerSceneObserver,
+    registerAnnotationHandler
+  } = useThreeDHopViewer();
   const contributionKey = useId();
   const annotationMapRef = useRef<Map<string, AnnotationDefinition>>(new Map());
   const onAnnotationPickRef = useRef(onAnnotationPick);
-  const previousOnPickedSpotRef = useRef<PresenterInstance['_onPickedSpot']>();
   const hotspotVisibleRef = useRef<boolean>(expanded ?? true);
 
   useEffect(() => {
     onAnnotationPickRef.current = onAnnotationPick;
   }, [onAnnotationPick]);
 
-  const annotationData = useMemo<AnnotationData>(() => {
-    if (!annotations || annotations.length === 0) {
-      return {
-        spots: undefined,
-        map: new Map<string, AnnotationDefinition>()
-      };
-    }
-
-    const map = new Map<string, AnnotationDefinition>();
-    const spots: Record<string, unknown> = {};
-
-    for (let index = 0; index < annotations.length; index += 1) {
-      const annotationEntry = annotations[index];
-      if (!annotationEntry || !Array.isArray(annotationEntry.position) || annotationEntry.position.length < 3) {
-        continue;
-      }
-
-      const id = annotationEntry.id ?? `annotation_${index + 1}`;
-      map.set(id, annotationEntry);
-
-      const radius = safeRadius(annotationEntry.radius);
-      const [x, y, z] = annotationEntry.position;
-      const tags = annotationEntry.tags ?? (annotationEntry.type ? [annotationEntry.type] : undefined);
-
-      spots[id] = {
-        mesh: 'spot',
-        color: normalizeColor(annotationEntry.color),
-        alpha: typeof annotationEntry.alpha === 'number' ? annotationEntry.alpha : 0.5,
-        alphaHigh: typeof annotationEntry.alphaHigh === 'number' ? annotationEntry.alphaHigh : 0.8,
-        useTransparency: annotationEntry.useTransparency ?? true,
-        useStencil: annotationEntry.useStencil ?? true,
-        tags,
-        transform: {
-          translation: [x, y, z],
-          scale: [radius, radius, radius]
-        }
-      };
-    }
-
-    return {
-      spots: Object.keys(spots).length > 0 ? spots : undefined,
-      map
-    };
-  }, [annotations]);
+  const annotationData = useMemo<AnnotationData>(
+    () => buildAnnotations(annotations, { idPrefix: 'annotation', meshName: 'spot' }),
+    [annotations]
+  );
 
   const hasSpots = annotationData.spots != null;
 
@@ -174,7 +92,8 @@ export const Annotations: React.FC<AnnotationsProps> = ({
     }
 
     const contribution: SceneContribution = {
-      spots: annotationData.spots
+      spots: annotationData.spots,
+      annotations: Object.fromEntries(annotationData.map)
     };
 
     if (resolvedAnnotationMeshUrl) {
@@ -217,33 +136,22 @@ export const Annotations: React.FC<AnnotationsProps> = ({
   }, [applyHotspotState, hasSpots, registerSceneObserver]);
 
   useEffect(() => {
-    const presenterInstance = presenter;
-    if (!presenterInstance || !hasSpots) {
-      return undefined;
-    }
-
-    previousOnPickedSpotRef.current = presenterInstance._onPickedSpot;
-
-    presenterInstance._onPickedSpot = (id: string) => {
-      const annotation = annotationMapRef.current.get(id);
-      if (!annotation) {
+    const cleanup = registerAnnotationHandler((event: AnnotationPickEvent) => {
+      if (!annotationMapRef.current.has(event.id)) {
         return;
       }
+      onAnnotationPickRef.current?.(event);
+    });
 
-      onAnnotationPickRef.current?.({
-        id,
-        annotation
-      });
-    };
+    return cleanup;
+  }, [registerAnnotationHandler]);
 
+  useEffect(() => {
+    const presenterInstance = presenter;
+    if (!presenterInstance || !hasSpots) {
+      return;
+    }
     applyHotspotState(presenterInstance, hotspotVisibleRef.current);
-
-    return () => {
-      if (previousOnPickedSpotRef.current !== undefined) {
-        presenterInstance._onPickedSpot = previousOnPickedSpotRef.current;
-        previousOnPickedSpotRef.current = undefined;
-      }
-    };
   }, [applyHotspotState, presenter, hasSpots]);
 
   return null;

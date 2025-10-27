@@ -44,6 +44,54 @@ The canvas background defaults to the bundled light vignette. Supply `background
 
 Set the `measurementUnits` prop on `ThreeDHopViewer` to change the label appended to measurement results (defaults to `mm`). Individual `MeasureControl` instances can override this with their own `units` prop when desired. Both the measurement and pick outputs include a built-in copy button for quick clipboard access. When your source models are stored with shortened coordinates (for example, large UTM offsets trimmed in the `.nxz`), supply `coordinateCorrections={{ x: ..., y: ..., z: ... }}` to re-apply those offsets to any exposed coordinates so the pick output reflects real-world positions.
 
+### Multiple Models
+
+Pass a `models` map to load several meshes at once and configure each instance independently. Keys become identifiers in the generated scene; any invalid characters are sanitised automatically.
+
+```tsx
+import {
+	ThreeDHopViewer,
+	Toolbar,
+	HomeControl,
+	TransparencyControl,
+	type AnnotationDefinition
+} from 'react-3dhop';
+
+const primaryAnnotations: AnnotationDefinition[] = [
+	{ id: 'base', label: 'Statue Base', position: [-113.6, 11.54, -48.16], radius: 5.4 }
+];
+
+export function MultiModelScene() {
+	return (
+		<ThreeDHopViewer
+			width={640}
+			height={480}
+			models={{
+				primary: {
+					url: '/models/statue.nxz',
+					annotations: primaryAnnotations
+				},
+				shadow: {
+					url: '/models/statue.nxz',
+					transform: { translation: [0, 0, -80] },
+					scale: 0.95,
+					useSolidColor: true,
+					color: [0.6, 0.75, 1],
+					transparency: { enabled: true, alpha: 0.25 }
+				}
+			}}
+		>
+			<Toolbar position="top-left">
+				<HomeControl />
+				<TransparencyControl />
+			</Toolbar>
+		</ThreeDHopViewer>
+	);
+}
+```
+
+Each model definition accepts optional transforms (`translation`, `rotation`, `scale`), per-instance colours, tags, transparency/specular overrides, and inline hotspot annotations. The legacy `modelUrl` prop still works for simple single-model viewers—omit `models` to fall back to it.
+
 ### Compass Navigation
 
 Add the optional `CompassNavigation` overlay to expose quick view presets and a live heading indicator:
@@ -83,7 +131,7 @@ Face labels default to the cardinal directions plus top/bottom; override them th
 
 ### Optional Hotspot Annotations
 
-Annotations are opt-in via the `<Annotations>` helper. They register hotspot meshes/spots and wire the hotspot toolbar toggle automatically.
+Annotations are opt-in. Supply an `annotations` array on any model definition, or render the `<Annotations>` helper when you prefer to register hotspots from child components. Either approach wires the hotspot meshes and automatically synchronises the toolbar toggle.
 
 ```tsx
 import { useState } from 'react';

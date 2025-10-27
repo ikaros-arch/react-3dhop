@@ -1,7 +1,12 @@
 export { ThreeDHopViewer, useThreeDHopViewer } from './ThreeDHopViewer.js';
 export type {
 	ThreeDHopViewerProps,
+	ModelDefinition,
+	ModelTransparencyOptions,
+	ModelTransformConfig,
 	SceneContribution,
+	AnnotationPickEvent,
+	AnnotationPickHandler,
 	PresenterInstance,
 	ThreeDHopViewerContextValue,
 	ToolbarActionHandler,
