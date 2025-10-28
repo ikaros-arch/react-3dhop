@@ -13,6 +13,12 @@ import type {
   PresenterInstance
 } from './types.js';
 
+/**
+ * sceneBuilder.ts translates high-level viewer inputs (models, contributions, annotations) into
+ * the structure expected by the 3DHOP presenter. It also exposes a hook that keeps the presenter
+ * scene in sync with React state while coordinating toolbar highlights.
+ */
+
 function sanitizeIdentifier(value: string, fallback: string): string {
   const sanitized = value
     .replace(/[^A-Za-z0-9_-]/g, '_')
@@ -90,6 +96,10 @@ function createMeshDefinition(url: string) {
   } satisfies SceneMeshes[string];
 }
 
+/**
+ * Builds a concrete scene configuration from declarative model definitions and contribution
+ * overrides. The result includes meshes, instances, annotations, and hotspot metadata.
+ */
 export function buildSceneConfiguration(options: SceneBuilderOptions): SceneBuildResult {
   const { models, normalizedBaseUrl, resolvedModelUrl, sceneContributions } = options;
 
@@ -299,6 +309,10 @@ export type UseSceneConfigurationResult = {
   applyScene: (presenter: PresenterInstance, preserveView?: boolean) => void;
 };
 
+/**
+ * Memoises a scene-building callback and returns an `applyScene` helper that pushes updates to the
+ * presenter while preserving trackball state and refreshing dependent UI.
+ */
 export function useSceneConfiguration({
   models,
   normalizedBaseUrl,

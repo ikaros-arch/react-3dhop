@@ -1,3 +1,7 @@
+/**
+ * Registers presenter annotations and synchronizes hotspot visibility so React consumers
+ * can declaratively add 3DHOP annotation data while reacting to pick events.
+ */
 import React, { useCallback, useEffect, useId, useMemo, useRef } from 'react';
 import {
   useThreeDHopViewer,
@@ -24,6 +28,10 @@ export type AnnotationsProps = {
 
 type AnnotationData = AnnotationBuildResult;
 
+/**
+ * Bridges declarative annotation definitions with the imperative presenter API by
+ * contributing meshes, wiring toolbar toggles, and dispatching pick callbacks.
+ */
 export const Annotations: React.FC<AnnotationsProps> = ({
   annotations,
   annotationMeshUrl,
@@ -105,6 +113,10 @@ export const Annotations: React.FC<AnnotationsProps> = ({
     return registerSceneContribution(contributionKey, contribution);
   }, [annotationData.spots, resolvedAnnotationMeshUrl, registerSceneContribution, contributionKey, hasSpots]);
 
+  /**
+   * Applies the requested hotspot visibility to the presenter while updating legacy 3DHOP
+   * globals so toolbar buttons and UI overlays stay in sync.
+   */
   const applyHotspotState = useCallback((presenterInstance: PresenterInstance, visible: boolean) => {
     presenterInstance.setSpotVisibility?.(getHopAllTag(), visible, true);
     presenterInstance.enableOnHover?.(visible);

@@ -1,3 +1,10 @@
+/**
+ * interactiveTools.ts keeps the viewer's mutually exclusive presenter tools in one place,
+ * exposing a hook that coordinates presenter method calls with UI state tracking.
+ *
+ * The module defines shared tool metadata plus the React-facing helpers that callers use when
+ * toggling measurement or pickpoint modes, ensuring state stays consistent across refs and UI.
+ */
 import { useCallback, useMemo, useState } from 'react';
 import type React from 'react';
 import type { PresenterInstance } from './types.js';

@@ -1,7 +1,8 @@
-// Centralized toolbar/DOM sync behavior via toolbarSync.ts:
-// the hook encapsulates the previous UI helpers
-// (alignment, toggle syncing, info panel state, etc.)
-// and reports reusable controls back to the viewer.
+/**
+ * toolbarSync.ts gathers the DOM manipulation routines that keep the legacy 3DHOP toolbar in
+ * sync with the presenter's state. Alignment, toggle visibility, and info panel handling are
+ * all encapsulated here so React components can stay declarative.
+ */
 
 import { useCallback, useRef } from 'react';
 import type React from 'react';
@@ -39,6 +40,10 @@ export type ToolbarSync = {
 
 export type { InteractiveTool };
 
+/**
+ * Creates memoised callbacks that keep toolbar elements aligned with presenter and UI state.
+ * The helpers operate on the legacy DOM nodes while presenting a tidy API to React callers.
+ */
 export function useToolbarSync({
   presenterRef,
   activeInteractiveToolRef,

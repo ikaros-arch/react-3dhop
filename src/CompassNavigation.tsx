@@ -1,3 +1,7 @@
+/**
+ * Provides a compass-style navigation HUD that mirrors the presenter heading and exposes
+ * cardinal buttons plus a projection toggle for quick camera adjustments.
+ */
 import React, {
   useCallback,
   useEffect,
@@ -82,6 +86,10 @@ export type CompassNavigationProps = {
   };
 };
 
+/**
+ * Compact navigation widget that renders a rotating compass canvas and directional
+ * controls wired to the 3DHOP presenter trackball.
+ */
 export const CompassNavigation: React.FC<CompassNavigationProps> = ({
   className,
   style,
@@ -112,6 +120,10 @@ export const CompassNavigation: React.FC<CompassNavigationProps> = ({
     };
   }, [position, style]);
 
+  /**
+   * Ensures the backing canvas matches the configured compass size and device pixel
+   * ratio so drawings remain crisp on high-density displays.
+   */
   const ensureCanvasDimensions = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -129,6 +141,9 @@ export const CompassNavigation: React.FC<CompassNavigationProps> = ({
     canvas.style.height = `${compassSize}px`;
   }, [compassSize]);
 
+  /**
+   * Repaints the compass needle and tick marks using the latest heading in degrees.
+   */
   const drawCompass = useCallback((phiDeg: number) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -185,6 +200,10 @@ export const CompassNavigation: React.FC<CompassNavigationProps> = ({
     context.restore();
   }, [ensureCanvasDimensions]);
 
+  /**
+   * Coerces presenter trackball arrays into a full six-value tuple while caching the last
+   * known state for reuse across redraws.
+   */
   const updateTrackballState = useCallback((state: number[] | null | undefined) => {
     const current = lastTrackballStateRef.current;
     if (!Array.isArray(state) || state.length === 0) {
@@ -203,6 +222,9 @@ export const CompassNavigation: React.FC<CompassNavigationProps> = ({
     return next;
   }, []);
 
+  /**
+   * Responds to real-time trackball updates by redrawing the compass with the new heading.
+   */
   const handleTrackballUpdate = useCallback<TrackballObserver>((trackState) => {
     const next = updateTrackballState(trackState);
     drawCompass(next[0]);
@@ -231,11 +253,19 @@ export const CompassNavigation: React.FC<CompassNavigationProps> = ({
     return false;
   }), [registerToolbarAction]);
 
+  /**
+   * Retrieves the latest trackball tuple from the presenter, defaulting to the cached copy
+   * when the presenter instance is not yet ready.
+   */
   const getCurrentTrackballState = useCallback((): TrackballState => {
     const state = presenter?.getTrackballPosition?.();
     return updateTrackballState(state);
   }, [presenter, updateTrackballState]);
 
+  /**
+   * Builds a target trackball state from partial overrides and animates the presenter to
+   * that orientation before updating the compass.
+   */
   const animateToPartial = useCallback((partial: PartialTrackballState) => {
     if (!presenter?.animateToTrackballPosition) {
       return;
@@ -257,12 +287,18 @@ export const CompassNavigation: React.FC<CompassNavigationProps> = ({
     drawCompass(next[0]);
   }, [presenter, getCurrentTrackballState, preservePanAndDistance, animationSeconds, drawCompass]);
 
+  /**
+   * Directs the presenter to the named cardinal orientation or top view.
+   */
   const handleNorth = useCallback(() => animateToPartial({ phi: 0, theta: 0 }), [animateToPartial]);
   const handleSouth = useCallback(() => animateToPartial({ phi: 180, theta: 0 }), [animateToPartial]);
   const handleEast = useCallback(() => animateToPartial({ phi: -90, theta: 0 }), [animateToPartial]);
   const handleWest = useCallback(() => animateToPartial({ phi: 90, theta: 0 }), [animateToPartial]);
   const handleTop = useCallback(() => animateToPartial({ theta: 90 }), [animateToPartial]);
 
+  /**
+   * Resets the presenter camera and refreshes the compass heading.
+   */
   const handleResetView = useCallback(() => {
     if (!presenter) {
       return;
@@ -273,6 +309,9 @@ export const CompassNavigation: React.FC<CompassNavigationProps> = ({
     drawCompass(next[0]);
   }, [presenter, updateTrackballState, drawCompass]);
 
+  /**
+   * Toggles the presenter's camera type and updates the projection label accordingly.
+   */
   const handleToggleProjection = useCallback(() => {
     if (!presenter?.toggleCameraType) {
       return;

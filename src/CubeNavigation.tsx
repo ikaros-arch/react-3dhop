@@ -1,3 +1,7 @@
+/**
+ * Implements a 3D cube navigation HUD that mirrors the presenter's trackball state and
+ * offers quick view presets, projection toggles, and directional nudge controls.
+ */
 import React, {
   useCallback,
   useEffect,
@@ -103,6 +107,9 @@ const EDGE_POSITIONS: Record<EdgeKey, React.CSSProperties> = {
 
 const EDGE_ORDER: EdgeKey[] = ['top', 'right', 'bottom', 'left'];
 
+/**
+ * Wraps raw angles into the [0, 360) range while tolerating non-finite inputs.
+ */
 const normalizeAngle = (value: number): number => {
   if (!Number.isFinite(value)) {
     return 0;
@@ -111,6 +118,9 @@ const normalizeAngle = (value: number): number => {
   return wrapped < 0 ? wrapped + 360 : wrapped;
 };
 
+/**
+ * Clamps camera elevation to the trackball's supported hemisphere range.
+ */
 const clampTheta = (value: number): number => {
   if (!Number.isFinite(value)) {
     return 0;
@@ -118,6 +128,10 @@ const clampTheta = (value: number): number => {
   return Math.max(-90, Math.min(90, value));
 };
 
+/**
+ * HUD overlay that animates the presenter to known cube faces and edges while tracking
+ * live orientation updates from the 3DHOP trackball.
+ */
 export const CubeNavigation: React.FC<CubeNavigationProps> = ({
   className,
   style,
@@ -150,6 +164,10 @@ export const CubeNavigation: React.FC<CubeNavigationProps> = ({
   const [rotation, setRotation] = useState<{ x: number; y: number }>({ x: -DEFAULT_TRACKBALL_STATE[1], y: -DEFAULT_TRACKBALL_STATE[0] });
   const lastTrackballStateRef = useRef<TrackballState>(DEFAULT_TRACKBALL_STATE);
 
+  /**
+   * Normalizes incoming trackball arrays into a stable six-value tuple and caches the
+   * latest state for reuse across animations.
+   */
   const updateTrackballState = useCallback((state: number[] | null | undefined) => {
     const current = lastTrackballStateRef.current;
     if (!Array.isArray(state) || state.length === 0) {
@@ -168,10 +186,17 @@ export const CubeNavigation: React.FC<CubeNavigationProps> = ({
     return next;
   }, []);
 
+  /**
+   * Projects the trackball's phi/theta values onto the cube representation so the HUD
+   * matches the presenter's camera orientation.
+   */
   const applyRotationFromTrackball = useCallback((state: TrackballState) => {
     setRotation({ x: -state[1], y: -state[0] });
   }, []);
 
+  /**
+   * Processes presenter trackball events and updates the cube rotation in response.
+   */
   const handleTrackballUpdate = useCallback<TrackballObserver>((trackState) => {
     const next = updateTrackballState(trackState);
     applyRotationFromTrackball(next);
@@ -200,11 +225,19 @@ export const CubeNavigation: React.FC<CubeNavigationProps> = ({
     return false;
   }), [registerToolbarAction]);
 
+  /**
+   * Reads the presenter's current trackball state, falling back to the cached values when
+   * the presenter is unavailable (SSR or before mount).
+   */
   const getCurrentTrackballState = useCallback((): TrackballState => {
     const state = presenter?.getTrackballPosition?.();
     return updateTrackballState(state);
   }, [presenter, updateTrackballState]);
 
+  /**
+   * Builds a full trackball vector from the supplied partial overrides and animates the
+   * presenter while respecting optional pan/distance preservation.
+   */
   const animateToPartial = useCallback((partial: PartialTrackballState) => {
     if (!presenter?.animateToTrackballPosition) {
       return;
@@ -226,12 +259,18 @@ export const CubeNavigation: React.FC<CubeNavigationProps> = ({
     applyRotationFromTrackball(next);
   }, [presenter, getCurrentTrackballState, preservePanAndDistance, targetDistance, animationSeconds, applyRotationFromTrackball]);
 
+  /**
+   * Animates the camera so the chosen cube face becomes front-facing.
+   */
   const handleFaceSelection = useCallback((face: keyof typeof FACE_VIEW_TARGETS) => {
     const partial = FACE_VIEW_TARGETS[face];
     if (!partial) return;
     animateToPartial(partial);
   }, [animateToPartial]);
 
+  /**
+   * Rotates around the cube by delta increments, convenient for edge buttons.
+   */
   const animateByDelta = useCallback((deltaPhi: number, deltaTheta: number) => {
     if (!presenter?.animateToTrackballPosition) {
       return;
@@ -250,6 +289,9 @@ export const CubeNavigation: React.FC<CubeNavigationProps> = ({
     animateToPartial(target);
   }, [presenter, getCurrentTrackballState, preservePanAndDistance, targetDistance, animateToPartial]);
 
+  /**
+   * Maps edge button presses to the corresponding rotational deltas.
+   */
   const handleEdgeSelection = useCallback((edge: EdgeKey) => {
     switch (edge) {
       case 'top':
@@ -269,6 +311,9 @@ export const CubeNavigation: React.FC<CubeNavigationProps> = ({
     }
   }, [animateByDelta]);
 
+  /**
+   * Resets the presenter camera and syncs the cube orientation to match.
+   */
   const handleResetView = useCallback(() => {
     if (!presenter) {
       return;
@@ -279,6 +324,9 @@ export const CubeNavigation: React.FC<CubeNavigationProps> = ({
     applyRotationFromTrackball(next);
   }, [presenter, updateTrackballState, applyRotationFromTrackball]);
 
+  /**
+   * Toggles between perspective and orthographic cameras and updates the HUD label.
+   */
   const handleToggleProjection = useCallback(() => {
     if (!presenter?.toggleCameraType) {
       return;

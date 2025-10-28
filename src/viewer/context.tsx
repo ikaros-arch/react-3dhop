@@ -1,8 +1,9 @@
-// Split viewer context logic into context.tsx:
-// new provider now builds the context value and
-// exports the useThreeDHopViewer hook while keeping
-// all public types available for re-export.
-
+/**
+ * Exposes the shared 3DHOP viewer context so React children can subscribe to presenter
+ * state, toolbar hooks, and measurement updates without directly touching the viewer API.
+ * The provider composes the full context value while the public hook enforces usage
+ * within the configured subtree.
+ */
 
 import React, { createContext, useContext, useMemo } from 'react';
 import type {
@@ -36,6 +37,10 @@ export type ThreeDHopViewerProviderProps = {
 
 const ThreeDHopViewerContext = createContext<ThreeDHopViewerContextValue | null>(null);
 
+/**
+ * Returns the nearest `ThreeDHopViewerContextValue`, throwing when it is accessed outside
+ * the `ThreeDHopViewerProvider` so consumers catch misconfiguration early.
+ */
 export const useThreeDHopViewer = (): ThreeDHopViewerContextValue => {
   const context = useContext(ThreeDHopViewerContext);
   if (!context) {
@@ -44,6 +49,11 @@ export const useThreeDHopViewer = (): ThreeDHopViewerContextValue => {
   return context;
 };
 
+/**
+ * Wraps the viewer subtree with a context that shares presenter references, registration
+ * helpers, and derived measurement state with any child component that opts in via the
+ * `useThreeDHopViewer` hook.
+ */
 export const ThreeDHopViewerProvider: React.FC<ThreeDHopViewerProviderProps> = ({
   presenter,
   assetBaseUrl,

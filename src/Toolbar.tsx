@@ -1,3 +1,7 @@
+/**
+ * Supplies styled toolbar controls and sidecar panels that mimic the stock 3DHOP toolbar
+ * while remaining declarative and composable inside React trees.
+ */
 import React, {
   createContext,
   useCallback,
@@ -24,6 +28,10 @@ type SidecarRegistry = {
 
 const ToolbarSidecarContext = createContext<SidecarRegistry | null>(null);
 
+/**
+ * Supplies toolbar asset metadata to descendants so controls can resolve icon URLs
+ * relative to the active skin.
+ */
 export const ToolbarAssetsProvider: React.FC<{ assetBaseUrl: string; children: React.ReactNode }> = ({
   assetBaseUrl,
   children
@@ -31,6 +39,9 @@ export const ToolbarAssetsProvider: React.FC<{ assetBaseUrl: string; children: R
   <ToolbarAssetsContext.Provider value={{ assetBaseUrl }}>{children}</ToolbarAssetsContext.Provider>
 );
 
+/**
+ * Retrieves the current toolbar asset context, allowing controls to locate icons.
+ */
 function useToolbarAssets(): ToolbarAssetsContextValue {
   return useContext(ToolbarAssetsContext);
 }
@@ -49,6 +60,10 @@ export type ToolbarProps = {
   children: React.ReactNode;
 } & React.HTMLAttributes<HTMLDivElement>;
 
+/**
+ * Wraps toolbar controls and optional sidecars, handling position presets and the
+ * lifecycle of floating HUD attachments.
+ */
 export const Toolbar: React.FC<ToolbarProps> = ({ position, style, children, ...rest }) => {
   const [sidecars, setSidecars] = useState<Map<string, React.ReactNode>>(new Map());
   const reactId = useId();
@@ -112,8 +127,15 @@ const ToolbarImage: React.FC<React.ImgHTMLAttributes<HTMLImageElement>> = ({ alt
   <img alt={alt ?? ''} id={id} data-hop-id={id} {...rest} />
 );
 
+/**
+ * Inserts a line break between toolbar icons, mimicking the original 3DHOP layout.
+ */
 export const ToolbarSeparator: React.FC = () => <br />;
 
+/**
+ * Registers an auxiliary HUD element with the nearest toolbar so it can be positioned as
+ * a floating sidecar alongside the main toolbar surface.
+ */
 function useToolbarSidecar(key: string, element: React.ReactNode | null) {
   const sidecar = useContext(ToolbarSidecarContext);
 
@@ -126,6 +148,9 @@ function useToolbarSidecar(key: string, element: React.ReactNode | null) {
   }, [sidecar, key, element]);
 }
 
+/**
+ * Resolves an icon path, honoring optional overrides while defaulting to bundled assets.
+ */
 function resolveToggleIcon(assetBaseUrl: string, override: string | undefined, fallback: string): string {
   return resolveRelativeAssetPath(override, assetBaseUrl, joinAssetPath(assetBaseUrl, fallback));
 }
@@ -144,6 +169,10 @@ type ToggleImagePairProps = {
   includeSeparator?: boolean;
 };
 
+/**
+ * Renders the enabled/disabled icon pair expected by 3DHOP toggles, optionally inserting
+ * a separator after the pair.
+ */
 const ToggleImagePair: React.FC<ToggleImagePairProps> = ({ primary, secondary, includeSeparator = true }) => {
   const { style: primaryStyle, ...restPrimary } = primary.imgProps ?? {};
   const { style: secondaryStyle, ...restSecondary } = secondary.imgProps ?? {};
@@ -161,6 +190,9 @@ const ToggleImagePair: React.FC<ToggleImagePairProps> = ({ primary, secondary, i
   );
 };
 
+/**
+ * Lightweight inline SVG used for copy-to-clipboard affordances within toolbar sidecars.
+ */
 const CopyIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
   <svg
     viewBox="0 0 16 16"
@@ -182,6 +214,10 @@ type CopyableOutputProps = {
   value: string;
 };
 
+/**
+ * Displays measurement or pickpoint output alongside a copy button that copies the value
+ * using the modern clipboard API when available.
+ */
 const CopyableOutput: React.FC<CopyableOutputProps> = ({ id, value }) => {
   const [copied, setCopied] = useState(false);
   const resetTimerRef = useRef<number | null>(null);
@@ -253,6 +289,9 @@ const CopyableOutput: React.FC<CopyableOutputProps> = ({ id, value }) => {
   );
 };
 
+/**
+ * Restores the default camera view when activated and displays the standard home icon.
+ */
 export const HomeControl: React.FC<BasicControlProps> = ({ title, icon, imgProps }) => {
   const { assetBaseUrl } = useToolbarAssets();
   const resolvedTitle = title ?? 'Home';
@@ -266,6 +305,9 @@ export const HomeControl: React.FC<BasicControlProps> = ({ title, icon, imgProps
   );
 };
 
+/**
+ * Triggers the zoom-in presenter action using the bundled magnifier asset.
+ */
 export const ZoomInControl: React.FC<BasicControlProps> = ({ title, icon, imgProps }) => {
   const { assetBaseUrl } = useToolbarAssets();
   const resolvedTitle = title ?? 'Zoom In';
@@ -279,6 +321,9 @@ export const ZoomInControl: React.FC<BasicControlProps> = ({ title, icon, imgPro
   );
 };
 
+/**
+ * Triggers the zoom-out presenter action with the default zoom-out icon.
+ */
 export const ZoomOutControl: React.FC<BasicControlProps> = ({ title, icon, imgProps }) => {
   const { assetBaseUrl } = useToolbarAssets();
   const resolvedTitle = title ?? 'Zoom Out';
@@ -312,6 +357,10 @@ export type LightControlProps = {
   icon?: ToggleIcons;
 } & ToggleImgProps;
 
+/**
+ * Wraps the legacy light toggle icons so toolbar integration can toggle illumination on
+ * and off while reflecting the current state.
+ */
 export const LightControl: React.FC<LightControlProps> = ({ title, icon, enabledImgProps, disabledImgProps }) => {
   const { assetBaseUrl } = useToolbarAssets();
   const enabledTitle = title?.enabled ?? 'Disable Light Control';
@@ -332,6 +381,10 @@ export type FullscreenControlProps = {
   icon?: ToggleIcons;
 } & ToggleImgProps;
 
+/**
+ * Presents matching full-screen enable/disable icons bound to the presenter's fullscreen
+ * handlers.
+ */
 export const FullscreenControl: React.FC<FullscreenControlProps> = ({
   title,
   icon,
@@ -357,6 +410,9 @@ export type HotspotControlProps = {
   icon?: ToggleIcons;
 } & ToggleImgProps;
 
+/**
+ * Shows hotspot visibility toggles that integrate with the `Annotations` sidecar logic.
+ */
 export const HotspotControl: React.FC<HotspotControlProps> = ({ title, icon, enabledImgProps, disabledImgProps }) => {
   const { assetBaseUrl } = useToolbarAssets();
   const enabledTitle = title?.enabled ?? 'Hide Hotspots';
@@ -377,6 +433,9 @@ export type LightingControlProps = {
   icon?: ToggleIcons;
 } & ToggleImgProps;
 
+/**
+ * Toggles the advanced lighting shader while swapping between highlight and dim icons.
+ */
 export const LightingControl: React.FC<LightingControlProps> = ({
   title,
   icon,
@@ -402,6 +461,9 @@ export type ColorControlProps = {
   icon?: ToggleIcons;
 } & ToggleImgProps;
 
+/**
+ * Switches between shaded and solid-color rendering modes with paired toolbar icons.
+ */
 export const ColorControl: React.FC<ColorControlProps> = ({ title, icon, enabledImgProps, disabledImgProps }) => {
   const { assetBaseUrl } = useToolbarAssets();
   const enabledTitle = title?.enabled ?? 'Disable Solid Color';
@@ -422,6 +484,9 @@ export type TransparencyControlProps = {
   icon?: ToggleIcons;
 } & ToggleImgProps;
 
+/**
+ * Toggles transparency rendering by swapping the enabled and disabled alpha icons.
+ */
 export const TransparencyControl: React.FC<TransparencyControlProps> = ({
   title,
   icon,
@@ -447,6 +512,9 @@ export type SpecularControlProps = {
   icon?: ToggleIcons;
 } & ToggleImgProps;
 
+/**
+ * Toggles specular highlights via the presenter's toolbar bindings.
+ */
 export const SpecularControl: React.FC<SpecularControlProps> = ({
   title,
   icon,
@@ -472,6 +540,9 @@ export type CameraControlProps = {
   icon?: ToggleIcons;
 } & ToggleImgProps;
 
+/**
+ * Provides perspective versus orthographic camera toggle icons.
+ */
 export const CameraControl: React.FC<CameraControlProps> = ({ title, icon, enabledImgProps, disabledImgProps }) => {
   const { assetBaseUrl } = useToolbarAssets();
   const enabledTitle = title?.enabled ?? 'Perspective Camera';
@@ -493,6 +564,9 @@ export type ScreenshotControlProps = {
   imgProps?: React.ImgHTMLAttributes<HTMLImageElement>;
 };
 
+/**
+ * Adds a screenshot button that invokes the presenter's capture action.
+ */
 export const ScreenshotControl: React.FC<ScreenshotControlProps> = ({ title, icon, imgProps }) => {
   const { assetBaseUrl } = useToolbarAssets();
   const resolvedTitle = title ?? 'Save Screenshot';
@@ -514,6 +588,10 @@ export type MeasureControlProps = {
   units?: string;
 } & ToggleImgProps;
 
+/**
+ * Wires the measurement toggle icons and exposes a live measurement sidecar with copy
+ * support.
+ */
 export const MeasureControl: React.FC<MeasureControlProps> = ({
   title,
   icon,
@@ -567,6 +645,10 @@ export type PickControlProps = {
   initialDisplayValue?: string;
 } & ToggleImgProps;
 
+/**
+ * Provides pickpoint toggle icons and renders the coordinates sidecar linked to viewer
+ * state updates.
+ */
 export const PickControl: React.FC<PickControlProps> = ({
   title,
   icon,
@@ -617,6 +699,9 @@ export type InfoControlProps = {
   content: React.ReactNode;
 } & ToggleImgProps;
 
+/**
+ * Exposes an info panel sidecar that can be shown or hidden via the toolbar toggle.
+ */
 export const InfoControl: React.FC<InfoControlProps> = ({
   title,
   icon,
@@ -673,6 +758,10 @@ export type SectionsControlProps = {
   showEdgesLabel?: string;
 } & ToggleImgProps;
 
+/**
+ * Manages the complex section-plane controls, binding sliders, checkboxes, and toggle
+ * icons to the presenter's section tooling.
+ */
 export const SectionsControl: React.FC<SectionsControlProps> = ({
   title,
   icon,
