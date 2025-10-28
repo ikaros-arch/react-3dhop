@@ -1,11 +1,16 @@
+import { useCallback } from 'react';
+import type React from 'react';
 import { joinAssetPath, resolveRelativeAssetPath } from '../utils/assetPaths.js';
 import { buildAnnotations, type AnnotationDefinition } from '../utils/annotations.js';
+import { queryToolbarSidecars } from './dom.js';
 import type {
   ModelDefinition,
   ModelInstanceConfiguration,
   SceneConfiguration,
   SceneContribution,
-  SceneMeshes
+  SceneMeshes,
+  SceneObserver,
+  PresenterInstance
 } from './types.js';
 
 function sanitizeIdentifier(value: string, fallback: string): string {
@@ -273,4 +278,95 @@ export function buildSceneConfiguration(options: SceneBuilderOptions): SceneBuil
     annotationDefinitions,
     hasHotspots: Boolean(scene.spots && Object.keys(scene.spots).length > 0)
   };
+}
+
+export type UseSceneConfigurationOptions = {
+  models: Record<string, ModelDefinition | null | undefined> | undefined;
+  normalizedBaseUrl: string;
+  resolvedModelUrl: string;
+  sceneContributionsRef: React.MutableRefObject<Map<string, SceneContribution>>;
+  sceneContributionsVersion: number;
+  annotationDefinitionsRef: React.MutableRefObject<Map<string, AnnotationDefinition>>;
+  notifyTrackballObservers: (trackState: number[]) => void;
+  setHasHotspotContribution: React.Dispatch<React.SetStateAction<boolean>>;
+  sceneObserversRef: React.MutableRefObject<Set<SceneObserver>>;
+  syncTransparencySwitch: (override?: boolean) => boolean;
+  syncSpecularUi: (override?: boolean) => boolean;
+  syncSectionsUi: () => void;
+};
+
+export type UseSceneConfigurationResult = {
+  applyScene: (presenter: PresenterInstance, preserveView?: boolean) => void;
+};
+
+export function useSceneConfiguration({
+  models,
+  normalizedBaseUrl,
+  resolvedModelUrl,
+  sceneContributionsRef,
+  sceneContributionsVersion,
+  annotationDefinitionsRef,
+  notifyTrackballObservers,
+  setHasHotspotContribution,
+  sceneObserversRef,
+  syncTransparencySwitch,
+  syncSpecularUi,
+  syncSectionsUi
+}: UseSceneConfigurationOptions): UseSceneConfigurationResult {
+  const buildScene = useCallback(() => {
+    return buildSceneConfiguration({
+      models,
+      normalizedBaseUrl,
+      resolvedModelUrl,
+      sceneContributions: sceneContributionsRef.current
+    });
+  }, [models, normalizedBaseUrl, resolvedModelUrl, sceneContributionsRef, sceneContributionsVersion]);
+
+  const applyScene = useCallback(
+    (presenter: PresenterInstance, preserveView = false) => {
+      let trackballState: number[] | undefined;
+
+      if (preserveView && typeof presenter.getTrackballPosition === 'function') {
+        trackballState = presenter.getTrackballPosition();
+      }
+
+      const { scene, annotationDefinitions, hasHotspots } = buildScene();
+      presenter.setScene(scene);
+      annotationDefinitionsRef.current = annotationDefinitions;
+
+      if (trackballState && typeof presenter.setTrackballPosition === 'function') {
+        presenter.setTrackballPosition(trackballState);
+      }
+
+      const nextTrackball = presenter.getTrackballPosition?.();
+      if (Array.isArray(nextTrackball)) {
+        notifyTrackballObservers(nextTrackball);
+      }
+
+      setHasHotspotContribution(hasHotspots);
+
+      sceneObserversRef.current.forEach((observer) => observer(presenter));
+
+      if (queryToolbarSidecars('sections-box').length > 0) {
+        window.sectiontoolInit?.();
+        window.sectiontoolReset?.();
+        syncSectionsUi();
+      }
+
+      syncTransparencySwitch();
+      syncSpecularUi();
+    },
+    [
+      annotationDefinitionsRef,
+      buildScene,
+      notifyTrackballObservers,
+      sceneObserversRef,
+      setHasHotspotContribution,
+      syncSectionsUi,
+      syncSpecularUi,
+      syncTransparencySwitch
+    ]
+  );
+
+  return { applyScene };
 }

@@ -1,4 +1,4 @@
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   FullscreenControl,
   HomeControl,
@@ -13,8 +13,11 @@ import { getHopAllTag } from './utils/hopTags';
 import type { AnnotationDefinition } from './utils/annotations.js';
 import { joinAssetPath, resolveRelativeAssetPath } from './utils/assetPaths.js';
 import { ensureAssets } from './viewer/assets';
-import { queryToolbarElements, queryToolbarSidecars, resolveBackgroundUrl } from './viewer/dom';
-import { buildSceneConfiguration } from './viewer/sceneBuilder';
+import { queryToolbarElements, resolveBackgroundUrl } from './viewer/dom';
+import { ThreeDHopViewerProvider } from './viewer/context.js';
+import { useSceneConfiguration } from './viewer/sceneBuilder';
+import { useToolbarSync } from './viewer/toolbarSync.js';
+import { useInteractiveTools, type InteractiveTool } from './viewer/interactiveTools.js';
 import {
   type AnnotationPickEvent,
   type AnnotationPickHandler,
@@ -31,32 +34,6 @@ import {
   type TrackballObserver
 } from './viewer/types';
 
-export type {
-  AnnotationPickEvent,
-  AnnotationPickHandler,
-  CoordinateCorrections,
-  ModelDefinition,
-  ModelTransparencyOptions,
-  ModelTransformConfig,
-  PresenterInstance,
-  SceneContribution,
-  SceneObserver,
-  ThreeDHopViewerContextValue,
-  ThreeDHopViewerProps,
-  ToolbarActionHandler,
-  TrackballObserver
-} from './viewer/types.js';
-
-const ThreeDHopViewerContext = createContext<ThreeDHopViewerContextValue | null>(null);
-
-export const useThreeDHopViewer = (): ThreeDHopViewerContextValue => {
-  const context = useContext(ThreeDHopViewerContext);
-  if (!context) {
-    throw new Error('useThreeDHopViewer must be used within a ThreeDHopViewer');
-  }
-  return context;
-};
-
 declare global {
   interface Window {
     Presenter: new (canvasId: string) => PresenterInstance;
@@ -66,8 +43,8 @@ declare global {
     lightingSwitch?: (on?: boolean) => void;
     cameraSwitch?: (on?: boolean) => void;
     colorSwitch?: (on?: boolean) => void;
-  transparencySwitch?: (on?: boolean) => void;
-  specularSwitch?: (on?: boolean) => void;
+    transparencySwitch?: (on?: boolean) => void;
+    specularSwitch?: (on?: boolean) => void;
     measureSwitch?: (on?: boolean) => void;
     pickpointSwitch?: (on?: boolean) => void;
     hotspotSwitch?: (on?: boolean) => void;
@@ -85,14 +62,22 @@ declare global {
   const HOP_ALL: unknown;
 }
 
-type InteractiveTool = 'measure' | 'pick';
-
-type InteractiveToolConfig = {
-  id: InteractiveTool;
-  enable?: (presenter: PresenterInstance, enabled: boolean) => void;
-  isEnabled?: (presenter: PresenterInstance) => boolean | undefined;
-  syncUi: (enabled?: boolean) => void;
-};
+export type {
+  AnnotationPickEvent,
+  AnnotationPickHandler,
+  CoordinateCorrections,
+  ModelDefinition,
+  ModelTransparencyOptions,
+  ModelTransformConfig,
+  PresenterInstance,
+  SceneContribution,
+  SceneObserver,
+  ThreeDHopViewerContextValue,
+  ThreeDHopViewerProps,
+  ToolbarActionHandler,
+  TrackballObserver
+} from './viewer/types.js';
+export { useThreeDHopViewer } from './viewer/context.js';
 
 export const ThreeDHopViewer: React.FC<ThreeDHopViewerProps> = ({
   assetBaseUrl = '/node_modules/react-3dhop/dist/3dhop',
@@ -126,7 +111,6 @@ export const ThreeDHopViewer: React.FC<ThreeDHopViewerProps> = ({
   const previousHotspotSwitchRef = useRef<typeof window.hotspotSwitch>();
   const previousSectiontoolSwitchRef = useRef<typeof window.sectiontoolSwitch>();
   const previousOnPickedSpotRef = useRef<PresenterInstance['_onPickedSpot']>();
-  const infoBoxVisibleRef = useRef(false);
   const sceneContributionsRef = useRef<Map<string, SceneContribution>>(new Map());
   const [sceneContributionsVersion, setSceneContributionsVersion] = useState(0);
   const toolbarHandlersRef = useRef<Map<string, Set<ToolbarActionHandler>>>(new Map());
@@ -137,79 +121,39 @@ export const ThreeDHopViewer: React.FC<ThreeDHopViewerProps> = ({
   const [hasHotspotContribution, setHasHotspotContribution] = useState(false);
   const [measurementValue, setMeasurementValue] = useState<number | null>(null);
   const [pickpointValue, setPickpointValue] = useState<[number, number, number] | null>(null);
-  const [activeInteractiveTool, setActiveInteractiveTool] = useState<InteractiveTool | null>(null);
   const activeInteractiveToolRef = useRef<InteractiveTool | null>(null);
 
-  useEffect(() => {
-    activeInteractiveToolRef.current = activeInteractiveTool;
-  }, [activeInteractiveTool]);
+  const {
+    alignToolbarSidecars,
+    syncMeasurementUi,
+    syncPickpointUi,
+    syncSectionsUi,
+    syncLightSwitch,
+    syncLightingSwitch,
+    syncColorSwitch,
+    syncTransparencySwitch,
+    syncSpecularUi,
+    syncCameraSwitch,
+    syncHotspotSwitch,
+    syncFullscreenUi,
+    syncInfoUi,
+    setInfoVisibility,
+    toggleInfoVisibility,
+    isControlVisible,
+    infoBoxVisibleRef
+  } = useToolbarSync({
+    presenterRef,
+    activeInteractiveToolRef,
+    setMeasurementValue,
+    setPickpointValue
+  });
 
-  const alignToolbarSidecars = useCallback(() => {
-    if (typeof document === 'undefined') {
-      return;
-    }
-
-    const container = document.querySelector<HTMLElement>('[data-hop-toolbar-container="true"]');
-    if (!container) {
-      return;
-    }
-
-    const containerRect = container.getBoundingClientRect();
-    const containerMidX = containerRect.left + containerRect.width / 2;
-    const toolbars = Array.from(container.querySelectorAll<HTMLElement>('[data-hop-toolbar]'));
-
-    toolbars.forEach((toolbar) => {
-      const toolbarId = toolbar.getAttribute('data-hop-toolbar');
-      if (!toolbarId) {
-        return;
-      }
-
-      const toolbarRect = toolbar.getBoundingClientRect();
-      const toolbarCenterX = toolbarRect.left + toolbarRect.width / 2;
-      const isRightAligned = toolbarCenterX >= containerMidX;
-
-      const anchorMap: Record<string, string[]> = {
-        'measure-box': ['measure', 'measure_on'],
-        'pickpoint-box': ['pick', 'pick_on'],
-        'sections-box': ['sections', 'sections_on'],
-        'info-box': ['info', 'info_on']
-      };
-
-      Object.entries(anchorMap).forEach(([sidecarId, anchorIds]) => {
-        const sidecar = container.querySelector<HTMLElement>(
-          `[data-hop-sidecar="${sidecarId}"][data-hop-toolbar-owner="${toolbarId}"]`
-        );
-        if (!sidecar) {
-          return;
-        }
-
-        const anchor = anchorIds
-          .map((candidate) => toolbar.querySelector<HTMLElement>(`[data-hop-id="${candidate}"]`))
-          .find((element): element is HTMLElement => Boolean(element));
-        if (!anchor) {
-          return;
-        }
-
-    const anchorRect = anchor.getBoundingClientRect();
-    const anchorTop = anchorRect.top - containerRect.top;
-    const anchorRight = anchorRect.right - containerRect.left;
-
-        sidecar.style.left = 'auto';
-        sidecar.style.right = 'auto';
-
-        if (isRightAligned) {
-          const rightOffset = containerRect.right - anchorRect.left + 5;
-          sidecar.style.right = `${Math.max(rightOffset, 0)}px`;
-        } else {
-          const leftOffset = anchorRight + 5;
-          sidecar.style.left = `${Math.max(leftOffset, 0)}px`;
-        }
-
-        const top = anchorTop;
-        sidecar.style.top = `${top}px`;
-      });
-    });
-  }, []);
+  const { toggleTool, deactivateTool, resetActiveTool } = useInteractiveTools({
+    presenterRef,
+    activeInteractiveToolRef,
+    syncMeasurementUi,
+    syncPickpointUi
+  });
 
   const measurementUnitLabel = useMemo(() => {
     const trimmed = measurementUnits.trim();
@@ -223,422 +167,6 @@ export const ThreeDHopViewer: React.FC<ThreeDHopViewerProps> = ({
       z: coordinateCorrections?.z ?? 0
     }),
     [coordinateCorrections?.x, coordinateCorrections?.y, coordinateCorrections?.z]
-  );
-
-  const clearSelectionRange = useCallback(() => {
-    const selection = window.getSelection?.();
-    if (selection && selection.toString() !== '') {
-      selection.removeAllRanges();
-      return;
-    }
-
-    const legacySelection = (document as Document & {
-      selection?: {
-        empty?: () => void;
-      };
-    }).selection;
-
-    legacySelection?.empty?.();
-  }, []);
-
-  const setControlVisibility = useCallback((controlId: string, visible: boolean) => {
-    queryToolbarElements<HTMLElement>(controlId).forEach((element) => {
-      element.style.visibility = visible ? 'visible' : 'hidden';
-    });
-  }, []);
-
-  const setTogglePairVisibility = useCallback(
-    (enabledControlId: string, disabledControlId: string, enabled: boolean) => {
-      setControlVisibility(enabledControlId, enabled);
-      setControlVisibility(disabledControlId, !enabled);
-    },
-    [setControlVisibility]
-  );
-
-  const isControlVisible = useCallback((controlId: string): boolean | null => {
-    const element = queryToolbarElements<HTMLElement>(controlId)[0];
-    if (!element) {
-      return null;
-    }
-    return getComputedStyle(element).visibility !== 'hidden';
-  }, []);
-
-  const syncMeasurementUi = useCallback(
-    (override?: boolean) => {
-      const presenter = presenterRef.current;
-      const shouldEnable =
-        typeof override === 'boolean'
-          ? override
-          : presenter?.isMeasurementToolEnabled?.() ?? activeInteractiveToolRef.current === 'measure';
-
-      const measureElements = queryToolbarElements<HTMLImageElement>('measure');
-      const measureOnElements = queryToolbarElements<HTMLImageElement>('measure_on');
-      const measureBoxes = queryToolbarSidecars<HTMLDivElement>('measure-box');
-      const canvas = document.getElementById('draw-canvas') as HTMLCanvasElement | null;
-
-      if (shouldEnable) {
-        measureElements.forEach((element) => {
-          element.style.visibility = 'hidden';
-        });
-        measureOnElements.forEach((element) => {
-          element.style.visibility = 'visible';
-        });
-        measureBoxes.forEach((element) => {
-          element.style.display = 'table';
-        });
-        if (canvas) canvas.style.cursor = 'crosshair';
-      } else {
-        clearSelectionRange();
-        measureOnElements.forEach((element) => {
-          element.style.visibility = 'hidden';
-        });
-        measureElements.forEach((element) => {
-          element.style.visibility = 'visible';
-        });
-        measureBoxes.forEach((element) => {
-          element.style.display = 'none';
-        });
-        const anyMeasurementEnabled = presenter?.isAnyMeasurementEnabled?.() ?? false;
-        if (canvas && !anyMeasurementEnabled) {
-          canvas.style.cursor = 'default';
-        }
-        setMeasurementValue(null);
-      }
-      alignToolbarSidecars();
-    },
-    [alignToolbarSidecars, clearSelectionRange]
-  );
-
-  const syncPickpointUi = useCallback(
-    (override?: boolean) => {
-      const presenter = presenterRef.current;
-      const shouldEnable =
-        typeof override === 'boolean'
-          ? override
-          : presenter?.isPickpointModeEnabled?.() ?? activeInteractiveToolRef.current === 'pick';
-
-      const pickElements = queryToolbarElements<HTMLImageElement>('pick');
-      const pickOnElements = queryToolbarElements<HTMLImageElement>('pick_on');
-      const pickBoxes = queryToolbarSidecars<HTMLDivElement>('pickpoint-box');
-      const canvas = document.getElementById('draw-canvas') as HTMLCanvasElement | null;
-
-      if (shouldEnable) {
-        pickElements.forEach((element) => {
-          element.style.visibility = 'hidden';
-        });
-        pickOnElements.forEach((element) => {
-          element.style.visibility = 'visible';
-        });
-        pickBoxes.forEach((element) => {
-          element.style.display = 'table';
-        });
-        if (canvas) canvas.style.cursor = 'crosshair';
-      } else {
-        clearSelectionRange();
-        pickOnElements.forEach((element) => {
-          element.style.visibility = 'hidden';
-        });
-        pickElements.forEach((element) => {
-          element.style.visibility = 'visible';
-        });
-        pickBoxes.forEach((element) => {
-          element.style.display = 'none';
-        });
-        const anyMeasurementEnabled = presenter?.isAnyMeasurementEnabled?.() ?? false;
-        if (canvas && !anyMeasurementEnabled) {
-          canvas.style.cursor = 'default';
-        }
-        setPickpointValue(null);
-      }
-      alignToolbarSidecars();
-    },
-    [alignToolbarSidecars, clearSelectionRange]
-  );
-
-  const syncSectionsUi = useCallback(() => {
-    if (typeof document === 'undefined') {
-      return;
-    }
-
-    const reference = document.querySelector<HTMLElement>('[data-hop-id="sections_on"]');
-    const isActive = reference ? getComputedStyle(reference).visibility !== 'hidden' : false;
-
-    setTogglePairVisibility('sections_on', 'sections', isActive);
-
-    const sectionBoxes = queryToolbarSidecars<HTMLDivElement>('sections-box');
-    sectionBoxes.forEach((element) => {
-      element.style.display = isActive ? 'table' : 'none';
-    });
-
-    alignToolbarSidecars();
-  }, [alignToolbarSidecars, setTogglePairVisibility]);
-
-  const syncLightSwitch = useCallback(
-    (override?: boolean) => {
-      const presenter = presenterRef.current;
-      const enabled =
-        typeof override === 'boolean'
-          ? override
-          : presenter?.isLightTrackballEnabled?.() ?? false;
-
-      setTogglePairVisibility('light_on', 'light', enabled);
-      if (enabled) {
-        setControlVisibility('lighting_off', false);
-        setControlVisibility('lighting', true);
-      }
-
-      return enabled;
-    },
-    [setControlVisibility, setTogglePairVisibility]
-  );
-
-  const syncInfoUi = useCallback(
-    (override?: boolean) => {
-      const shouldShow = typeof override === 'boolean' ? override : infoBoxVisibleRef.current;
-
-      const infoElements = queryToolbarElements<HTMLImageElement>('info');
-      const infoOnElements = queryToolbarElements<HTMLImageElement>('info_on');
-      const infoBoxes = queryToolbarSidecars<HTMLDivElement>('info-box');
-
-      if (shouldShow) {
-        infoElements.forEach((element) => {
-          element.style.visibility = 'hidden';
-        });
-        infoOnElements.forEach((element) => {
-          element.style.visibility = 'visible';
-        });
-        infoBoxes.forEach((element) => {
-          element.style.display = 'table';
-        });
-      } else {
-        infoOnElements.forEach((element) => {
-          element.style.visibility = 'hidden';
-        });
-        infoElements.forEach((element) => {
-          element.style.visibility = 'visible';
-        });
-        infoBoxes.forEach((element) => {
-          element.style.display = 'none';
-        });
-      }
-
-      alignToolbarSidecars();
-      return shouldShow;
-    },
-    [alignToolbarSidecars]
-  );
-
-  const setInfoVisibility = useCallback(
-    (visible: boolean) => {
-      infoBoxVisibleRef.current = visible;
-      syncInfoUi(visible);
-    },
-    [syncInfoUi]
-  );
-
-  const toggleInfoVisibility = useCallback(() => {
-    setInfoVisibility(!infoBoxVisibleRef.current);
-  }, [setInfoVisibility]);
-
-  const syncLightingSwitch = useCallback(
-    (override?: boolean) => {
-      const presenter = presenterRef.current;
-      const enabled =
-        typeof override === 'boolean'
-          ? override
-          : presenter?.isSceneLightingEnabled?.() ?? (isControlVisible('lighting') ?? false);
-
-      setTogglePairVisibility('lighting', 'lighting_off', enabled);
-      if (!enabled) {
-        setControlVisibility('light_on', false);
-        setControlVisibility('light', true);
-      }
-
-      return enabled;
-    },
-    [isControlVisible, setControlVisibility, setTogglePairVisibility]
-  );
-
-  const syncColorSwitch = useCallback(
-    (override?: boolean) => {
-      const fallback = isControlVisible('color');
-      const enabled = typeof override === 'boolean' ? override : fallback ?? true;
-
-      setControlVisibility('color', !enabled);
-      setControlVisibility('color_on', enabled);
-
-      return enabled;
-    },
-    [isControlVisible, setControlVisibility]
-  );
-
-  const syncTransparencySwitch = useCallback(
-    (override?: boolean) => {
-      const presenter = presenterRef.current;
-      const presenterState =
-        typeof presenter?.isInstanceTransparencyEnabled === 'function'
-          ? presenter.isInstanceTransparencyEnabled(getHopAllTag())
-          : undefined;
-
-      const enabled =
-        typeof override === 'boolean'
-          ? override
-          : typeof presenterState === 'boolean'
-            ? presenterState
-            : isControlVisible('transparency_on') ?? false;
-
-      setControlVisibility('transparency_on', enabled);
-      setControlVisibility('transparency', !enabled);
-
-      return enabled;
-    },
-    [isControlVisible, setControlVisibility]
-  );
-
-  const syncSpecularUi = useCallback(
-    (override?: boolean) => {
-      const presenter = presenterRef.current;
-      const instances = presenter?._scene?.modelInstances as
-        | Record<string, { specularColor?: number[] }>
-        | undefined;
-
-      const presenterState = instances
-        ? Object.values(instances).some((instance) => {
-            if (!instance) {
-              return false;
-            }
-            const specular = instance.specularColor;
-            if (!Array.isArray(specular) || specular.length < 3) {
-              return false;
-            }
-            const [r = 0, g = 0, b = 0] = specular;
-            return Math.abs(r) > 1e-3 || Math.abs(g) > 1e-3 || Math.abs(b) > 1e-3;
-          })
-        : undefined;
-
-      const enabled =
-        typeof override === 'boolean'
-          ? override
-          : typeof presenterState === 'boolean'
-            ? presenterState
-            : isControlVisible('specular_on') ?? false;
-
-      setControlVisibility('specular_on', enabled);
-      setControlVisibility('specular', !enabled);
-
-      return enabled;
-    },
-    [isControlVisible, setControlVisibility]
-  );
-
-  const syncCameraSwitch = useCallback(
-    (override?: boolean) => {
-      const fallback = isControlVisible('perspective');
-      const enabled = typeof override === 'boolean' ? override : fallback ?? true;
-
-      setControlVisibility('perspective', !enabled);
-      setControlVisibility('orthographic', enabled);
-
-      return enabled;
-    },
-    [isControlVisible, setControlVisibility]
-  );
-
-  const syncHotspotSwitch = useCallback(
-    (override?: boolean) => {
-      const presenter = presenterRef.current;
-      const enabled =
-        typeof override === 'boolean'
-          ? override
-          : presenter?.isSpotVisibilityEnabled?.() ?? (isControlVisible('hotspot_on') ?? false);
-
-      setTogglePairVisibility('hotspot_on', 'hotspot', enabled);
-
-      return enabled;
-    },
-    [isControlVisible, setTogglePairVisibility]
-  );
-
-  const syncFullscreenUi = useCallback(
-    (isFullscreen: boolean) => {
-      setControlVisibility('full', !isFullscreen);
-      setControlVisibility('full_on', isFullscreen);
-    },
-    [setControlVisibility]
-  );
-
-  const interactiveToolConfigs = useMemo(() => {
-    const configs: Map<InteractiveTool, InteractiveToolConfig> = new Map();
-
-    configs.set('measure', {
-      id: 'measure',
-      enable: (presenter, enabled) => presenter.enableMeasurementTool?.(enabled),
-      isEnabled: (presenter) => presenter.isMeasurementToolEnabled?.(),
-      syncUi: syncMeasurementUi
-    });
-
-    configs.set('pick', {
-      id: 'pick',
-      enable: (presenter, enabled) => presenter.enablePickpointMode?.(enabled),
-      isEnabled: (presenter) => presenter.isPickpointModeEnabled?.(),
-      syncUi: syncPickpointUi
-    });
-
-    return configs;
-  }, [syncMeasurementUi, syncPickpointUi]);
-
-  const deactivateTool = useCallback(
-    (toolId: InteractiveTool, presenter: PresenterInstance) => {
-      const config = interactiveToolConfigs.get(toolId);
-      if (!config || typeof config.enable !== 'function') {
-        return false;
-      }
-
-      const isActive =
-        typeof config.isEnabled === 'function'
-          ? Boolean(config.isEnabled(presenter))
-          : activeInteractiveToolRef.current === toolId;
-
-      if (!isActive) {
-        return false;
-      }
-
-      config.enable(presenter, false);
-      config.syncUi(false);
-      setActiveInteractiveTool((current) => (current === toolId ? null : current));
-      activeInteractiveToolRef.current = null;
-      return true;
-    },
-    [interactiveToolConfigs]
-  );
-
-  const toggleTool = useCallback(
-    (toolId: InteractiveTool, presenter: PresenterInstance) => {
-      const config = interactiveToolConfigs.get(toolId);
-      if (!config || typeof config.enable !== 'function') {
-        return;
-      }
-
-      const currentlyEnabled =
-        typeof config.isEnabled === 'function'
-          ? Boolean(config.isEnabled(presenter))
-          : activeInteractiveToolRef.current === toolId;
-      const nextEnabled = !currentlyEnabled;
-
-      if (nextEnabled) {
-        if (activeInteractiveToolRef.current && activeInteractiveToolRef.current !== toolId) {
-          deactivateTool(activeInteractiveToolRef.current, presenter);
-        }
-
-        config.enable(presenter, true);
-        config.syncUi(true);
-        setActiveInteractiveTool(toolId);
-        activeInteractiveToolRef.current = toolId;
-      } else {
-        void deactivateTool(toolId, presenter);
-      }
-    },
-    [deactivateTool, interactiveToolConfigs]
   );
 
   const bumpSceneContributionsVersion = useCallback(() => {
@@ -765,50 +293,20 @@ export const ThreeDHopViewer: React.FC<ThreeDHopViewerProps> = ({
     [backgroundUrl, normalizedBaseUrl]
   );
 
-  const buildScene = useCallback(() => {
-    return buildSceneConfiguration({
-      models,
-      normalizedBaseUrl,
-      resolvedModelUrl,
-      sceneContributions: sceneContributionsRef.current
-    });
-  }, [models, normalizedBaseUrl, resolvedModelUrl, sceneContributionsVersion]);
-
-  const applyScene = useCallback(
-    (presenter: PresenterInstance, preserveView = false) => {
-      let trackballState: number[] | undefined;
-
-      if (preserveView && typeof presenter.getTrackballPosition === 'function') {
-        trackballState = presenter.getTrackballPosition();
-      }
-
-      const { scene, annotationDefinitions, hasHotspots } = buildScene();
-      presenter.setScene(scene);
-      annotationDefinitionsRef.current = annotationDefinitions;
-
-      if (trackballState && typeof presenter.setTrackballPosition === 'function') {
-        presenter.setTrackballPosition(trackballState);
-      }
-
-      const nextTrackball = presenter.getTrackballPosition?.();
-      if (Array.isArray(nextTrackball)) {
-        notifyTrackballObservers(nextTrackball);
-      }
-
-      setHasHotspotContribution(hasHotspots);
-
-      sceneObserversRef.current.forEach((observer) => observer(presenter));
-
-      if (queryToolbarSidecars('sections-box').length > 0) {
-        window.sectiontoolInit?.();
-        window.sectiontoolReset?.();
-      }
-
-      syncTransparencySwitch();
-      syncSpecularUi();
-    },
-    [buildScene, notifyTrackballObservers, syncSpecularUi, syncTransparencySwitch]
-  );
+  const { applyScene } = useSceneConfiguration({
+    models,
+    normalizedBaseUrl,
+    resolvedModelUrl,
+    sceneContributionsRef,
+    sceneContributionsVersion,
+    annotationDefinitionsRef,
+    notifyTrackballObservers,
+    setHasHotspotContribution,
+    sceneObserversRef,
+    syncTransparencySwitch,
+    syncSpecularUi,
+    syncSectionsUi
+  });
 
   useEffect(() => {
     let disposed = false;
@@ -1100,12 +598,6 @@ export const ThreeDHopViewer: React.FC<ThreeDHopViewerProps> = ({
             previousPickHandler(id);
           }
         };
-
-        if (queryToolbarSidecars('sections-box').length > 0) {
-          window.sectiontoolInit?.();
-          window.sectiontoolReset?.();
-          syncSectionsUi();
-        }
       } catch (error) {
         // eslint-disable-next-line no-console
         console.error('Failed to initialize 3DHOP viewer', error);
@@ -1183,8 +675,7 @@ export const ThreeDHopViewer: React.FC<ThreeDHopViewerProps> = ({
 
       presenterRef.current = null;
       setPresenterState(null);
-      setActiveInteractiveTool(null);
-      activeInteractiveToolRef.current = null;
+      resetActiveTool();
     };
     // `assetBaseUrl` and `resolvedModelUrl` are captured intentionally for first render only.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1214,41 +705,6 @@ export const ThreeDHopViewer: React.FC<ThreeDHopViewerProps> = ({
     applyScene(presenter, true);
   }, [applyScene]);
 
-  const contextValue = useMemo<ThreeDHopViewerContextValue>(
-    () => ({
-      presenter: presenterState,
-      assetBaseUrl: normalizedBaseUrl,
-      registerSceneContribution,
-      registerToolbarAction,
-      registerSceneObserver,
-    registerTrackballObserver,
-    registerAnnotationHandler,
-      hasHotspotContribution,
-      measurementUnits: measurementUnitLabel,
-      measurementValue,
-      pickpointValue,
-      setMeasurementValue,
-      setPickpointValue,
-      coordinateCorrections: resolvedCoordinateCorrections
-    }),
-    [
-      normalizedBaseUrl,
-      presenterState,
-      registerSceneContribution,
-      registerToolbarAction,
-      registerSceneObserver,
-    registerTrackballObserver,
-    registerAnnotationHandler,
-      hasHotspotContribution,
-      measurementUnitLabel,
-      measurementValue,
-      pickpointValue,
-      setMeasurementValue,
-      setPickpointValue,
-      resolvedCoordinateCorrections
-    ]
-  );
-
   const toolbarChildren: React.ReactNode[] = [];
   const otherChildren: React.ReactNode[] = [];
 
@@ -1272,7 +728,22 @@ export const ThreeDHopViewer: React.FC<ThreeDHopViewerProps> = ({
   }, [alignToolbarSidecars, syncInfoUi, toolbarCount, hasHotspotContribution]);
 
   return (
-    <ThreeDHopViewerContext.Provider value={contextValue}>
+    <ThreeDHopViewerProvider
+      presenter={presenterState}
+      assetBaseUrl={normalizedBaseUrl}
+      registerSceneContribution={registerSceneContribution}
+      registerToolbarAction={registerToolbarAction}
+      registerSceneObserver={registerSceneObserver}
+      registerTrackballObserver={registerTrackballObserver}
+      registerAnnotationHandler={registerAnnotationHandler}
+      hasHotspotContribution={hasHotspotContribution}
+      measurementUnits={measurementUnitLabel}
+      measurementValue={measurementValue}
+      pickpointValue={pickpointValue}
+      setMeasurementValue={setMeasurementValue}
+      setPickpointValue={setPickpointValue}
+      coordinateCorrections={resolvedCoordinateCorrections}
+    >
       <div
         className={className}
         style={{
@@ -1333,6 +804,6 @@ export const ThreeDHopViewer: React.FC<ThreeDHopViewerProps> = ({
         </div>
         {otherChildren.length > 0 ? otherChildren : null}
       </div>
-    </ThreeDHopViewerContext.Provider>
+    </ThreeDHopViewerProvider>
   );
 };
