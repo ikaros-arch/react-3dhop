@@ -69,6 +69,9 @@ export function sceneFromManifest(parsed: ParsedManifest, options: ToModelsOptio
     models[key] = {
       url: model.url,
       meshId,
+      // Pinned, because the scene builder otherwise derives the instance name from the entry key
+      // (`model_<key>`) and the panels address instances by the name recorded below.
+      instanceId: key,
       transform: {
         matrix: buildModelMatrix({
           position: model.position,

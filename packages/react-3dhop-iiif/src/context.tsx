@@ -1,4 +1,4 @@
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { useThreeDHopViewer } from 'react-3dhop';
 import { cameraToView, track2view, view2track, viewToCameraAnnotation, type SceneFraming, type TrackballState } from './iiif/camera.js';
 import { resolveLanguageMap } from './iiif/language.js';
@@ -79,9 +79,10 @@ export const IIIFProvider: React.FC<IIIFProviderProps> = ({
 }) => {
   const { presenter, registerSceneObserver } = useThreeDHopViewer();
   const [framing, setFraming] = useState<SceneFraming | null>(null);
-  const visibilityRef = useRef<Record<string, boolean>>({});
-  const transparencyRef = useRef<Record<string, boolean>>({});
-  const [, forceUpdate] = useState(0);
+  // Held as state, not refs: the panels render these as controlled inputs, so a toggle has to
+  // produce a new context value or the consumers never re-render and React reverts the checkbox.
+  const [visibility, setVisibility] = useState<Record<string, boolean>>({});
+  const [transparency, setTransparency] = useState<Record<string, boolean>>({});
 
   // The presenter only derives sceneCenter/sceneRadiusInv once a scene has been set, so read them
   // when the viewer tells us the scene changed rather than on mount.
@@ -93,8 +94,8 @@ export const IIIFProvider: React.FC<IIIFProviderProps> = ({
         setFraming({ sceneCenter: [center[0], center[1], center[2]], sceneRadiusInv: radiusInv });
       }
       // A new scene resets every instance to its declared state.
-      visibilityRef.current = {};
-      transparencyRef.current = {};
+      setVisibility({});
+      setTransparency({});
     });
   }, [registerSceneObserver]);
 
@@ -160,8 +161,8 @@ export const IIIFProvider: React.FC<IIIFProviderProps> = ({
   );
 
   const isModelVisible = useCallback(
-    (modelId: string) => visibilityRef.current[modelId] ?? true,
-    []
+    (modelId: string) => visibility[modelId] ?? true,
+    [visibility]
   );
 
   const setModelVisible = useCallback(
@@ -170,20 +171,19 @@ export const IIIFProvider: React.FC<IIIFProviderProps> = ({
       if (!key || !presenter) {
         return;
       }
-      if (isModelVisible(modelId) === visible) {
+      // The presenter only offers a toggle, so state is tracked here to make this idempotent.
+      if ((visibility[modelId] ?? true) === visible) {
         return;
       }
-      // The presenter only offers a toggle, so state is tracked here to make this idempotent.
       presenter.toggleInstanceVisibilityByName?.(key, true);
-      visibilityRef.current = { ...visibilityRef.current, [modelId]: visible };
-      forceUpdate((value) => value + 1);
+      setVisibility((current) => ({ ...current, [modelId]: visible }));
     },
-    [instanceKeyFor, isModelVisible, presenter]
+    [instanceKeyFor, presenter, visibility]
   );
 
   const isModelTransparent = useCallback(
-    (modelId: string) => transparencyRef.current[modelId] ?? false,
-    []
+    (modelId: string) => transparency[modelId] ?? false,
+    [transparency]
   );
 
   const toggleModelTransparency = useCallback(
@@ -193,11 +193,7 @@ export const IIIFProvider: React.FC<IIIFProviderProps> = ({
         return;
       }
       presenter.toggleInstanceTransparencyByName?.(key, true);
-      transparencyRef.current = {
-        ...transparencyRef.current,
-        [modelId]: !(transparencyRef.current[modelId] ?? false)
-      };
-      forceUpdate((value) => value + 1);
+      setTransparency((current) => ({ ...current, [modelId]: !(current[modelId] ?? false) }));
     },
     [instanceKeyFor, presenter]
   );
