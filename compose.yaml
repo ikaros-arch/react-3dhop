@@ -21,15 +21,15 @@ x-workspace: &workspace
     - npm_cache:/root/.npm
 
 services:
-  # Builds the libraries, then serves the demo at http://localhost:5173/.
+  # Builds the libraries, then serves the demo at http://localhost:8085/.
   dev:
     <<: *workspace
     command: >
       sh -c "sh docker/install.sh &&
              npm run build &&
-             npm run dev --workspace=react-3dhop-demo -- --host 0.0.0.0"
+             npm run dev --workspace=react-3dhop-demo -- --host 0.0.0.0 --port 8085"
     ports:
-      - '5173:5173'
+      - '8085:8085'
     environment:
       # Bind mounts do not deliver inotify events, so the watcher has to poll for hot reload.
       VITE_POLL: '1'

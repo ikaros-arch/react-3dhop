@@ -23,7 +23,7 @@ up by `packages/react-3dhop-iiif` and the demo without publishing.
 The same thing in a container, if you would rather not depend on the host toolchain:
 
 ```bash
-docker compose up dev                            # demo on http://localhost:5173/
+docker compose up dev                            # demo on http://localhost:8085/
 docker compose --profile verify run --rm verify  # lint, test, and every build, once
 ```
 

@@ -7,14 +7,14 @@ the dev server behave the same regardless of the host. It needs no Dockerfile â€
 ## Commands
 
 ```bash
-docker compose up dev                            # install, build, serve the demo on :5173
+docker compose up dev                            # install, build, serve the demo on :8085
 docker compose --profile verify run --rm verify  # lint, test, build everything, once
 docker compose run --rm dev bash                 # a shell in the same environment
 docker compose down -v                           # stop and discard the installed dependencies
 ```
 
 `docker compose up dev` installs, builds both libraries, then starts Vite bound to `0.0.0.0`. The
-demo is at **http://localhost:5173/** from the host browser; see
+demo is at **http://localhost:8085/** from the host browser; see
 [workspace.md](workspace.md#the-demo) for the two views and the manifests they load. `Ctrl-C` stops
 it.
 
@@ -82,4 +82,4 @@ unaffected.
   output afterwards.
 - **Node version.** The image pins Node 24. Nothing in the workspace declares an `engines` range.
 - **No browser inside.** The container serves the demo; the visual checks happen in your own
-  browser against `localhost:5173`. There is no headless WebGL in this setup.
+  browser against `localhost:8085`. There is no headless WebGL in this setup.
