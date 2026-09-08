@@ -39,6 +39,10 @@ Run from the repository root:
 The demo has its own `npm run lint` (ESLint) and `npm run build` (`tsc -b && vite build`), run from
 `examples/react-3dhop-demo`.
 
+All of this also runs in a container, which is the reproducible way to do it:
+`docker compose up dev` serves the demo, `docker compose --profile verify run --rm verify` runs the
+whole check suite. See [docker.md](docker.md).
+
 Building the libraries before starting the demo matters the first time: the demo imports
 `react-3dhop` and `react-3dhop-iiif` by package name, and both resolve to `dist/`.
 

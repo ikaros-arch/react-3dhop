@@ -20,6 +20,13 @@ npm run dev          # starts the demo app
 The packages are linked through npm workspaces, so changes in `packages/react-3dhop` are picked
 up by `packages/react-3dhop-iiif` and the demo without publishing.
 
+The same thing in a container, if you would rather not depend on the host toolchain:
+
+```bash
+docker compose up dev                            # demo on http://localhost:5173/
+docker compose --profile verify run --rm verify  # lint, test, and every build, once
+```
+
 The demo has two views: the core viewer at `/`, and the IIIF viewer at `/?view=iiif`. The latter
 takes a `?manifest=` parameter pointing at any manifest URL, and bundles a few in
 `public/manifests/` — including one that works without network access and one that is deliberately
@@ -30,6 +37,7 @@ malformed.
 [`docs/`](docs/README.md) covers the workspace itself and the features added in `react-3dhop` 0.2.0:
 
 - [Workspace](docs/workspace.md) — layout, scripts, tests, and the demo.
+- [Docker](docs/docker.md) — the containerised toolchain.
 - [Scene configuration](docs/scene-configuration.md) — the `space`, `config`, `trackball` and
   `nexusTargetError` props.
 - [IIIF 3D](docs/iiif.md) — how a manifest becomes a scene.

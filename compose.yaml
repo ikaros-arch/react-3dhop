@@ -1,0 +1,54 @@
+name: react-3dhop
+
+# A Linux toolchain for this workspace, so builds and the dev server do not depend on the host.
+#
+# The repository is bind-mounted, but every node_modules is a named volume: native binaries
+# (rolldown, esbuild) are platform-specific and must never be shared with a host install.
+#
+# Dependencies are installed by docker/install.sh, which restores the lockfile afterwards; see
+# that file for why `npm ci` is not usable here.
+
+x-workspace: &workspace
+  image: node:24-bookworm-slim
+  working_dir: /app
+  init: true
+  volumes:
+    - .:/app
+    - root_modules:/app/node_modules
+    - core_modules:/app/packages/react-3dhop/node_modules
+    - iiif_modules:/app/packages/react-3dhop-iiif/node_modules
+    - demo_modules:/app/examples/react-3dhop-demo/node_modules
+    - npm_cache:/root/.npm
+
+services:
+  # Builds the libraries, then serves the demo at http://localhost:5173/.
+  dev:
+    <<: *workspace
+    command: >
+      sh -c "sh docker/install.sh &&
+             npm run build &&
+             npm run dev --workspace=react-3dhop-demo -- --host 0.0.0.0"
+    ports:
+      - '5173:5173'
+    environment:
+      # Bind mounts do not deliver inotify events, so the watcher has to poll for hot reload.
+      VITE_POLL: '1'
+
+  # One-shot: everything CI would check, including the demo's production build.
+  verify:
+    <<: *workspace
+    profiles: ['verify']
+    command: >
+      sh -c "sh docker/install.sh &&
+             npm run lint &&
+             npm test &&
+             npm run build &&
+             npm run build --workspace=react-3dhop-demo &&
+             npm run lint --workspace=react-3dhop-demo"
+
+volumes:
+  npm_cache:
+  root_modules:
+  core_modules:
+  iiif_modules:
+  demo_modules:

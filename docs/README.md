@@ -3,6 +3,7 @@
 | Document | Covers |
 | --- | --- |
 | [workspace.md](workspace.md) | Repository layout, scripts, tests, and the demo application |
+| [docker.md](docker.md) | Running the build, the tests and the demo in a standard Linux container |
 | [scene-configuration.md](scene-configuration.md) | `space`, `config`, `trackball` and `nexusTargetError` — the scene-level controls added in `react-3dhop` 0.2.0 |
 | [iiif.md](iiif.md) | Rendering IIIF 3D manifests with `react-3dhop-iiif` |
 | [upgrading-to-0.2.md](upgrading-to-0.2.md) | What changed since 0.1, and what you have to do about it |

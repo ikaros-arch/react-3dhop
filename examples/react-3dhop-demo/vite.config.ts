@@ -67,5 +67,10 @@ function serve3dhopAssets(): Plugin {
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react(), serve3dhopAssets()]
+  plugins: [react(), serve3dhopAssets()],
+  server: {
+    // Bind-mounted filesystems (Docker, WSL) do not deliver inotify events, so hot reload only
+    // works there if the watcher polls. Off unless asked for; polling is wasteful natively.
+    watch: process.env.VITE_POLL ? { usePolling: true, interval: 300 } : undefined
+  }
 })
