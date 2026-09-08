@@ -2,16 +2,27 @@ export { ThreeDHopViewer, useThreeDHopViewer } from './ThreeDHopViewer.js';
 export type {
 	ThreeDHopViewerProps,
 	ModelDefinition,
+	ModelInstanceConfiguration,
 	ModelTransparencyOptions,
 	ModelTransformConfig,
+	SceneConfiguration,
 	SceneContribution,
+	SceneMeshDefinition,
+	SceneMeshes,
+	SceneRenderConfig,
+	SceneSpaceConfig,
+	CameraType,
+	CoordinateCorrections,
 	AnnotationPickEvent,
 	AnnotationPickHandler,
 	PresenterInstance,
 	ThreeDHopViewerContextValue,
 	ToolbarActionHandler,
 	SceneObserver,
-	TrackballObserver
+	TrackballConfig,
+	TrackballName,
+	TrackballObserver,
+	TrackOptions
 } from './ThreeDHopViewer.js';
 export { Annotations } from './Annotations.js';
 export type { AnnotationDefinition, AnnotationsProps } from './Annotations.js';

@@ -1,0 +1,23 @@
+{
+  "name": "react-3dhop-workspace",
+  "private": true,
+  "description": "Workspace root for the react-3dhop packages",
+  "license": "GPL-3.0-or-later",
+  "author": "Hallvard R. Indgjerd",
+  "workspaces": [
+    "packages/*",
+    "examples/*"
+  ],
+  "scripts": {
+    "build": "npm run build --workspace=react-3dhop --workspace=react-3dhop-iiif",
+    "dev": "npm run dev --workspace=react-3dhop-demo",
+    "lint": "npm run lint --workspace=react-3dhop --workspace=react-3dhop-iiif",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3",
+    "vite": "npm:rolldown-vite@7.1.14",
+    "vitest": "^2.1.8"
+  }
+}

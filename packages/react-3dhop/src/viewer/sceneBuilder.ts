@@ -10,7 +10,11 @@ import type {
   SceneContribution,
   SceneMeshes,
   SceneObserver,
-  PresenterInstance
+  SceneRenderConfig,
+  SceneSpaceConfig,
+  PresenterInstance,
+  TrackballConfig,
+  TrackOptions
 } from './types.js';
 
 /**
@@ -66,11 +70,42 @@ function normalizeScale(scale?: number | [number, number, number]): [number, num
 const PLY_RENDER_MODE = ['POINT'] as const;
 const NEXUS_RENDER_MODE = ['FILL', 'POINT'] as const;
 
+const DEFAULT_TRACK_OPTIONS: TrackOptions = {
+  startPhi: 35.0,
+  startTheta: 15.0,
+  startDistance: 2.5,
+  minMaxPhi: [-180, 180],
+  minMaxTheta: [-30.0, 70.0],
+  minMaxDist: [0.5, 3.0]
+};
+
+/**
+ * Resolves a trackball name such as `'SphereTrackball'` against the globals that the 3DHOP
+ * scripts install on `window`. Anything that is not a string is assumed to already be a
+ * constructor and passed straight through, so custom trackballs still work.
+ */
+function resolveTrackballType(type: TrackballConfig['type']): unknown {
+  if (typeof type === 'string') {
+    const resolved = (window as unknown as Record<string, unknown>)[type];
+    if (resolved) {
+      return resolved;
+    }
+    // eslint-disable-next-line no-console
+    console.warn(`Unknown 3DHOP trackball "${type}", falling back to TurnTableTrackball.`);
+    return window.TurnTableTrackball;
+  }
+
+  return type ?? window.TurnTableTrackball;
+}
+
 type SceneBuilderOptions = {
   models: Record<string, ModelDefinition | null | undefined> | undefined;
   normalizedBaseUrl: string;
   resolvedModelUrl: string;
   sceneContributions: Map<string, SceneContribution>;
+  space?: SceneSpaceConfig;
+  config?: SceneRenderConfig;
+  trackball?: TrackballConfig;
 };
 
 type SceneBuildResult = {
@@ -101,7 +136,7 @@ function createMeshDefinition(url: string) {
  * overrides. The result includes meshes, instances, annotations, and hotspot metadata.
  */
 export function buildSceneConfiguration(options: SceneBuilderOptions): SceneBuildResult {
-  const { models, normalizedBaseUrl, resolvedModelUrl, sceneContributions } = options;
+  const { models, normalizedBaseUrl, resolvedModelUrl, sceneContributions, space, config, trackball } = options;
 
   const meshes: SceneMeshes = {};
   const modelInstances: Record<string, ModelInstanceConfiguration> = {};
@@ -267,20 +302,26 @@ export function buildSceneConfiguration(options: SceneBuilderOptions): SceneBuil
     meshes,
     modelInstances,
     trackball: {
-      type: window.TurnTableTrackball,
+      type: resolveTrackballType(trackball?.type),
       trackOptions: {
-        startPhi: 35.0,
-        startTheta: 15.0,
-        startDistance: 2.5,
-        minMaxPhi: [-180, 180],
-        minMaxTheta: [-30.0, 70.0],
-        minMaxDist: [0.5, 3.0]
-      }
+        ...DEFAULT_TRACK_OPTIONS,
+        ...(trackball?.trackOptions ?? {})
+      },
+      ...(typeof trackball?.locked === 'boolean' ? { locked: trackball.locked } : {})
     }
   };
 
   if (spots) {
     scene.spots = spots;
+  }
+
+  // Only forward `space`/`config` when the caller supplied them, so the presenter keeps applying
+  // its own defaults for everything else.
+  if (space) {
+    scene.space = { ...space };
+  }
+  if (config) {
+    scene.config = { ...config };
   }
 
   return {
@@ -303,6 +344,10 @@ export type UseSceneConfigurationOptions = {
   syncTransparencySwitch: (override?: boolean) => boolean;
   syncSpecularUi: (override?: boolean) => boolean;
   syncSectionsUi: () => void;
+  space?: SceneSpaceConfig;
+  config?: SceneRenderConfig;
+  trackball?: TrackballConfig;
+  nexusTargetError?: number;
 };
 
 export type UseSceneConfigurationResult = {
@@ -325,16 +370,32 @@ export function useSceneConfiguration({
   sceneObserversRef,
   syncTransparencySwitch,
   syncSpecularUi,
-  syncSectionsUi
+  syncSectionsUi,
+  space,
+  config,
+  trackball,
+  nexusTargetError
 }: UseSceneConfigurationOptions): UseSceneConfigurationResult {
   const buildScene = useCallback(() => {
     return buildSceneConfiguration({
       models,
       normalizedBaseUrl,
       resolvedModelUrl,
-      sceneContributions: sceneContributionsRef.current
+      sceneContributions: sceneContributionsRef.current,
+      space,
+      config,
+      trackball
     });
-  }, [models, normalizedBaseUrl, resolvedModelUrl, sceneContributionsRef, sceneContributionsVersion]);
+  }, [
+    models,
+    normalizedBaseUrl,
+    resolvedModelUrl,
+    sceneContributionsRef,
+    sceneContributionsVersion,
+    space,
+    config,
+    trackball
+  ]);
 
   const applyScene = useCallback(
     (presenter: PresenterInstance, preserveView = false) => {
@@ -347,6 +408,10 @@ export function useSceneConfiguration({
       const { scene, annotationDefinitions, hasHotspots } = buildScene();
       presenter.setScene(scene);
       annotationDefinitionsRef.current = annotationDefinitions;
+
+      if (typeof nexusTargetError === 'number') {
+        presenter.setNexusTargetError?.(nexusTargetError);
+      }
 
       if (trackballState && typeof presenter.setTrackballPosition === 'function') {
         presenter.setTrackballPosition(trackballState);
@@ -373,6 +438,7 @@ export function useSceneConfiguration({
     [
       annotationDefinitionsRef,
       buildScene,
+      nexusTargetError,
       notifyTrackballObservers,
       sceneObserversRef,
       setHasHotspotContribution,

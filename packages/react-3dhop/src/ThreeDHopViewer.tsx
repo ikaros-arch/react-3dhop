@@ -17,6 +17,7 @@ import {
 } from './Toolbar';
 import type { AnnotationDefinition } from './utils/annotations.js';
 import { joinAssetPath, resolveRelativeAssetPath } from './utils/assetPaths.js';
+import { useStableValue } from './utils/stableValue.js';
 import { resolveBackgroundUrl } from './viewer/dom';
 import { ThreeDHopViewerProvider } from './viewer/context.js';
 import { useSceneConfiguration } from './viewer/sceneBuilder';
@@ -66,17 +67,27 @@ declare global {
 export type {
   AnnotationPickEvent,
   AnnotationPickHandler,
+  CameraType,
   CoordinateCorrections,
   ModelDefinition,
+  ModelInstanceConfiguration,
   ModelTransparencyOptions,
   ModelTransformConfig,
   PresenterInstance,
+  SceneConfiguration,
   SceneContribution,
+  SceneMeshDefinition,
+  SceneMeshes,
   SceneObserver,
+  SceneRenderConfig,
+  SceneSpaceConfig,
   ThreeDHopViewerContextValue,
   ThreeDHopViewerProps,
   ToolbarActionHandler,
-  TrackballObserver
+  TrackballConfig,
+  TrackballName,
+  TrackballObserver,
+  TrackOptions
 } from './viewer/types.js';
 export { useThreeDHopViewer } from './viewer/context.js';
 
@@ -97,6 +108,10 @@ export const ThreeDHopViewer: React.FC<ThreeDHopViewerProps> = ({
   showToolbar = true,
   measurementUnits = 'mm',
   coordinateCorrections,
+  space,
+  config,
+  trackball,
+  nexusTargetError,
   children
 }) => {
   const presenterRef = useRef<PresenterInstance | null>(null);
@@ -337,6 +352,12 @@ export const ThreeDHopViewer: React.FC<ThreeDHopViewerProps> = ({
     [backgroundUrl, normalizedBaseUrl]
   );
 
+  // These are typically written as inline literals; keeping them stable by value stops the scene
+  // from being rebuilt on every render.
+  const stableSpace = useStableValue(space);
+  const stableConfig = useStableValue(config);
+  const stableTrackball = useStableValue(trackball);
+
   const { applyScene } = useSceneConfiguration({
     models,
     normalizedBaseUrl,
@@ -349,7 +370,11 @@ export const ThreeDHopViewer: React.FC<ThreeDHopViewerProps> = ({
     sceneObserversRef,
     syncTransparencySwitch,
     syncSpecularUi,
-    syncSectionsUi
+    syncSectionsUi,
+    space: stableSpace,
+    config: stableConfig,
+    trackball: stableTrackball,
+    nexusTargetError
   });
 
   const { presenterState } = usePresenterLifecycle({

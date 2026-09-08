@@ -2,7 +2,6 @@ const CSS_RESOURCES = ['stylesheet/3dhop.css'];
 
 const SCRIPT_RESOURCES = [
   'js/spidergl.js',
-  'js/jquery.js',
   'js/presenter.js',
   'js/nexus.js',
   'js/ply.js',
@@ -10,6 +9,7 @@ const SCRIPT_RESOURCES = [
   'js/trackball_turntable_pan.js',
   'js/trackball_pantilt.js',
   'js/trackball_sphere.js',
+  'js/trackball_rail.js',
   'js/init.js'
 ];
 

@@ -23,15 +23,13 @@ SpiderGL.openNamespace();
 // CONSTANTS
 //----------------------------------------------------------------------------------------
 // version
-const HOP_VERSION             = "4.3";
+const HOP_VERSION             = "4.3.5";
 // selectors
 const HOP_ALL                 = 256;
 // starting debug mode
 const HOP_DEBUGMODE           = false;
 // default light direction
 const HOP_DEFAULTLIGHT        = [0, 0, -1];
-// default points size
-const HOP_DEFAULTPOINTSIZE    = 1.0;
 // sgltrackball
 const SGL_TRACKBALL_NO_ACTION = 0;
 const SGL_TRACKBALL_ROTATE    = 1;
@@ -219,10 +217,11 @@ _parseConfig : function (options) {
 		showClippingBorder  : false,
 		clippingBorderSize  : 0.5,
 		clippingBorderColor : [0.0, 1.0, 1.0],
-		pointSize           : 3.0,
-		pointSizeMinMax     : [1.0, 5.0],
+		pointSize           : 1.0,
+		pointSizeMinMax     : [0.0, 2.0],
 		autoSaveScreenshot  : true,
 		screenshotBaseName  : "screenshot",
+		screenshotTime      : true,
 	}, options);
 	return r;
 },
@@ -1527,7 +1526,7 @@ _drawScene : function () {
 	gl.clearColor(bkg[0], bkg[1], bkg[2], bkg[3]);
 	gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT | gl.STENCIL_BUFFER_BIT);
 	gl.enable(gl.DEPTH_TEST);
-	
+
 	// draw non-transparent geometries
 	for (var inst in instances) {
 		var instance = instances[inst];
@@ -1812,10 +1811,10 @@ _drawScene : function () {
 		
 		var entityUniforms = {
 			"uWorldViewProjectionMatrix" : xform.modelViewProjectionMatrix,
-			"uPointSize"                 : config.pointSize,
+			"uPointSize"                 : entity.pointSize,
 			"uColorID"                   : entity.color,
 			"uZOff"                      : entity.zOff,
-		};		
+		};
 
 		if(entity.useTransparency)
 		{
@@ -2060,23 +2059,29 @@ _drawScene : function () {
 		if(this._scene.config.autoSaveScreenshot)
 		{
 			var currentdate = new Date();
-			var fName = this._scene.config.screenshotBaseName + currentdate.getHours() + currentdate.getMinutes() + currentdate.getSeconds() + ".png";
+			var fName = this._scene.config.screenshotBaseName;
+			if(this._scene.config.screenshotTime) fName += "_" + String(currentdate.getHours()).padStart(2, '0') + String(currentdate.getMinutes()).padStart(2, '0') + String(currentdate.getSeconds()).padStart(2, '0');
+			fName += ".png";
 			
-			if(this.ui._canvas.msToBlob) // IE or EDGEhtml
-			{
-				console.error("IE and EDGEhtml cannot save images");
-				var blob = this.ui._canvas.msToBlob();
-				window.navigator.msSaveBlob(blob, fName);
-			}
-			else // every other browser
-			{
-				var a  = document.createElement('a');
-				a.href = this.screenshotData;
-				a.download = fName;
-				a.target="_blank";
-				a.click();
-			}
+			this._saveImage(fName);
 		}
+	}
+},
+
+_saveImage : function(fName){
+	if(this.ui._canvas.msToBlob) // IE or EDGEhtml
+	{
+		console.error("IE and EDGEhtml cannot save images");
+		var blob = this.ui._canvas.msToBlob();
+		window.navigator.msSaveBlob(blob, fName);
+	}
+	else // every other browser
+	{
+		var a  = document.createElement('a');
+		a.href = this.screenshotData;
+		a.download = fName;
+		a.target="_blank";
+		a.click();
 	}
 },
 
@@ -2625,10 +2630,12 @@ onInitialize : function () {
 	// animation
 	this.ui.animateRate = 0;
 
-	// current cursor XY position
-	this.x 			= 0.0;
-	this.y 			= 0.0;
-
+	// current cursor XY position normalized [-1 1] on canvas size, and delta
+	this.x	= 0.0;
+	this.y	= 0.0;
+	this.dx	= 0.0;
+	this.dy	= 0.0;
+	
 	// scene data
 	this._scene         = null;
 	this._sceneParsed   = false;
@@ -2708,21 +2715,21 @@ installDefaultShaders : function () {
 
 onDrag : function (button, x, y, e) {
 	var ui = this.ui;
+	this.x = (x / (ui.width  - 1)) * 2.0 - 1.0;
+	this.y = (y / (ui.height - 1)) * 2.0 - 1.0;
 
 	if(this._clickable) this._clickable = false;
 
 	if(this._movingLight && ui.isMouseButtonDown(0)){
-		var dxl = (x / (ui.width  - 1)) * 2.0 - 1.0;
-		var dyl = (y / (ui.height - 1)) * 2.0 - 1.0;
-		this.rotateLight(dxl/2, dyl/2);
+		this.rotateLight(this.x/2.0, this.y/2.0);
 		return;
 	}
 
 	// if locked trackball, just return. we check AFTER the light-trackball test
 	if (this._scene.trackball.locked) return;
 
-	if(ui.dragDeltaX(button) != 0) this.x += (ui.cursorDeltaX/500);
-	if(ui.dragDeltaY(button) != 0) this.y += (ui.cursorDeltaY/500);
+	if(ui.dragDeltaX(button) != 0) this.dx += (ui.cursorDeltaX/ui.width);
+	if(ui.dragDeltaY(button) != 0) this.dy += (ui.cursorDeltaY/ui.height);
 
 	var action = SGL_TRACKBALL_NO_ACTION;
 	if ((ui.isMouseButtonDown(0) && ui.isKeyDown(17)) || ui.isMouseButtonDown(1) || ui.isMouseButtonDown(2)) {
@@ -2742,6 +2749,10 @@ onDrag : function (button, x, y, e) {
 		if(testMatrix[i]!=this.trackball._matrix[i]) {diff=true; break;}
 	}
 	if(diff) this.repaint();
+},
+
+onMouseButtonUp : function (x, y, e) {
+	this.trackball.action = SGL_TRACKBALL_NO_ACTION;	
 },
 
 onMouseMove : function (x, y, e) {
@@ -2797,7 +2808,7 @@ onKeyDown : function (key, e) {
 	if (e.ctrlKey) {
 		if (e.key == 'p') // ctrl-p to save screenshot
 		{
-			e.preventDefault();
+			if(e.preventDefault) e.preventDefault();
 			this.isCapturingScreenshot = true;
 			this.repaint();
 		}
@@ -2821,7 +2832,7 @@ onKeyPress : function (key, e) {
 
 onKeyUp : function (key, e) {
 	if(this._keycombo && e.keyCode == '18') {
-		e.preventDefault();
+		if(e.preventDefault) e.preventDefault();
 		this._keycombo = false;
 	}
 },
@@ -2846,7 +2857,7 @@ onMouseWheel: function (wheelDelta, x, y, e) {
 	else {
 		// if locked trackball, just return.
 		if (this._scene.trackball.locked) return;
-
+		
 		var action = SGL_TRACKBALL_SCALE;
 
 		var factor = wheelDelta > 0.0 ? (0.90) : (1.10);
@@ -2915,7 +2926,7 @@ setScene : function (options) {
 
 	// trackball creation
 	this.trackball  = new scene.trackball.type();
-	this.trackball.setup(scene.trackball.trackOptions);
+	this.trackball.setup(scene.trackball.trackOptions, this);
 	this.trackball.track(SglMat4.identity(), 0.0, 0.0, 0.0);
 
 	// mesh models creation
@@ -2965,6 +2976,7 @@ createEntity : function (eName, type, verticesList) {
 	nEntity.transform.matrix = SglMat4.identity();
 	nEntity.color = [1.0, 0.0, 1.0, 1.0];
 	nEntity.useTransparency = false;
+	nEntity.pointSize = 6.0;
 	nEntity.zOff = 0.0;
 
 	var modelDescriptor = {};
@@ -3084,6 +3096,7 @@ setCenterModeScene : function () {
 	this.repaint();
 },
 
+
 setCenterModeSpecific : function (instancename) {
 	if(this._scene.modelInstances[instancename])
 	{
@@ -3184,6 +3197,9 @@ setInstanceSolidColor : function (tag, newState, redraw, newColor) {
 	if(redraw)
 		this.repaint();
 },
+
+
+
 
 toggleInstanceSolidColorByName : function (name, redraw) {
 	var instances = this._scene.modelInstances;
@@ -3521,6 +3537,8 @@ toggleInstanceVisibilityByName : function (name, redraw) {
 	if(redraw)
 		this.repaint();
 },
+
+
 
 toggleInstanceVisibility : function (tag, redraw) {
 	var instances = this._scene.modelInstances;

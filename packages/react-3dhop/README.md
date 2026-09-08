@@ -10,7 +10,9 @@ npm install react-3dhop
 
 The library ships with prebuilt assets under `dist/3dhop`. During development you can rely on the files inside `node_modules/react-3dhop/dist/3dhop`; for production remember to copy that directory (or host it elsewhere) and point `assetBaseUrl` to the published location.
 
-Current versions of 3DHOP relies on jQuery and are not easily compatible with React. This library expects and includes a non-jQuery development version of 3DHOP.
+Current versions of 3DHOP rely on jQuery and are not easily compatible with React. This library includes a jQuery-free build of 3DHOP; jQuery is neither vendored nor loaded. What that build is, and how it differs from upstream, is recorded in [`3dhop/PROVENANCE.md`](3dhop/PROVENANCE.md).
+
+Longer-form documentation lives in [`docs/`](../../docs/README.md) at the repository root.
 
 ### Basic Viewer
 
@@ -91,6 +93,24 @@ export function MultiModelScene() {
 ```
 
 Each model definition accepts optional transforms (`translation`, `rotation`, `scale`), per-instance colours, tags, transparency/specular overrides, and inline hotspot annotations. The legacy `modelUrl` prop still works for simple single-model viewers—omit `models` to fall back to it.
+
+### Scene Configuration
+
+`space`, `config`, `trackball` and `nexusTargetError` reach the presenter's scene-level settings: how the scene is framed and projected, how clipping borders and point clouds are drawn, which trackball is used, and how aggressively Nexus streams detail.
+
+```tsx
+<ThreeDHopViewer
+	models={models}
+	space={{ centerMode: 'scene', radiusMode: 'scene', cameraFOV: 45 }}
+	config={{ showClippingBorder: true, clippingBorderSize: 0.002 }}
+	trackball={{ type: 'SphereTrackball', trackOptions: { startDistance: 2.0 } }}
+	nexusTargetError={0.8}
+/>
+```
+
+`space` and `config` are forwarded field by field, so anything you leave out keeps 3DHOP's own default. Set `centerMode`/`radiusMode` to `'scene'` when several models sit at different positions—the default frames the first instance only. `trackball.type` takes the name of one of 3DHOP's trackballs (`TurnTableTrackball`, `TurntablePanTrackball`, `PanTiltTrackball`, `SphereTrackball`, `RailTrackball`) so you never have to reach into `window`; a constructor is also accepted for custom trackballs.
+
+All three are compared structurally, so inline object literals do not rebuild the scene on every render. Every field is listed in [docs/scene-configuration.md](../../docs/scene-configuration.md).
 
 ### Compass Navigation
 

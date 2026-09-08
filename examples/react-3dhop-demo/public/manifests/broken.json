@@ -1,0 +1,44 @@
+{
+  "@context": "http://iiif.io/api/presentation/4/context.json",
+  "id": "/manifests/broken.json",
+  "type": "Manifest",
+  "label": { "en": ["Malformed Manifest"] },
+  "summary": {
+    "en": ["Every annotation here is broken in a different way. Nothing should render, and the parser notes should say why."]
+  },
+  "metadata": [
+    { "label": { "en": ["Measure Unit"] }, "value": { "en": ["furlong"] } }
+  ],
+  "items": [
+    {
+      "id": "/manifests/broken.json/scene/1",
+      "type": "Scene",
+      "items": [
+        {
+          "id": "/manifests/broken.json/page/1",
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "/manifests/broken.json/anno/no-url",
+              "type": "Annotation",
+              "motivation": ["painting"],
+              "body": { "type": "Model", "format": "Nexus" }
+            },
+            {
+              "id": "/manifests/broken.json/anno/empty-source",
+              "type": "Annotation",
+              "motivation": ["painting"],
+              "body": { "type": "SpecificResource", "source": [] }
+            },
+            {
+              "id": "/manifests/broken.json/anno/unsupported",
+              "type": "Annotation",
+              "motivation": ["painting"],
+              "body": { "id": "/lights/1", "type": "AmbientLight" }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
