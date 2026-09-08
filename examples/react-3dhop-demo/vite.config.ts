@@ -71,6 +71,9 @@ export default defineConfig({
   server: {
     // Bind-mounted filesystems (Docker, WSL) do not deliver inotify events, so hot reload only
     // works there if the watcher polls. Off unless asked for; polling is wasteful natively.
-    watch: process.env.VITE_POLL ? { usePolling: true, interval: 300 } : undefined
+    watch: process.env.VITE_POLL ? { usePolling: true, interval: 300 } : undefined,
+    // Vite rejects requests for any Host header it doesn't recognise; the container is reached
+    // through this reverse-proxied hostname rather than localhost.
+    allowedHosts: ['apps.humgis.uiocloud.no']
   }
 })
