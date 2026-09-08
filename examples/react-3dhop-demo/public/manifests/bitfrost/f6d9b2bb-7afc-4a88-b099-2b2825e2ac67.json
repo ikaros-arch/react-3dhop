@@ -1,0 +1,207 @@
+{
+  "@context": "http://iiif.io/api/presentation/4/context.json",
+  "id": "/manifests/bitfrost/f6d9b2bb-7afc-4a88-b099-2b2825e2ac67.json",
+  "type": "Manifest",
+  "label": {
+    "en": [
+      "UEM2444"
+    ]
+  },
+  "summary": {
+    "en": [
+      "Krysspolarisert fotogrammetriopptak av trevedheng i form av et dyrefigur laget for nettportalen. Hull har blitt manuelt rekonstruert. Tilleggs spekulardata er fanget som en del av opptaket. [see more on unimus] Kulturhistorisk museum. Universitet i Oslo. Norge"
+    ]
+  },
+  "metadata": [
+    {
+      "label": {
+        "en": [
+          "Museum"
+        ]
+      },
+      "value": {
+        "en": [
+          "KHM"
+        ]
+      }
+    },
+    {
+      "label": {
+        "en": [
+          "Inventory Number"
+        ]
+      },
+      "value": {
+        "en": [
+          "UEM2444"
+        ]
+      }
+    },
+    {
+      "label": {
+        "en": [
+          "Object ID"
+        ]
+      },
+      "value": {
+        "en": [
+          "uem2444_20220224_edited_2m"
+        ]
+      }
+    },
+    {
+      "label": {
+        "en": [
+          "Measure Unit"
+        ]
+      },
+      "value": {
+        "en": [
+          "m"
+        ]
+      }
+    },
+    {
+      "label": {
+        "en": [
+          "Display Unit"
+        ]
+      },
+      "value": {
+        "en": [
+          "m"
+        ]
+      }
+    },
+    {
+      "label": {
+        "en": [
+          "Acquisition Method"
+        ]
+      },
+      "value": {
+        "en": [
+          "Photogrammetry"
+        ]
+      }
+    },
+    {
+      "label": {
+        "en": [
+          "Material"
+        ]
+      },
+      "value": {
+        "en": [
+          "tre"
+        ]
+      }
+    },
+    {
+      "label": {
+        "en": [
+          "Category"
+        ]
+      },
+      "value": {
+        "en": [
+          "figure"
+        ]
+      }
+    },
+    {
+      "label": {
+        "en": [
+          "Author"
+        ]
+      },
+      "value": {
+        "en": [
+          "Letizia Bonelli"
+        ]
+      }
+    },
+    {
+      "label": {
+        "en": [
+          "Date"
+        ]
+      },
+      "value": {
+        "en": [
+          "21.03.2025"
+        ]
+      }
+    }
+  ],
+  "requiredStatement": {
+    "label": {
+      "en": [
+        "Attribution"
+      ]
+    },
+    "value": {
+      "en": [
+        "Kulturhistorisk museum. Universitet i Oslo. Norge"
+      ]
+    }
+  },
+  "items": [
+    {
+      "id": "/manifests/bitfrost/f6d9b2bb-7afc-4a88-b099-2b2825e2ac67.json/scene/1",
+      "type": "Scene",
+      "label": {
+        "en": [
+          "UEM2444"
+        ]
+      },
+      "items": [
+        {
+          "id": "/manifests/bitfrost/f6d9b2bb-7afc-4a88-b099-2b2825e2ac67.json/page/1",
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "/manifests/bitfrost/f6d9b2bb-7afc-4a88-b099-2b2825e2ac67.json/anno/0",
+              "type": "Annotation",
+              "motivation": [
+                "painting"
+              ],
+              "label": {
+                "en": [
+                  "UEM2444"
+                ]
+              },
+              "body": {
+                "type": "SpecificResource",
+                "source": [
+                  {
+                    "id": "https://3d.unimus.no/data/f6d9b2bb-7afc-4a88-b099-2b2825e2ac67/models/uem2444_20220224_edited_2m.nxz",
+                    "type": "Model",
+                    "format": "Nexus"
+                  }
+                ],
+                "transform": [
+                  {
+                    "type": "RotateTransform",
+                    "x": -90,
+                    "y": 0,
+                    "z": 0
+                  }
+                ]
+              },
+              "target": {
+                "type": "SpecificResource",
+                "source": [
+                  {
+                    "id": "/manifests/bitfrost/f6d9b2bb-7afc-4a88-b099-2b2825e2ac67.json/scene/1",
+                    "type": "Scene"
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

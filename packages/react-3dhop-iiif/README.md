@@ -214,6 +214,52 @@ All five read from `useIIIFManifest()`, use semantic markup with no CSS framewor
 | `<IIIFModelsPanel>` | Per-model visibility and transparency toggles |
 | `<IIIFSavedViewsPanel>` | The manifest's cameras, plus "save current view" |
 | `<IIIFLanguageSwitcher>` | Language selector; hidden when the manifest has one language |
+| `<IIIFCollectionPicker>` | A `<select>` of every manifest in a collection |
+| `<IIIFCollectionCarousel>` | A thumbnail strip of every manifest in a collection, with prev/next |
+
+---
+
+## Collections
+
+A IIIF Collection lists several manifests — e.g. every object in a museum sub-catalogue — so a
+picker or carousel can switch between them. `<IIIFCollectionProvider>` fetches and parses one, and
+tracks which manifest is selected; it renders nothing itself, so it composes with `<IIIFViewer>`
+rather than replacing it:
+
+```tsx
+import {
+  IIIFCollectionProvider,
+  IIIFCollectionPicker,
+  IIIFCollectionCarousel,
+  IIIFViewer,
+  useIIIFCollection
+} from 'react-3dhop-iiif';
+
+function CollectionBrowser() {
+  return (
+    <IIIFCollectionProvider collection="/manifests/bitfrost/collection.json">
+      <IIIFCollectionPicker />
+      <IIIFCollectionCarousel />
+      <SelectedManifestViewer />
+    </IIIFCollectionProvider>
+  );
+}
+
+function SelectedManifestViewer() {
+  const { selectedId } = useIIIFCollection();
+  if (!selectedId) return null;
+  // Remounting on selection change avoids carrying one object's camera into the next.
+  return <IIIFViewer key={selectedId} manifest={selectedId} assetBaseUrl="/3dhop" width={760} height={620} />;
+}
+```
+
+`collection` accepts a URL or an already-fetched object, mirroring `<IIIFViewer manifest>`.
+`useIIIFCollection()` also exposes `items` (id, label, thumbnail), `status`/`error`, and
+`next()`/`previous()` for building a custom control. See
+[`examples/react-3dhop-demo/src/IIIFDemo.tsx`](../../examples/react-3dhop-demo/src/IIIFDemo.tsx)
+for a full example, including the [generator
+script](../../examples/react-3dhop-demo/scripts/generate-bitfrost-collection.mjs) that builds its
+sample collection from a museum catalogue export.
 
 ---
 

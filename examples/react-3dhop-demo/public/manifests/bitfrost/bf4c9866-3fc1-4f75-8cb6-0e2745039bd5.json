@@ -1,0 +1,170 @@
+{
+  "@context": "http://iiif.io/api/presentation/4/context.json",
+  "id": "/manifests/bitfrost/bf4c9866-3fc1-4f75-8cb6-0e2745039bd5.json",
+  "type": "Manifest",
+  "label": {
+    "en": [
+      "C22007"
+    ]
+  },
+  "summary": {
+    "en": [
+      "[see more on unimus] Kulturhistorisk museum. Universitet i Oslo. Norge"
+    ]
+  },
+  "metadata": [
+    {
+      "label": {
+        "en": [
+          "Museum"
+        ]
+      },
+      "value": {
+        "en": [
+          "KHM"
+        ]
+      }
+    },
+    {
+      "label": {
+        "en": [
+          "Inventory Number"
+        ]
+      },
+      "value": {
+        "en": [
+          "C22007"
+        ]
+      }
+    },
+    {
+      "label": {
+        "en": [
+          "Object ID"
+        ]
+      },
+      "value": {
+        "en": [
+          "C22007_sID-688_mID-992"
+        ]
+      }
+    },
+    {
+      "label": {
+        "en": [
+          "Measure Unit"
+        ]
+      },
+      "value": {
+        "en": [
+          "m"
+        ]
+      }
+    },
+    {
+      "label": {
+        "en": [
+          "Display Unit"
+        ]
+      },
+      "value": {
+        "en": [
+          "m"
+        ]
+      }
+    },
+    {
+      "label": {
+        "en": [
+          "Material"
+        ]
+      },
+      "value": {
+        "en": [
+          "bergart"
+        ]
+      }
+    },
+    {
+      "label": {
+        "en": [
+          "Category"
+        ]
+      },
+      "value": {
+        "en": [
+          "billedsten"
+        ]
+      }
+    },
+    {
+      "label": {
+        "en": [
+          "Author"
+        ]
+      },
+      "value": {
+        "en": [
+          "Justin J.L. Kimball"
+        ]
+      }
+    }
+  ],
+  "requiredStatement": {
+    "label": {
+      "en": [
+        "Attribution"
+      ]
+    },
+    "value": {
+      "en": [
+        "Kulturhistorisk museum. Universitet i Oslo. Norge"
+      ]
+    }
+  },
+  "items": [
+    {
+      "id": "/manifests/bitfrost/bf4c9866-3fc1-4f75-8cb6-0e2745039bd5.json/scene/1",
+      "type": "Scene",
+      "label": {
+        "en": [
+          "C22007"
+        ]
+      },
+      "items": [
+        {
+          "id": "/manifests/bitfrost/bf4c9866-3fc1-4f75-8cb6-0e2745039bd5.json/page/1",
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "/manifests/bitfrost/bf4c9866-3fc1-4f75-8cb6-0e2745039bd5.json/anno/0",
+              "type": "Annotation",
+              "motivation": [
+                "painting"
+              ],
+              "label": {
+                "en": [
+                  "C22007"
+                ]
+              },
+              "body": {
+                "id": "https://3d.unimus.no/data/bf4c9866-3fc1-4f75-8cb6-0e2745039bd5/models/C22007_sID-688_mID-992.nxz",
+                "type": "Model",
+                "format": "Nexus"
+              },
+              "target": {
+                "type": "SpecificResource",
+                "source": [
+                  {
+                    "id": "/manifests/bitfrost/bf4c9866-3fc1-4f75-8cb6-0e2745039bd5.json/scene/1",
+                    "type": "Scene"
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

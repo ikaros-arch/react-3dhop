@@ -21,7 +21,11 @@ import {
   IIIFModelsPanel,
   IIIFSavedViewsPanel,
   IIIFLanguageSwitcher,
-  useIIIFManifest
+  IIIFCollectionProvider,
+  IIIFCollectionPicker,
+  IIIFCollectionCarousel,
+  useIIIFManifest,
+  useIIIFCollection
 } from 'react-3dhop-iiif'
 import './IIIFDemo.css'
 
@@ -31,6 +35,8 @@ const MANIFESTS = [
   { url: '/manifests/advanced.json', label: 'Advanced — multi-model with transforms' },
   { url: '/manifests/broken.json', label: 'Deliberately malformed manifest' }
 ]
+
+const BITFROST_COLLECTION_URL = '/manifests/bitfrost/collection.json'
 
 /**
  * The local manifest is the default because it is the only one whose mesh ships with this demo;
@@ -90,7 +96,37 @@ function Sidebar({ host }: { host: HTMLElement | null }) {
   )
 }
 
-export function IIIFDemo() {
+/** The toolbar is identical for every manifest shown, whether picked singly or from a collection. */
+function ViewerToolbar() {
+  return (
+    <Toolbar position="top-left">
+      <HomeControl title="Home" icon="skins/dark/home.png" />
+      <ZoomInControl title="Zoom in" icon="skins/dark/zoomin.png" />
+      <ZoomOutControl title="Zoom out" icon="skins/dark/zoomout.png" />
+      <LightingControl title={{ enabled: 'Disable lighting', disabled: 'Enable lighting' }} />
+      <ColorControl title={{ enabled: 'Show texture', disabled: 'Show solid colour' }} />
+      <MeasureControl title={{ enabled: 'Clear measurement', disabled: 'Measure' }} label="Measured length" />
+      <PickControl title={{ enabled: 'Stop picking', disabled: 'Pick a point' }} label="XYZ point" />
+      <SectionsControl title={{ enabled: 'Hide sections', disabled: 'Show sections' }} />
+      <ScreenshotControl title="Save screenshot" />
+      <FullscreenControl
+        title={{ enabled: 'Leave fullscreen', disabled: 'Go fullscreen' }}
+        icon={{ enabled: 'skins/dark/full_on.png', disabled: 'skins/dark/full.png' }}
+      />
+    </Toolbar>
+  )
+}
+
+function renderManifestError(error: Error) {
+  return (
+    <div className="iiif-error">
+      <h2>Could not load this manifest</h2>
+      <p>{error.message}</p>
+    </div>
+  )
+}
+
+function SingleManifestDemo() {
   const [manifest, setManifest] = useState(manifestFromQuery)
   const [sidebarHost, setSidebarHost] = useState<HTMLElement | null>(null)
 
@@ -102,26 +138,10 @@ export function IIIFDemo() {
     window.history.replaceState(null, '', next)
   }, [])
 
-  const renderError = useCallback(
-    (error: Error) => (
-      <div className="iiif-error">
-        <h2>Could not load this manifest</h2>
-        <p>{error.message}</p>
-      </div>
-    ),
-    []
-  )
-
   const isKnown = MANIFESTS.some((entry) => entry.url === manifest)
 
   return (
-    <div className="viewer-wrapper">
-      <h1>react-3dhop-iiif Demo</h1>
-      <p className="description">
-        Renders a IIIF Presentation 4.0 / IIIF 3D manifest with 3DHOP. Pick a manifest below, or
-        point the <code>?manifest=</code> query parameter at any manifest URL.
-      </p>
-
+    <>
       <div className="iiif-picker">
         <label htmlFor="manifest-select">Manifest</label>
         <select
@@ -149,26 +169,9 @@ export function IIIFDemo() {
             height={620}
             backgroundUrl="skins/backgrounds/cyan_gradient.jpg"
             loadingFallback={<div className="iiif-loading">Loading manifest…</div>}
-            errorFallback={renderError}
+            errorFallback={renderManifestError}
           >
-            <Toolbar position="top-left">
-              <HomeControl title="Home" icon="skins/dark/home.png" />
-              <ZoomInControl title="Zoom in" icon="skins/dark/zoomin.png" />
-              <ZoomOutControl title="Zoom out" icon="skins/dark/zoomout.png" />
-              <LightingControl title={{ enabled: 'Disable lighting', disabled: 'Enable lighting' }} />
-              <ColorControl title={{ enabled: 'Show texture', disabled: 'Show solid colour' }} />
-              <MeasureControl
-                title={{ enabled: 'Clear measurement', disabled: 'Measure' }}
-                label="Measured length"
-              />
-              <PickControl title={{ enabled: 'Stop picking', disabled: 'Pick a point' }} label="XYZ point" />
-              <SectionsControl title={{ enabled: 'Hide sections', disabled: 'Show sections' }} />
-              <ScreenshotControl title="Save screenshot" />
-              <FullscreenControl
-                title={{ enabled: 'Leave fullscreen', disabled: 'Go fullscreen' }}
-                icon={{ enabled: 'skins/dark/full_on.png', disabled: 'skins/dark/full.png' }}
-              />
-            </Toolbar>
+            <ViewerToolbar />
             <CompassNavigation position="bottom-right" />
             <Sidebar host={sidebarHost} />
           </IIIFViewer>
@@ -176,6 +179,119 @@ export function IIIFDemo() {
 
         <aside className="iiif-sidebar" ref={setSidebarHost} />
       </div>
+    </>
+  )
+}
+
+/**
+ * The viewer for whichever manifest is selected in the collection. Split out from
+ * `CollectionDemo` so it can read `selectedId` from `useIIIFCollection()` — that hook only works
+ * below `<IIIFCollectionProvider>`, which wraps the picker and carousel too.
+ */
+function CollectionManifestViewer() {
+  const { status, error, selectedId } = useIIIFCollection()
+  const [sidebarHost, setSidebarHost] = useState<HTMLElement | null>(null)
+
+  if (status === 'error') {
+    return (
+      <div className="iiif-error">
+        <h2>Could not load this collection</h2>
+        <p>{error?.message}</p>
+      </div>
+    )
+  }
+
+  if (!selectedId) {
+    return <div className="iiif-loading">Loading collection…</div>
+  }
+
+  return (
+    <div className="iiif-layout">
+      <div className="viewer-container">
+        <IIIFViewer
+          // Remounting on selection change avoids carrying one object's camera into the next.
+          key={selectedId}
+          manifest={selectedId}
+          assetBaseUrl="/3dhop"
+          width={760}
+          height={620}
+          backgroundUrl="skins/backgrounds/cyan_gradient.jpg"
+          loadingFallback={<div className="iiif-loading">Loading manifest…</div>}
+          errorFallback={renderManifestError}
+        >
+          <ViewerToolbar />
+          <CompassNavigation position="bottom-right" />
+          <Sidebar host={sidebarHost} />
+        </IIIFViewer>
+      </div>
+
+      <aside className="iiif-sidebar" ref={setSidebarHost} />
+    </div>
+  )
+}
+
+function CollectionDemo() {
+  return (
+    <IIIFCollectionProvider collection={BITFROST_COLLECTION_URL}>
+      <div className="iiif-picker">
+        <IIIFCollectionPicker />
+      </div>
+      <IIIFCollectionCarousel />
+      <CollectionManifestViewer />
+    </IIIFCollectionProvider>
+  )
+}
+
+function useDemoMode(): 'manifest' | 'collection' {
+  if (typeof window === 'undefined') {
+    return 'manifest'
+  }
+  return new URLSearchParams(window.location.search).get('mode') === 'collection' ? 'collection' : 'manifest'
+}
+
+function setDemoMode(mode: 'manifest' | 'collection') {
+  const next = new URL(window.location.href)
+  next.searchParams.set('mode', mode)
+  window.history.replaceState(null, '', next)
+}
+
+export function IIIFDemo() {
+  const [mode, setMode] = useState(useDemoMode)
+
+  return (
+    <div className="viewer-wrapper">
+      <h1>react-3dhop-iiif Demo</h1>
+      <p className="description">
+        Renders a IIIF Presentation 4.0 / IIIF 3D manifest with 3DHOP. Pick a manifest below, or
+        point the <code>?manifest=</code> query parameter at any manifest URL.
+      </p>
+
+      <nav className="demo-nav">
+        <a
+          href="?mode=manifest"
+          aria-current={mode === 'manifest' ? 'page' : undefined}
+          onClick={(event) => {
+            event.preventDefault()
+            setMode('manifest')
+            setDemoMode('manifest')
+          }}
+        >
+          Single manifest
+        </a>
+        <a
+          href="?mode=collection"
+          aria-current={mode === 'collection' ? 'page' : undefined}
+          onClick={(event) => {
+            event.preventDefault()
+            setMode('collection')
+            setDemoMode('collection')
+          }}
+        >
+          IIIF Collection browser
+        </a>
+      </nav>
+
+      {mode === 'collection' ? <CollectionDemo /> : <SingleManifestDemo />}
     </div>
   )
 }

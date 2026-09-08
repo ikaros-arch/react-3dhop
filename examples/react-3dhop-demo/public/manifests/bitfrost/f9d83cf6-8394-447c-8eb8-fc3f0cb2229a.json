@@ -1,0 +1,182 @@
+{
+  "@context": "http://iiif.io/api/presentation/4/context.json",
+  "id": "/manifests/bitfrost/f9d83cf6-8394-447c-8eb8-fc3f0cb2229a.json",
+  "type": "Manifest",
+  "label": {
+    "en": [
+      "C55000/152 h"
+    ]
+  },
+  "summary": {
+    "en": [
+      "[see more on unimus] Kulturhistorisk museum. Universitet i Oslo. Norge"
+    ]
+  },
+  "metadata": [
+    {
+      "label": {
+        "en": [
+          "Museum"
+        ]
+      },
+      "value": {
+        "en": [
+          "KHM"
+        ]
+      }
+    },
+    {
+      "label": {
+        "en": [
+          "Inventory Number"
+        ]
+      },
+      "value": {
+        "en": [
+          "C55000/152 h"
+        ]
+      }
+    },
+    {
+      "label": {
+        "en": [
+          "Object ID"
+        ]
+      },
+      "value": {
+        "en": [
+          "C55000_152_1904-153b[007]_sID-359_mID-583"
+        ]
+      }
+    },
+    {
+      "label": {
+        "en": [
+          "Measure Unit"
+        ]
+      },
+      "value": {
+        "en": [
+          "mm"
+        ]
+      }
+    },
+    {
+      "label": {
+        "en": [
+          "Display Unit"
+        ]
+      },
+      "value": {
+        "en": [
+          "mm"
+        ]
+      }
+    },
+    {
+      "label": {
+        "en": [
+          "Acquisition Method"
+        ]
+      },
+      "value": {
+        "en": [
+          "Structured Light Scanning"
+        ]
+      }
+    },
+    {
+      "label": {
+        "en": [
+          "Material"
+        ]
+      },
+      "value": {
+        "en": [
+          "tre; organisk materiale"
+        ]
+      }
+    },
+    {
+      "label": {
+        "en": [
+          "Category"
+        ]
+      },
+      "value": {
+        "en": [
+          "knevel"
+        ]
+      }
+    },
+    {
+      "label": {
+        "en": [
+          "Author"
+        ]
+      },
+      "value": {
+        "en": [
+          "Bjarte Aarseth"
+        ]
+      }
+    }
+  ],
+  "requiredStatement": {
+    "label": {
+      "en": [
+        "Attribution"
+      ]
+    },
+    "value": {
+      "en": [
+        "Kulturhistorisk museum. Universitet i Oslo. Norge"
+      ]
+    }
+  },
+  "items": [
+    {
+      "id": "/manifests/bitfrost/f9d83cf6-8394-447c-8eb8-fc3f0cb2229a.json/scene/1",
+      "type": "Scene",
+      "label": {
+        "en": [
+          "C55000/152 h"
+        ]
+      },
+      "items": [
+        {
+          "id": "/manifests/bitfrost/f9d83cf6-8394-447c-8eb8-fc3f0cb2229a.json/page/1",
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "/manifests/bitfrost/f9d83cf6-8394-447c-8eb8-fc3f0cb2229a.json/anno/0",
+              "type": "Annotation",
+              "motivation": [
+                "painting"
+              ],
+              "label": {
+                "en": [
+                  "C55000/152 h"
+                ]
+              },
+              "body": {
+                "id": "https://3d.unimus.no/data/f9d83cf6-8394-447c-8eb8-fc3f0cb2229a/models/C55000_152_1904-153b[007]_sID-359_mID-583.nxz",
+                "type": "Model",
+                "format": "Nexus"
+              },
+              "target": {
+                "type": "SpecificResource",
+                "source": [
+                  {
+                    "id": "/manifests/bitfrost/f9d83cf6-8394-447c-8eb8-fc3f0cb2229a.json/scene/1",
+                    "type": "Scene"
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -173,3 +173,44 @@ export type Diagnostic = {
 };
 
 export type DiagnosticHandler = (diagnostic: Diagnostic) => void;
+
+// ---------------------------------------------------------------------------
+// IIIF Collection (a listing of manifests, e.g. for a dropdown or carousel)
+// ---------------------------------------------------------------------------
+
+export type IIIFThumbnail = {
+  id: string;
+  type?: string;
+  format?: string;
+};
+
+export type IIIFCollectionItem = {
+  id: string;
+  type?: 'Manifest' | string;
+  label?: LocalizableValue;
+  summary?: LocalizableValue;
+  thumbnail?: IIIFThumbnail | IIIFThumbnail[];
+};
+
+export type IIIFCollection = {
+  id?: string;
+  type?: 'Collection' | string;
+  label?: LocalizableValue;
+  summary?: LocalizableValue;
+  items?: IIIFCollectionItem[];
+};
+
+export type ParsedCollectionItem = {
+  id: string;
+  label: string;
+  summary?: string;
+  /** URL of the first thumbnail image, when the item has one. */
+  thumbnail?: string;
+};
+
+export type ParsedCollection = {
+  collection: IIIFCollection;
+  label: string;
+  summary?: string;
+  items: ParsedCollectionItem[];
+};
