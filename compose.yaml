@@ -21,18 +21,25 @@ x-workspace: &workspace
     - npm_cache:/root/.npm
 
 services:
-  # Builds the libraries, then serves the demo at http://localhost:8085/.
+  # Builds the libraries, then serves the demo at http://localhost:${VITE_DEV_PORT:-8085}/.
+  #
+  # Host/port/allowed-hosts are read by examples/react-3dhop-demo/vite.config.ts from the
+  # environment below, not from CLI flags, so overriding them here (via a root .env; see
+  # .env.example) is enough — no change needed in the demo package itself.
   dev:
     <<: *workspace
     command: >
       sh -c "sh docker/install.sh &&
              npm run build &&
-             npm run dev --workspace=react-3dhop-demo -- --host 0.0.0.0 --port 8085"
+             npm run dev --workspace=react-3dhop-demo"
     ports:
-      - '8085:8085'
+      - '${VITE_DEV_PORT:-8085}:${VITE_DEV_PORT:-8085}'
     environment:
       # Bind mounts do not deliver inotify events, so the watcher has to poll for hot reload.
       VITE_POLL: '1'
+      VITE_DEV_HOST: ${VITE_DEV_HOST:-0.0.0.0}
+      VITE_DEV_PORT: ${VITE_DEV_PORT:-8085}
+      VITE_ALLOWED_HOSTS: ${VITE_ALLOWED_HOSTS:-}
 
   # One-shot: everything CI would check, including the demo's production build.
   verify:

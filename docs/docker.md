@@ -24,6 +24,28 @@ and ESLint pass. It is behind a profile so `docker compose up` never starts it b
 Run one service at a time. They share the dependency volumes, so two concurrent installs would
 race.
 
+## Configuration
+
+`dev`'s host, port, and Vite's `allowedHosts` come from environment variables, not hardcoded CLI
+flags — copy [`.env.example`](../.env.example) to `.env` at the repository root to override any of
+them (`.env` is gitignored):
+
+```bash
+cp .env.example .env
+```
+
+```
+VITE_DEV_HOST=0.0.0.0        # must stay 0.0.0.0 for the published port to be reachable
+VITE_DEV_PORT=8085           # used for both sides of the port mapping
+VITE_ALLOWED_HOSTS=          # comma-separated, e.g. a reverse proxy's hostname
+```
+
+`compose.yaml` substitutes `VITE_DEV_PORT` into the port mapping and forwards all three into the
+container's environment, where
+[`vite.config.ts`](../examples/react-3dhop-demo/vite.config.ts) reads them via `loadEnv`. Running
+the demo outside Docker honours the same variables through
+[`examples/react-3dhop-demo/.env.example`](../examples/react-3dhop-demo/.env.example) instead.
+
 ## How it is put together
 
 The repository is bind-mounted at `/app`, but **every `node_modules` is a named volume**:

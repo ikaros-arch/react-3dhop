@@ -2,7 +2,7 @@ import { createReadStream, existsSync, statSync } from 'node:fs'
 import { cp } from 'node:fs/promises'
 import { extname, join, normalize, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { defineConfig, type Plugin } from 'vite'
+import { defineConfig, loadEnv, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
 
 const here = fileURLToPath(new URL('.', import.meta.url))
@@ -66,14 +66,28 @@ function serve3dhopAssets(): Plugin {
 }
 
 // https://vite.dev/config/
-export default defineConfig({
-  plugins: [react(), serve3dhopAssets()],
-  server: {
-    // Bind-mounted filesystems (Docker, WSL) do not deliver inotify events, so hot reload only
-    // works there if the watcher polls. Off unless asked for; polling is wasteful natively.
-    watch: process.env.VITE_POLL ? { usePolling: true, interval: 300 } : undefined,
-    // Vite rejects requests for any Host header it doesn't recognise; the container is reached
-    // through this reverse-proxied hostname rather than localhost.
-    allowedHosts: ['apps.humgis.uiocloud.no']
+export default defineConfig(({ mode }) => {
+  // Reads examples/react-3dhop-demo/.env (see .env.example); real env vars — e.g. those `compose.yaml`
+  // sets for the Docker dev server — take priority over the file, so this also picks up the
+  // container's settings. Merged into process.env so VITE_POLL, read directly below, sees it too.
+  const env = loadEnv(mode, process.cwd())
+  Object.assign(process.env, env)
+
+  const allowedHosts = env.VITE_ALLOWED_HOSTS
+    ? env.VITE_ALLOWED_HOSTS.split(',').map((host) => host.trim()).filter(Boolean)
+    : undefined
+
+  return {
+    plugins: [react(), serve3dhopAssets()],
+    server: {
+      host: env.VITE_DEV_HOST || undefined,
+      port: env.VITE_DEV_PORT ? Number(env.VITE_DEV_PORT) : undefined,
+      // Vite rejects requests for any Host header it doesn't recognise, which matters when the
+      // server sits behind a reverse proxy rather than being reached as localhost.
+      allowedHosts,
+      // Bind-mounted filesystems (Docker, WSL) do not deliver inotify events, so hot reload only
+      // works there if the watcher polls. Off unless asked for; polling is wasteful natively.
+      watch: process.env.VITE_POLL ? { usePolling: true, interval: 300 } : undefined
+    }
   }
 })
