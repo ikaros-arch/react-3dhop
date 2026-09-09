@@ -1,8 +1,19 @@
 export { IIIFViewer } from './IIIFViewer.js';
 export type { IIIFViewerProps } from './IIIFViewer.js';
 
+export { IIIFMultiManifestViewer } from './IIIFMultiManifestViewer.js';
+export type { IIIFMultiManifestViewerProps } from './IIIFMultiManifestViewer.js';
+
 export { IIIFProvider, useIIIFManifest } from './context.js';
 export type { IIIFContextValue, IIIFProviderProps, IIIFStatus } from './context.js';
+
+export { IIIFMultiManifestProvider, useIIIFMultiManifest } from './multiManifestContext.js';
+export type {
+  IIIFMultiManifestContextValue,
+  IIIFMultiManifestProviderProps,
+  IIIFMultiManifestStatus,
+  ManifestGroup
+} from './multiManifestContext.js';
 
 export { IIIFCollectionProvider, useIIIFCollection } from './collectionContext.js';
 export type {
@@ -22,6 +33,8 @@ export { IIIFMetadataPanel } from './panels/IIIFMetadataPanel.js';
 export type { IIIFMetadataPanelProps } from './panels/IIIFMetadataPanel.js';
 export { IIIFModelsPanel } from './panels/IIIFModelsPanel.js';
 export type { IIIFModelsPanelProps } from './panels/IIIFModelsPanel.js';
+export { IIIFMultiManifestModelsPanel } from './panels/IIIFMultiManifestModelsPanel.js';
+export type { IIIFMultiManifestModelsPanelProps } from './panels/IIIFMultiManifestModelsPanel.js';
 export { IIIFSavedViewsPanel } from './panels/IIIFSavedViewsPanel.js';
 export type { IIIFSavedViewsPanelProps } from './panels/IIIFSavedViewsPanel.js';
 export { IIIFLanguageSwitcher, LANGUAGE_NAMES } from './panels/IIIFLanguageSwitcher.js';
@@ -36,6 +49,9 @@ export type { LoadCollectionOptions, ParseCollectionOptions } from './iiif/colle
 
 export { sceneFromManifest, DEFAULT_MEASURE_UNIT } from './iiif/toModels.js';
 export type { SceneFromManifest, ToModelsOptions } from './iiif/toModels.js';
+
+export { sceneFromManifests, layoutManifests } from './iiif/toMultiModels.js';
+export type { SceneFromManifests, ToMultiModelsOptions, ManifestSceneEntry } from './iiif/toMultiModels.js';
 
 export { getUnitScaleFactor, isKnownUnit, UNITS_IN_METRES } from './iiif/units.js';
 export type { UnitName } from './iiif/units.js';

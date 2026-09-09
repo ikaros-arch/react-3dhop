@@ -16,6 +16,8 @@ import {
 } from 'react-3dhop'
 import {
   IIIFViewer,
+  IIIFMultiManifestViewer,
+  IIIFMultiManifestModelsPanel,
   IIIFSummary,
   IIIFMetadataPanel,
   IIIFModelsPanel,
@@ -242,14 +244,112 @@ function CollectionDemo() {
   )
 }
 
-function useDemoMode(): 'manifest' | 'collection' {
+function renderMultiManifestError() {
+  return (
+    <div className="iiif-error">
+      <h2>Could not load one or more of the selected manifests</h2>
+    </div>
+  )
+}
+
+/**
+ * Lets the user check off any number of objects from the Bitfrost collection and view them
+ * together in one `<IIIFMultiManifestViewer>`. Selection is kept locally rather than through
+ * `useIIIFCollection()`'s `selectedId`, which only tracks a single manifest — the two features
+ * happen to share a collection, not a selection model.
+ */
+function MultiManifestPicker() {
+  const { items, status, error } = useIIIFCollection()
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [sidebarHost, setSidebarHost] = useState<HTMLElement | null>(null)
+
+  const toggle = (id: string) => {
+    setSelectedIds((current) => {
+      const next = new Set(current)
+      if (next.has(id)) {
+        next.delete(id)
+      } else {
+        next.add(id)
+      }
+      return next
+    })
+  }
+
+  if (status === 'error') {
+    return (
+      <div className="iiif-error">
+        <h2>Could not load this collection</h2>
+        <p>{error?.message}</p>
+      </div>
+    )
+  }
+
+  if (status !== 'ready') {
+    return <div className="iiif-loading">Loading collection…</div>
+  }
+
+  const selectedManifests = items.filter((item) => selectedIds.has(item.id)).map((item) => item.id)
+  // Remounting whenever the selected set changes avoids carrying stale per-manifest layout/camera
+  // state from one combination of objects into the next.
+  const viewerKey = [...selectedIds].sort().join(',')
+
+  return (
+    <>
+      <fieldset className="iiif-picker">
+        <legend>Objects</legend>
+        {items.map((item) => (
+          <label key={item.id} className="iiif-multi-picker__option">
+            <input type="checkbox" checked={selectedIds.has(item.id)} onChange={() => toggle(item.id)} />
+            {item.label}
+          </label>
+        ))}
+      </fieldset>
+
+      {selectedManifests.length === 0 ? (
+        <p className="iiif-loading">Select one or more objects above.</p>
+      ) : (
+        <div className="iiif-layout">
+          <div className="viewer-container">
+            <IIIFMultiManifestViewer
+              key={viewerKey}
+              manifests={selectedManifests}
+              assetBaseUrl="/3dhop"
+              width={760}
+              height={620}
+              backgroundUrl="skins/backgrounds/cyan_gradient.jpg"
+              loadingFallback={<div className="iiif-loading">Loading manifests…</div>}
+              errorFallback={renderMultiManifestError}
+            >
+              <ViewerToolbar />
+              <CompassNavigation position="bottom-right" />
+              {sidebarHost ? createPortal(<IIIFMultiManifestModelsPanel />, sidebarHost) : null}
+            </IIIFMultiManifestViewer>
+          </div>
+
+          <aside className="iiif-sidebar" ref={setSidebarHost} />
+        </div>
+      )}
+    </>
+  )
+}
+
+function MultiManifestDemo() {
+  return (
+    <IIIFCollectionProvider collection={BITFROST_COLLECTION_URL}>
+      <MultiManifestPicker />
+    </IIIFCollectionProvider>
+  )
+}
+
+function useDemoMode(): 'manifest' | 'collection' | 'multi' {
   if (typeof window === 'undefined') {
     return 'manifest'
   }
-  return new URLSearchParams(window.location.search).get('mode') === 'collection' ? 'collection' : 'manifest'
+  const mode = new URLSearchParams(window.location.search).get('mode')
+  return mode === 'collection' || mode === 'multi' ? mode : 'manifest'
 }
 
-function setDemoMode(mode: 'manifest' | 'collection') {
+function setDemoMode(mode: 'manifest' | 'collection' | 'multi') {
   const next = new URL(window.location.href)
   next.searchParams.set('mode', mode)
   window.history.replaceState(null, '', next)
@@ -289,9 +389,20 @@ export function IIIFDemo() {
         >
           IIIF Collection browser
         </a>
+        <a
+          href="?mode=multi"
+          aria-current={mode === 'multi' ? 'page' : undefined}
+          onClick={(event) => {
+            event.preventDefault()
+            setMode('multi')
+            setDemoMode('multi')
+          }}
+        >
+          Multi-manifest viewer
+        </a>
       </nav>
 
-      {mode === 'collection' ? <CollectionDemo /> : <SingleManifestDemo />}
+      {mode === 'collection' ? <CollectionDemo /> : mode === 'multi' ? <MultiManifestDemo /> : <SingleManifestDemo />}
     </div>
   )
 }
