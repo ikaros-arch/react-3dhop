@@ -203,9 +203,9 @@ so switching language does not lose the unit or inventory fields.
 
 ## Panels
 
-All five read from `useIIIFManifest()`, use semantic markup with no CSS framework, and accept
-`className` props on every element. There is no bundled stylesheet; the demo's
-[`IIIFDemo.css`](../../examples/react-3dhop-demo/src/IIIFDemo.css) is a starting point.
+All read from `useIIIFManifest()` unless noted otherwise, use semantic markup with no CSS
+framework, and accept `className` props on every element. There is no bundled stylesheet; the
+demo's [`IIIFDemo.css`](../../examples/react-3dhop-demo/src/IIIFDemo.css) is a starting point.
 
 | Component | Shows |
 |---|---|
@@ -216,6 +216,7 @@ All five read from `useIIIFManifest()`, use semantic markup with no CSS framewor
 | `<IIIFLanguageSwitcher>` | Language selector; hidden when the manifest has one language |
 | `<IIIFCollectionPicker>` | A `<select>` of every manifest in a collection |
 | `<IIIFCollectionCarousel>` | A thumbnail strip of every manifest in a collection, with prev/next |
+| `<IIIFMultiManifestModelsPanel>` | Visibility/transparency toggles grouped by manifest; reads `useIIIFMultiManifest()`, for use inside `<IIIFMultiManifestViewer>` instead of `<IIIFViewer>` |
 
 ---
 
@@ -260,6 +261,60 @@ function SelectedManifestViewer() {
 for a full example, including the [generator
 script](../../examples/react-3dhop-demo/scripts/generate-bitfrost-collection.mjs) that builds its
 sample collection from a museum catalogue export.
+
+---
+
+## Multiple manifests in one viewer
+
+`<IIIFMultiManifestViewer>` renders several manifests together in a single `<ThreeDHopViewer>`
+instance, laid out side by side rather than switched between one at a time:
+
+```tsx
+import { IIIFMultiManifestViewer, IIIFMultiManifestModelsPanel } from 'react-3dhop-iiif';
+
+function Comparison() {
+  return (
+    <IIIFMultiManifestViewer
+      manifests={['/manifests/a.json', '/manifests/b.json']}
+      assetBaseUrl="/3dhop"
+      width={760}
+      height={620}
+    >
+      <IIIFMultiManifestModelsPanel />
+    </IIIFMultiManifestViewer>
+  );
+}
+```
+
+It is a parallel component, not an extension of `<IIIFViewer>`: it fetches and parses each manifest
+independently, and fails fast if any one of them can't be loaded, since a partially-failed shared
+scene isn't a state worth trying to render. Its context, `useIIIFMultiManifest()`, only covers
+per-model visibility and transparency, scoped by manifest — cameras, saved views, metadata and
+language are per-manifest concepts without a defined multi-manifest behaviour yet, so `<IIIFViewer>`
+remains the way to reach those.
+
+There is no mesh geometry available at layout time — meshes stream in later, and the manifest only
+says where each annotation is *placed*, not how large it is — so the side-by-side layout is a
+heuristic: each manifest's own placement spread (the spread between its own annotations), floored by
+`minRadius` and separated by `gap`. A manifest with a single model at the origin (the common case)
+has a spread of zero and falls back entirely to `minRadius`. Tune both options for your data:
+
+```tsx
+<IIIFMultiManifestViewer manifests={ids} minRadius={150} gap={80} columns={3} />
+```
+
+`useIIIFMultiManifest()` addresses models with a `(manifestKey, modelId)` pair rather than the bare
+IIIF annotation id `useIIIFManifest()` uses, because two manifests can otherwise declare colliding
+ids:
+
+```tsx
+const { manifests, isModelVisible, setModelVisible } = useIIIFMultiManifest();
+// manifests: [{ key, sourceId, label, models }, …]
+```
+
+See [`examples/react-3dhop-demo/src/IIIFDemo.tsx`](../../examples/react-3dhop-demo/src/IIIFDemo.tsx)
+(`"Multi-manifest viewer"` mode) for a full example that lets the user check off any number of
+objects from a collection.
 
 ---
 

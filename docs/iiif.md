@@ -60,6 +60,33 @@ same object several times downloads it once.
 the result through `IIIFProvider`. It applies the manifest's first camera as the opening view from a
 scene observer — the earliest point at which scene framing exists.
 
+## Several manifests in one scene
+
+`IIIFMultiManifestViewer.tsx` is a parallel path, not a generalisation of `IIIFViewer.tsx`, built
+because `IIIFContext`'s visibility/transparency state is public API keyed by bare IIIF annotation id
+— making it manifest-aware would be a breaking change for every existing consumer of
+`useIIIFManifest()`/`IIIFModelsPanel`. Instead:
+
+```
+manifest[] ──parser.ts (×N)──▶ ParsedManifest[] ──toMultiModels.ts──▶ { models, space, config }
+                                                                            │
+                                                                  <ThreeDHopViewer …>
+```
+
+**`toMultiModels.ts`** calls `sceneFromManifest()` once per manifest to reuse all of its unit
+conversion and matrix building, then re-keys every model and mesh id with a per-manifest prefix so
+two manifests can never collide, and left-multiplies each model's matrix by a translation that
+spreads manifests out spatially (`layoutManifests()`). There is no real bounding-box data available
+at this point — geometry streams in only once 3DHOP has the mesh — so the layout radius is a
+heuristic derived from how far apart a manifest's own annotations are placed, not a true bounding
+sphere; see the package README's "Multiple manifests in one viewer" section for the practical
+implications of that.
+
+**`multiManifestContext.tsx`** is deliberately a smaller context than `IIIFContext`: no cameras, no
+saved views, no language, no metadata — just per-model visibility/transparency, keyed by
+`(manifestKey, modelId)` instead of a bare model id, since the id namespace is no longer unique to a
+single manifest.
+
 ## Everything pure is exported
 
 The parsing and geometry layer takes no React, touches no DOM, and never reads 3DHOP's globals.
