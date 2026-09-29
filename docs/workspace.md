@@ -64,8 +64,10 @@ wrong one and the demo's `tsc -b` would fail on two incompatible sets of Vite ty
 
 ## Tests
 
-Vitest runs in the `node` environment and collects `packages/*/test/**/*.test.ts`. The suites cover
-the parts of `react-3dhop-iiif` that are pure functions, which is deliberately most of the package:
+Vitest collects `packages/*/test/**/*.test.ts(x)`. The default environment is `node`; a test file
+that needs a DOM opts into jsdom with `// @vitest-environment jsdom` on its first line.
+
+`react-3dhop-iiif` tests the parts that are pure functions, which is deliberately most of the package:
 
 | Suite | Covers |
 | --- | --- |
@@ -74,11 +76,22 @@ the parts of `react-3dhop-iiif` that are pure functions, which is deliberately m
 | `transforms.test.ts` | Ordered transform composition and the model matrix |
 | `camera.test.ts` | `view2track` / `track2view` round-trips |
 
-Nothing in the suite needs a browser, a WebGL context, or 3DHOP's globals. The geometry and parsing
-code takes scene framing as an argument rather than reading it off a live presenter, which is what
-makes that possible — keep it that way when adding to it.
+`react-3dhop` tests its geometry in node and its hooks in jsdom, against a presenter double:
 
-The React components are not unit-tested; they are verified through the demo.
+| Suite | Covers |
+| --- | --- |
+| `bounds.test.ts`, `geometry.test.ts` | `computeSceneBounds` (Nexus/PLY/sphere fallback, transforms), `mat4`, theme helpers |
+| `interactiveTools.test.tsx` | Tool registry: exclusivity, custom tools, disposal, pick dispatch |
+| `hooks.test.tsx` | `useSceneEntity` re-creation across scene applies, `useSceneBounds` retry, `useSceneReady`, `useLightDirection` |
+
+`test/mockPresenter.ts` is a `PresenterInstance` double whose `setScene` wipes entities and whose
+`_testReady` flips readiness the way 3DHOP does; `test/harness.tsx` renders the real context
+provider around it with the real `useInteractiveTools`, and exposes `applyScene()` /
+`finishLoading()` for tests to drive. Nothing needs WebGL or 3DHOP's globals — keep it that way.
+Geometry and parsing code takes scene framing as an argument rather than reading it off a live
+presenter, which is what makes that possible.
+
+The toolbar controls and overlays themselves are still verified through the demo.
 
 ## The demo
 

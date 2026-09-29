@@ -2,13 +2,14 @@ import { useEffect, useRef, useState } from 'react';
 import type React from 'react';
 import { ensureAssets } from './assets.js';
 import { getHopAllTag } from '../utils/hopTags.js';
-import type { InteractiveTool } from './interactiveTools.js';
+import type { InteractiveTool, InteractiveToolPickContext } from './interactiveTools.js';
 import type {
   AnnotationPickEvent,
   AnnotationPickHandler,
   CoordinateCorrections,
   PresenterInstance,
-  TrackballObserver
+  TrackballObserver,
+  Vector3
 } from './types.js';
 import type { AnnotationDefinition } from '../utils/annotations.js';
 
@@ -30,8 +31,12 @@ export type PresenterLifecycleOptions = {
   normalizedBaseUrl: string;
   applyScene: (presenter: PresenterInstance, preserveView?: boolean) => void;
   notifyTrackballObservers: (trackState: number[]) => void;
+  notifySceneReadyObservers: (presenter: PresenterInstance) => void;
+  notifyLightObservers: (direction: Vector3) => void;
   dispatchToolbarAction: (action: string, presenter: PresenterInstance) => boolean;
   toggleTool: (toolId: InteractiveTool, presenter: PresenterInstance) => void;
+  hasTool: (toolId: InteractiveTool) => boolean;
+  dispatchPick: (context: InteractiveToolPickContext) => void;
   toggleInfoVisibility: () => void;
   isControlVisible: (controlId: string) => boolean | null;
   syncFullscreenUi: (isFullscreen: boolean) => void;
@@ -46,7 +51,6 @@ export type PresenterLifecycleOptions = {
   syncCameraSwitch: (override?: boolean) => boolean;
   syncHotspotSwitch: (override?: boolean) => boolean;
   setMeasurementValue: React.Dispatch<React.SetStateAction<number | null>>;
-  setPickpointValue: React.Dispatch<React.SetStateAction<[number, number, number] | null>>;
   resolvedCoordinateCorrections: Required<CoordinateCorrections>;
   dispatchAnnotationPick: (event: AnnotationPickEvent) => void;
   annotationDefinitionsRef: React.MutableRefObject<Map<string, AnnotationDefinition>>;
@@ -69,8 +73,12 @@ export function usePresenterLifecycle({
   normalizedBaseUrl,
   applyScene,
   notifyTrackballObservers,
+  notifySceneReadyObservers,
+  notifyLightObservers,
   dispatchToolbarAction,
   toggleTool,
+  hasTool,
+  dispatchPick,
   toggleInfoVisibility,
   isControlVisible,
   syncFullscreenUi,
@@ -85,7 +93,6 @@ export function usePresenterLifecycle({
   syncCameraSwitch,
   syncHotspotSwitch,
   setMeasurementValue,
-  setPickpointValue,
   resolvedCoordinateCorrections,
   dispatchAnnotationPick,
   annotationDefinitionsRef,
@@ -109,6 +116,10 @@ export function usePresenterLifecycle({
   const previousOnEndMeasurementRef = useRef<PresenterInstance['_onEndMeasurement']>();
   const previousOnEndPickingPointRef = useRef<PresenterInstance['_onEndPickingPoint']>();
   const previousOnPickedSpotRef = useRef<PresenterInstance['_onPickedSpot']>();
+  const previousTestReadyRef = useRef<PresenterInstance['_testReady']>();
+  const previousSetSceneRef = useRef<PresenterInstance['setScene']>();
+  const previousRotateLightRef = useRef<PresenterInstance['rotateLight']>();
+  const previousResetTrackballRef = useRef<PresenterInstance['resetTrackball']>();
 
   const [presenterState, setPresenterState] = useState<PresenterInstance | null>(null);
 
@@ -261,8 +272,15 @@ export function usePresenterLifecycle({
         case 'info_on':
           toggleInfoVisibility();
           break;
-        default:
+        default: {
+          // Any registered tool can be driven by a toolbar image whose id is the tool id
+          // (optionally with 3DHOP's `_on` suffix).
+          const toolId = action.replace(/_on$/, '');
+          if (hasTool(toolId)) {
+            toggleTool(toolId, presenter);
+          }
           break;
+        }
       }
     };
 
@@ -375,6 +393,51 @@ export function usePresenterLifecycle({
         window.presenter = presenter;
         setPresenterState(presenter);
 
+        // Scene-ready: 3DHOP calls `_testReady` as each object finishes loading; it flips
+        // `_sceneReady` once the count reaches zero. Observe that transition per scene apply.
+        if (typeof presenter._testReady === 'function') {
+          const originalTestReady = presenter._testReady;
+          previousTestReadyRef.current = originalTestReady;
+          let announcedReady = false;
+          const originalSetScene = presenter.setScene;
+          previousSetSceneRef.current = originalSetScene;
+          presenter.setScene = function wrappedSetScene(scene: unknown) {
+            announcedReady = false;
+            return originalSetScene.call(presenter, scene);
+          };
+          presenter._testReady = function wrappedTestReady() {
+            originalTestReady.call(presenter);
+            if (!announcedReady && presenter._isSceneReady?.()) {
+              announcedReady = true;
+              notifySceneReadyObservers(presenter);
+            }
+          };
+        }
+
+        // Light direction: `rotateLight` is the only setter; `resetTrackball` restores the default.
+        const emitLight = () => {
+          const direction = presenter._lightDirection;
+          if (Array.isArray(direction) && direction.length >= 3) {
+            notifyLightObservers([direction[0], direction[1], direction[2]]);
+          }
+        };
+        if (typeof presenter.rotateLight === 'function') {
+          const originalRotateLight = presenter.rotateLight;
+          previousRotateLightRef.current = originalRotateLight;
+          presenter.rotateLight = function wrappedRotateLight(x: number, y: number) {
+            originalRotateLight.call(presenter, x, y);
+            emitLight();
+          };
+        }
+        {
+          const originalResetTrackball = presenter.resetTrackball;
+          previousResetTrackballRef.current = originalResetTrackball;
+          presenter.resetTrackball = function wrappedResetTrackball() {
+            originalResetTrackball.call(presenter);
+            emitLight();
+          };
+        }
+
         applyScene(presenter);
 
         const initialTrackball = presenter.getTrackballPosition?.();
@@ -394,11 +457,15 @@ export function usePresenterLifecycle({
             return;
           }
           const [x, y, z] = point;
-          setPickpointValue([
-            x + resolvedCoordinateCorrections.x,
-            y + resolvedCoordinateCorrections.y,
-            z + resolvedCoordinateCorrections.z
-          ]);
+          dispatchPick({
+            raw: [x, y, z],
+            corrected: [
+              x + resolvedCoordinateCorrections.x,
+              y + resolvedCoordinateCorrections.y,
+              z + resolvedCoordinateCorrections.z
+            ],
+            presenter
+          });
         };
 
         const previousPickHandler = presenter._onPickedSpot;
@@ -427,6 +494,26 @@ export function usePresenterLifecycle({
       const presenter = presenterRef.current;
 
       if (presenter) {
+        if (typeof previousTestReadyRef.current !== 'undefined') {
+          presenter._testReady = previousTestReadyRef.current;
+          previousTestReadyRef.current = undefined;
+        }
+
+        if (typeof previousSetSceneRef.current !== 'undefined') {
+          presenter.setScene = previousSetSceneRef.current;
+          previousSetSceneRef.current = undefined;
+        }
+
+        if (typeof previousRotateLightRef.current !== 'undefined') {
+          presenter.rotateLight = previousRotateLightRef.current;
+          previousRotateLightRef.current = undefined;
+        }
+
+        if (typeof previousResetTrackballRef.current !== 'undefined') {
+          presenter.resetTrackball = previousResetTrackballRef.current;
+          previousResetTrackballRef.current = undefined;
+        }
+
         if (typeof previousOnEndMeasurementRef.current !== 'undefined') {
           presenter._onEndMeasurement = previousOnEndMeasurementRef.current;
           previousOnEndMeasurementRef.current = undefined;

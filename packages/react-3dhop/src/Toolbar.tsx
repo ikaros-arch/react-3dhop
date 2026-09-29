@@ -13,6 +13,7 @@ import React, {
   useState
 } from 'react';
 import { useThreeDHopViewer } from './ThreeDHopViewer.js';
+import { themeVar } from './theme.js';
 import { joinAssetPath, resolveRelativeAssetPath } from './utils/assetPaths';
 
 type ToolbarAssetsContextValue = {
@@ -101,7 +102,11 @@ export const Toolbar: React.FC<ToolbarProps> = ({ position, style, children, ...
           return <React.Fragment key={key}>{element}</React.Fragment>;
         }
 
+        // Sidecars inherit `.output-box` from 3dhop.css; the theme tokens default to the same
+        // values, so this only has an effect under a non-default theme or consumer overrides.
         const mergedStyle: React.CSSProperties = {
+          backgroundColor: themeVar('panelBg'),
+          color: themeVar('panelText'),
           ...(element.props.style as React.CSSProperties | undefined),
           position: 'absolute',
           pointerEvents: 'auto'

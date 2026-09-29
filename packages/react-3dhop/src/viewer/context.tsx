@@ -9,9 +9,14 @@ import React, { createContext, useContext, useMemo } from 'react';
 import type {
   AnnotationPickHandler,
   CoordinateCorrections,
+  InteractiveTool,
+  InteractiveToolConfig,
+  LightObserver,
   PresenterInstance,
   SceneContribution,
   SceneObserver,
+  SceneReadyObserver,
+  ThemeName,
   ThreeDHopViewerContextValue,
   ToolbarActionHandler,
   TrackballObserver
@@ -23,8 +28,14 @@ export type ThreeDHopViewerProviderProps = {
   registerSceneContribution: (key: string, contribution: SceneContribution | null) => () => void;
   registerToolbarAction: (actions: string | string[], handler: ToolbarActionHandler) => () => void;
   registerSceneObserver: (observer: SceneObserver) => () => void;
+  registerSceneReadyObserver: (observer: SceneReadyObserver) => () => void;
   registerTrackballObserver: (observer: TrackballObserver) => () => void;
+  registerLightObserver: (observer: LightObserver) => () => void;
   registerAnnotationHandler: (handler: AnnotationPickHandler) => () => void;
+  registerInteractiveTool: (config: InteractiveToolConfig) => () => void;
+  toggleInteractiveTool: (toolId: InteractiveTool) => void;
+  activeInteractiveTool: InteractiveTool | null;
+  theme: ThemeName;
   hasHotspotContribution: boolean;
   measurementUnits: string;
   measurementValue: number | null;
@@ -60,8 +71,14 @@ export const ThreeDHopViewerProvider: React.FC<ThreeDHopViewerProviderProps> = (
   registerSceneContribution,
   registerToolbarAction,
   registerSceneObserver,
+  registerSceneReadyObserver,
   registerTrackballObserver,
+  registerLightObserver,
   registerAnnotationHandler,
+  registerInteractiveTool,
+  toggleInteractiveTool,
+  activeInteractiveTool,
+  theme,
   hasHotspotContribution,
   measurementUnits,
   measurementValue,
@@ -78,8 +95,14 @@ export const ThreeDHopViewerProvider: React.FC<ThreeDHopViewerProviderProps> = (
       registerSceneContribution,
       registerToolbarAction,
       registerSceneObserver,
+      registerSceneReadyObserver,
       registerTrackballObserver,
+      registerLightObserver,
       registerAnnotationHandler,
+      registerInteractiveTool,
+      toggleInteractiveTool,
+      activeInteractiveTool,
+      theme,
       hasHotspotContribution,
       measurementUnits,
       measurementValue,
@@ -94,8 +117,14 @@ export const ThreeDHopViewerProvider: React.FC<ThreeDHopViewerProviderProps> = (
       registerSceneContribution,
       registerToolbarAction,
       registerSceneObserver,
+      registerSceneReadyObserver,
       registerTrackballObserver,
+      registerLightObserver,
       registerAnnotationHandler,
+      registerInteractiveTool,
+      toggleInteractiveTool,
+      activeInteractiveTool,
+      theme,
       hasHotspotContribution,
       measurementUnits,
       measurementValue,

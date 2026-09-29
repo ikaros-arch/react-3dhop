@@ -24,16 +24,21 @@ import { useSceneConfiguration } from './viewer/sceneBuilder';
 import { usePresenterLifecycle } from './viewer/presenterLifecycle.js';
 import { useToolbarSync } from './viewer/toolbarSync.js';
 import { useInteractiveTools, type InteractiveTool } from './viewer/interactiveTools.js';
+import { resolveThemeMode, themeStyle } from './theme.js';
 import {
   type AnnotationPickEvent,
   type AnnotationPickHandler,
   type CoordinateCorrections,
+  type LightObserver,
   type PresenterInstance,
   type SceneContribution,
   type SceneObserver,
+  type SceneReadyObserver,
+  type ThemeName,
   type ThreeDHopViewerProps,
   type ToolbarActionHandler,
-  type TrackballObserver
+  type TrackballObserver,
+  type Vector3
 } from './viewer/types';
 
 declare global {
@@ -69,25 +74,37 @@ export type {
   AnnotationPickHandler,
   CameraType,
   CoordinateCorrections,
+  InteractiveTool,
+  InteractiveToolConfig,
+  InteractiveToolPickContext,
+  LightObserver,
   ModelDefinition,
   ModelInstanceConfiguration,
   ModelTransparencyOptions,
   ModelTransformConfig,
   PresenterInstance,
+  SceneBounds,
   SceneConfiguration,
   SceneContribution,
+  SceneEntity,
+  SceneEntitySpec,
+  SceneEntityType,
   SceneMeshDefinition,
   SceneMeshes,
   SceneObserver,
+  SceneReadyObserver,
   SceneRenderConfig,
   SceneSpaceConfig,
+  ThemeMode,
+  ThemeName,
   ThreeDHopViewerContextValue,
   ThreeDHopViewerProps,
   ToolbarActionHandler,
   TrackballConfig,
   TrackballName,
   TrackballObserver,
-  TrackOptions
+  TrackOptions,
+  Vector3
 } from './viewer/types.js';
 export { useThreeDHopViewer } from './viewer/context.js';
 
@@ -112,6 +129,7 @@ export const ThreeDHopViewer: React.FC<ThreeDHopViewerProps> = ({
   config,
   trackball,
   nexusTargetError,
+  theme: themeMode,
   children
 }) => {
   const presenterRef = useRef<PresenterInstance | null>(null);
@@ -119,7 +137,9 @@ export const ThreeDHopViewer: React.FC<ThreeDHopViewerProps> = ({
   const [sceneContributionsVersion, setSceneContributionsVersion] = useState(0);
   const toolbarHandlersRef = useRef<Map<string, Set<ToolbarActionHandler>>>(new Map());
   const sceneObserversRef = useRef<Set<SceneObserver>>(new Set());
+  const sceneReadyObserversRef = useRef<Set<SceneReadyObserver>>(new Set());
   const trackballObserversRef = useRef<Set<TrackballObserver>>(new Set());
+  const lightObserversRef = useRef<Set<LightObserver>>(new Set());
   const annotationHandlersRef = useRef<Set<AnnotationPickHandler>>(new Set());
   const annotationDefinitionsRef = useRef<Map<string, AnnotationDefinition>>(new Map());
   const [hasHotspotContribution, setHasHotspotContribution] = useState(false);
@@ -152,12 +172,39 @@ export const ThreeDHopViewer: React.FC<ThreeDHopViewerProps> = ({
     setPickpointValue
   });
 
-  const { toggleTool, deactivateTool, resetActiveTool } = useInteractiveTools({
-    presenterRef,
-    activeInteractiveToolRef,
-    syncMeasurementUi,
-    syncPickpointUi
-  });
+  const { toggleTool, deactivateTool, resetActiveTool, registerInteractiveTool, dispatchPick, hasTool, activeInteractiveTool } =
+    useInteractiveTools({
+      presenterRef,
+      activeInteractiveToolRef,
+      syncMeasurementUi,
+      syncPickpointUi,
+      setPickpointValue
+    });
+
+  /** Context-facing toggle: always targets the live presenter. */
+  const toggleInteractiveTool = useCallback(
+    (toolId: InteractiveTool) => {
+      toggleTool(toolId, presenterRef.current);
+    },
+    [toggleTool]
+  );
+
+  /**
+   * Resolves the `theme` prop, following the OS preference live when set to `'system'`.
+   */
+  const [prefersDark, setPrefersDark] = useState<boolean | undefined>(undefined);
+  useEffect(() => {
+    if (themeMode !== 'system' || typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
+      setPrefersDark(undefined);
+      return;
+    }
+    const query = window.matchMedia('(prefers-color-scheme: dark)');
+    setPrefersDark(query.matches);
+    const listener = (event: MediaQueryListEvent) => setPrefersDark(event.matches);
+    query.addEventListener('change', listener);
+    return () => query.removeEventListener('change', listener);
+  }, [themeMode]);
+  const resolvedTheme = useMemo<ThemeName>(() => resolveThemeMode(themeMode, prefersDark), [themeMode, prefersDark]);
 
   /**
    * Normalizes human-readable measurement units for display alongside measurement values.
@@ -258,6 +305,48 @@ export const ThreeDHopViewer: React.FC<ThreeDHopViewerProps> = ({
     sceneObserversRef.current.add(observer);
     return () => {
       sceneObserversRef.current.delete(observer);
+    };
+  }, []);
+
+  /**
+   * Scene-ready observers fire once per scene apply, after every mesh has loaded. A subscriber
+   * arriving while the scene is already ready is called back immediately.
+   */
+  const registerSceneReadyObserver = useCallback((observer: SceneReadyObserver) => {
+    sceneReadyObserversRef.current.add(observer);
+    const presenter = presenterRef.current;
+    if (presenter && presenter._isSceneReady?.()) {
+      observer(presenter);
+    }
+    return () => {
+      sceneReadyObserversRef.current.delete(observer);
+    };
+  }, []);
+
+  const notifySceneReadyObservers = useCallback((presenter: PresenterInstance) => {
+    sceneReadyObserversRef.current.forEach((observer) => {
+      observer(presenter);
+    });
+  }, []);
+
+  const notifyLightObservers = useCallback((direction: Vector3) => {
+    lightObserversRef.current.forEach((observer) => {
+      observer(direction);
+    });
+  }, []);
+
+  /**
+   * Light observers receive 3DHOP's `_lightDirection` on every change; a new subscriber gets the
+   * current value straight away.
+   */
+  const registerLightObserver = useCallback((observer: LightObserver) => {
+    lightObserversRef.current.add(observer);
+    const direction = presenterRef.current?._lightDirection;
+    if (Array.isArray(direction) && direction.length >= 3) {
+      observer([direction[0], direction[1], direction[2]]);
+    }
+    return () => {
+      lightObserversRef.current.delete(observer);
     };
   }, []);
 
@@ -382,8 +471,12 @@ export const ThreeDHopViewer: React.FC<ThreeDHopViewerProps> = ({
     normalizedBaseUrl,
     applyScene,
     notifyTrackballObservers,
+    notifySceneReadyObservers,
+    notifyLightObservers,
     dispatchToolbarAction,
     toggleTool,
+    hasTool,
+    dispatchPick,
     toggleInfoVisibility,
     isControlVisible,
     syncFullscreenUi,
@@ -398,7 +491,6 @@ export const ThreeDHopViewer: React.FC<ThreeDHopViewerProps> = ({
     syncCameraSwitch,
     syncHotspotSwitch,
     setMeasurementValue,
-    setPickpointValue,
     resolvedCoordinateCorrections,
     dispatchAnnotationPick,
     annotationDefinitionsRef,
@@ -460,8 +552,14 @@ export const ThreeDHopViewer: React.FC<ThreeDHopViewerProps> = ({
       registerSceneContribution={registerSceneContribution}
       registerToolbarAction={registerToolbarAction}
       registerSceneObserver={registerSceneObserver}
+      registerSceneReadyObserver={registerSceneReadyObserver}
       registerTrackballObserver={registerTrackballObserver}
+      registerLightObserver={registerLightObserver}
       registerAnnotationHandler={registerAnnotationHandler}
+      registerInteractiveTool={registerInteractiveTool}
+      toggleInteractiveTool={toggleInteractiveTool}
+      activeInteractiveTool={activeInteractiveTool}
+      theme={resolvedTheme}
       hasHotspotContribution={hasHotspotContribution}
       measurementUnits={measurementUnitLabel}
       measurementValue={measurementValue}
@@ -472,11 +570,13 @@ export const ThreeDHopViewer: React.FC<ThreeDHopViewerProps> = ({
     >
       <div
         className={className}
+        data-r3dhop-theme={resolvedTheme}
         style={{
           position: 'relative',
           width,
           height,
           overflow: 'hidden',
+          ...themeStyle(resolvedTheme),
           ...style
         }}
       >

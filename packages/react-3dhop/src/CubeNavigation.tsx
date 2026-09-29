@@ -13,6 +13,7 @@ import {
   useThreeDHopViewer,
   type TrackballObserver
 } from './ThreeDHopViewer.js';
+import { themeVar } from './theme.js';
 
 export type CubeNavigationPosition = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
 
@@ -67,10 +68,10 @@ const POSITION_STYLES: Record<CubeNavigationPosition, React.CSSProperties> = {
 const DEFAULT_TRACKBALL_STATE: TrackballState = [35, 15, 0, 0, 0, 2.5];
 
 const DEFAULT_BUTTON_STYLE: React.CSSProperties = {
-  background: 'rgba(0, 0, 0, 0.45)',
-  border: '1px solid rgba(255, 255, 255, 0.4)',
+  background: themeVar('overlayBg'),
+  border: `1px solid ${themeVar('overlayBorder')}`,
   borderRadius: '4px',
-  color: '#FFFFFF',
+  color: themeVar('overlayText'),
   cursor: 'pointer',
   fontSize: '12px',
   lineHeight: 1.2,
@@ -79,12 +80,12 @@ const DEFAULT_BUTTON_STYLE: React.CSSProperties = {
 };
 
 const DEFAULT_PANEL_STYLE: React.CSSProperties = {
-  background: 'rgba(0, 0, 0, 0.55)',
+  background: themeVar('overlayBgStrong'),
   borderRadius: '8px',
   padding: '12px',
-  color: '#FFFFFF',
+  color: themeVar('overlayText'),
   minWidth: '140px',
-  boxShadow: '0 6px 20px rgba(0, 0, 0, 0.35)'
+  boxShadow: themeVar('overlayShadow')
 };
 
 const FACE_VIEW_TARGETS: Record<string, PartialTrackballState> = {
@@ -376,10 +377,10 @@ export const CubeNavigation: React.FC<CubeNavigationProps> = ({
     position: 'absolute',
     width: '100%',
     height: '100%',
-    background: 'rgba(255, 255, 255, 0.12)',
-    border: '1px solid rgba(255, 255, 255, 0.35)',
+    background: themeVar('controlBg'),
+    border: `1px solid ${themeVar('controlBorder')}`,
     boxSizing: 'border-box',
-    color: '#FFFFFF',
+    color: themeVar('overlayText'),
     cursor: 'pointer',
     userSelect: 'none',
     transformStyle: 'preserve-3d'
@@ -401,9 +402,9 @@ export const CubeNavigation: React.FC<CubeNavigationProps> = ({
 
   const faceEdgeStyle: React.CSSProperties = {
     position: 'absolute',
-    background: 'rgba(0, 0, 0, 0.25)',
-    border: 'none', //'1px solid rgba(255, 255, 255, 0.35)',
-    color: '#FFFFFF',
+    background: themeVar('overlayBg', 'rgba(0, 0, 0, 0.25)'),
+    border: 'none',
+    color: themeVar('overlayText'),
     fontSize: '11px',
     display: 'flex',
     alignItems: 'center',
