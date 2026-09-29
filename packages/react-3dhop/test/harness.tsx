@@ -137,6 +137,7 @@ export const ViewerHarness: React.FC<HarnessProps> = ({
       registerInteractiveTool={tools.registerInteractiveTool}
       toggleInteractiveTool={toggleInteractiveTool}
       activeInteractiveTool={tools.activeInteractiveTool}
+      realignToolbar={() => {}}
       theme={theme}
       hasHotspotContribution={false}
       measurementUnits="mm"

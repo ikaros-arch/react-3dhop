@@ -559,6 +559,7 @@ export const ThreeDHopViewer: React.FC<ThreeDHopViewerProps> = ({
       registerInteractiveTool={registerInteractiveTool}
       toggleInteractiveTool={toggleInteractiveTool}
       activeInteractiveTool={activeInteractiveTool}
+      realignToolbar={alignToolbarSidecars}
       theme={resolvedTheme}
       hasHotspotContribution={hasHotspotContribution}
       measurementUnits={measurementUnitLabel}

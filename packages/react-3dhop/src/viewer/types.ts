@@ -347,6 +347,8 @@ export type ThreeDHopViewerContextValue = {
   registerInteractiveTool: (config: InteractiveToolConfig) => () => void;
   toggleInteractiveTool: (toolId: InteractiveTool) => void;
   activeInteractiveTool: InteractiveTool | null;
+  /** Re-positions toolbar sidecars next to their anchor icons; call after showing/hiding one. */
+  realignToolbar: () => void;
   /** The theme in effect after resolving `'system'`. */
   theme: ThemeName;
   hasHotspotContribution: boolean;

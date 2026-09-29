@@ -81,6 +81,28 @@ describe('interactive tool registry', () => {
     expect(controls().getActiveTool()).toBeNull();
   });
 
+  it('switches between two tools that share the same presenter mode', () => {
+    // Angle rides on pick-point mode: isEnabled would report true while pick is active.
+    const config: InteractiveToolConfig = {
+      id: 'angle',
+      enable: (p, on) => p.enablePickpointMode?.(on),
+      isEnabled: (p) => p.isPickpointModeEnabled?.()
+    };
+    const { presenter, controls } = setup(<RegisterTool config={config} />);
+
+    act(() => controls().toggleTool('pick'));
+    expect(controls().getActiveTool()).toBe('pick');
+    act(() => controls().toggleTool('angle'));
+    expect(controls().getActiveTool()).toBe('angle');
+    expect(presenter.__pickEnabled).toBe(true);
+    act(() => controls().toggleTool('pick'));
+    expect(controls().getActiveTool()).toBe('pick');
+    expect(presenter.__pickEnabled).toBe(true);
+    act(() => controls().toggleTool('pick'));
+    expect(controls().getActiveTool()).toBeNull();
+    expect(presenter.__pickEnabled).toBe(false);
+  });
+
   it('deactivates and forgets a custom tool when its registration is disposed', () => {
     const enable = vi.fn();
     const config: InteractiveToolConfig = { id: 'angle', enable };
