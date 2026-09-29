@@ -46,9 +46,10 @@ whole check suite. See [docker.md](docker.md).
 Building the libraries before starting the demo matters the first time: the demo imports
 `react-3dhop` and `react-3dhop-iiif` by package name, and both resolve to `dist/`.
 
-The workspace root pins the same `vite` the demo uses (`npm:rolldown-vite`). Without it npm hoists
-the older Vite that Vitest depends on, `@vitejs/plugin-react` resolves against that copy, and the
-demo's `tsc -b` fails on two incompatible sets of Vite types. Vitest keeps its own nested copy.
+The workspace root pins the same `vite` the demo uses (`npm:rolldown-vite`) so that only one copy
+of Vite exists in the tree. Vitest declares `vite` as a peer dependency and resolves to that shared
+copy; if two versions were hoisted side by side, `@vitejs/plugin-react` could resolve against the
+wrong one and the demo's `tsc -b` would fail on two incompatible sets of Vite types.
 
 ## Tests
 
