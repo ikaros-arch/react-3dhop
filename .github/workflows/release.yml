@@ -1,0 +1,49 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+
+concurrency: release-${{ github.ref }}
+
+permissions:
+  contents: write       # changesets/action pushes the "Version Packages" branch and tags
+  pull-requests: write  # ...and opens/updates the PR
+  id-token: write       # npm trusted publishing (OIDC) + provenance attestations
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          registry-url: https://registry.npmjs.org
+
+      # Trusted publishing needs npm >= 11.5.1; Node 24 bundles a recent enough npm, but pin anyway.
+      - run: npm install -g npm@latest
+
+      - run: npm install --no-audit --no-fund
+
+      - run: npm run lint
+      - run: npm test
+
+      # Opens/updates the "Version Packages" PR when there are pending changesets; when that PR
+      # has just been merged (no pending changesets, versions bumped), publishes instead.
+      - name: Version or publish
+        uses: changesets/action@v1
+        with:
+          version: npm run version-packages
+          publish: npm run release
+          title: 'chore: version packages'
+          commit: 'chore: version packages'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # No NPM_TOKEN: publishing authenticates via OIDC once each package has a trusted
+          # publisher configured on npmjs.com (repo ikaros-arch/react-3dhop, workflow release.yml).
+          NPM_CONFIG_PROVENANCE: 'true'

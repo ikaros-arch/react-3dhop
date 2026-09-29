@@ -1,8 +1,29 @@
 # 3DHOP asset provenance
 
-These files are a vendored copy of [3DHOP](https://github.com/cnr-isti-vclab/3DHOP), not a
-dependency. This file records exactly how they differ from upstream so a future version bump
-can tell local changes from upstream ones.
+These files are a vendored copy of [3DHOP](https://github.com/cnr-isti-vclab/3DHOP), published
+as the npm package `@ikaros-arch/3dhop`. This file records exactly how they differ from upstream
+so a future version bump can tell local changes from upstream ones, and which licence each file
+is under.
+
+## Licences
+
+3DHOP as a whole is GPL-3.0 (upstream `LICENSE.txt`, copied here). Several of its components
+come from sibling VCLab projects under more permissive licences and keep their own headers:
+
+| Files | Licence | Origin |
+| --- | --- | --- |
+| `js/init.js`, `js/presenter.js`, `js/ply.js`, `js/helpers.js`, `js/trackball_*.js` | GPL-3.0-or-later | 3DHOP |
+| `js/nexus.js`, `js/nexus.monitor.js`, `js/meco.js` | MIT | [Nexus](https://github.com/cnr-isti-vclab/nexus) |
+| `js/corto.js`, `js/corto.em.js` | MIT | [Corto](https://github.com/cnr-isti-vclab/corto) |
+| `js/spidergl.js` | BSD-3-Clause | SpiderGL (Marco Di Benedetto, VCLab) |
+| `skins/`, `stylesheet/`, `models-system/` | GPL-3.0-or-later | 3DHOP |
+
+The combined work is distributed under GPL-3.0-or-later.
+
+**Modification notices.** GPL-3 §5(a) requires modified files to carry a prominent notice saying
+so, with a date. Every file listed under Layer 1 and Layer 2 below has a `MODIFIED from upstream
+3DHOP 4.3 …` block directly under its original licence header. Keep it there when editing, and
+add one to any further file you change.
 
 ## Base
 
@@ -27,14 +48,15 @@ of `$(document).ready()`, but `js/jquery.js` was still present in the folder.
 Local follow-ups in this repo (2026-09):
 
 - `js/jquery.js` has been deleted; jQuery is no longer vendored or loaded at all.
-- `js/jquery.js` has been removed from `SCRIPT_RESOURCES` in `src/viewer/assets.ts`.
+- `js/jquery.js` has been removed from `SCRIPT_RESOURCES` in `react-3dhop`'s `src/viewer/assets.ts`.
 - `3DHOP_no_tools.html` was converted to `DOMContentLoaded` as well.
 
-**Invariant to preserve: no file in `3dhop/js/` may call `jQuery(...)` or use jQuery's `$`.**
-Verify with:
+**Invariant to preserve: no file in `js/` may call `jQuery(...)` or use jQuery's `$`.**
+`npm run lint` in this package runs `scripts/check-no-jquery.mjs`, which fails if it finds any.
+By hand:
 
 ```bash
-grep -c 'jQuery(' packages/react-3dhop/3dhop/js/*.js   # must be 0 everywhere
+grep -c 'jQuery(' packages/3dhop/js/*.js   # must be 0 everywhere
 ```
 
 Note that `spidergl.js` contains the substrings `requests$(` and `muls$(`. These are ordinary
@@ -44,7 +66,9 @@ minified identifiers, not jQuery calls.
 
 `presenter.js` reports `HOP_VERSION = "4.3.5"`. **This is not an upstream release.** It comes
 from the build running in the `khm_3dhop_desktop` project, added there by a commit titled
-"update from server", and was adopted here for parity between the two projects.
+"update from server", and was adopted here (2025-10-25) for parity between the two projects.
+Who made these changes, and when, is not recorded; the version string suggests a VCLab
+development build rather than local patches, but that is unconfirmed.
 
 Files taken from that build, with their diff size against upstream 4.3:
 
@@ -79,4 +103,11 @@ de-jQueryed `init.js` for.
 ## Unmodified from upstream 4.3
 
 `js/ply.js`, `js/corto.js`, `js/corto.em.js`, `js/meco.js`, `js/helpers.js`, `js/spidergl.js`,
-and everything under `skins/`, `stylesheet/`, `models/`, `models-system/`, `annotations/`.
+and everything under `skins/`, `stylesheet/`, `models/`, `models-system/`.
+
+## Not from upstream, and not published
+
+`annotations/annotations.txt` is a sample annotation file that came along with the
+`khm_3dhop_desktop` build; it is not part of 3DHOP. It, the upstream sample model under
+`models/` (`gargo.nxz`, 7 MB) and the two `3DHOP_*.html` sample pages stay in the repository for
+reference but are excluded from the npm tarball by the `files` list in `package.json`.

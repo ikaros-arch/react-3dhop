@@ -1,17 +1,17 @@
 {
-  "name": "react-3dhop-iiif",
+  "name": "@ikaros-arch/react-3dhop-iiif",
   "version": "0.1.0",
-  "description": "IIIF Presentation 4.0 / IIIF 3D manifest support for react-3dhop",
-  "main": "dist/index.js",
-  "module": "dist/index.mjs",
-  "types": "dist/index.d.ts",
-  "files": [
-    "dist"
-  ],
-  "scripts": {
-    "build": "tsup",
-    "dev": "tsup --watch",
-    "lint": "tsc --noEmit"
+  "description": "IIIF Presentation 4.0 / IIIF 3D manifest support for @ikaros-arch/react-3dhop",
+  "license": "GPL-3.0-or-later",
+  "author": "Hallvard R. Indgjerd",
+  "homepage": "https://github.com/ikaros-arch/react-3dhop/tree/main/packages/react-3dhop-iiif#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ikaros-arch/react-3dhop.git",
+    "directory": "packages/react-3dhop-iiif"
+  },
+  "bugs": {
+    "url": "https://github.com/ikaros-arch/react-3dhop/issues"
   },
   "keywords": [
     "react",
@@ -20,22 +20,52 @@
     "iiif-3d",
     "manifest",
     "3d",
-    "viewer"
+    "viewer",
+    "cultural-heritage"
   ],
-  "author": "Hallvard R. Indgjerd",
-  "license": "GPL-3.0-or-later",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.mts",
+        "default": "./dist/index.mjs"
+      },
+      "require": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      }
+    },
+    "./package.json": "./package.json"
+  },
+  "sideEffects": false,
+  "files": [
+    "dist",
+    "LICENSE",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "lint": "tsc --noEmit",
+    "prepack": "npm run build"
+  },
   "peerDependencies": {
-    "react": ">=17.0.0",
-    "react-dom": ">=17.0.0",
-    "react-3dhop": "^0.2.0"
+    "@ikaros-arch/react-3dhop": ">=0.2.0 <1.0.0",
+    "react": "^17.0.0 || ^18.0.0 || ^19.0.0",
+    "react-dom": "^17.0.0 || ^18.0.0 || ^19.0.0"
   },
   "devDependencies": {
+    "@ikaros-arch/react-3dhop": "^0.2.0",
     "@types/react": "^18.2.37",
     "@types/react-dom": "^18.2.15",
     "react": "^18.2.0",
-    "react-3dhop": "^0.2.0",
     "react-dom": "^18.2.0",
     "tsup": "^8.0.1",
     "typescript": "^5.3.3"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

@@ -97,7 +97,7 @@ export { useThreeDHopViewer } from './viewer/context.js';
  * state to nested components through the `ThreeDHopViewerProvider` interface.
  */
 export const ThreeDHopViewer: React.FC<ThreeDHopViewerProps> = ({
-  assetBaseUrl = '/node_modules/react-3dhop/dist/3dhop',
+  assetBaseUrl = '/node_modules/@ikaros-arch/3dhop',
   modelUrl,
   models,
   backgroundUrl,

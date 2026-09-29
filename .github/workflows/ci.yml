@@ -1,0 +1,36 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      # `npm ci` is not usable with this lockfile across platforms; see docker/install.sh.
+      - run: npm install --no-audit --no-fund
+
+      - run: npm run lint
+      - run: npm test
+      - run: npm run build
+      - run: npm run build --workspace=react-3dhop-demo
+      - run: npm run lint --workspace=react-3dhop-demo
+
+      - name: Tarball contents
+        run: npm run pack:dry
+
+      - name: Audit (production deps only)
+        run: npm audit --omit=dev

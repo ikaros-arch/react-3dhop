@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { ThreeDHopViewer, type ThreeDHopViewerProps } from 'react-3dhop';
+import { ThreeDHopViewer, type ThreeDHopViewerProps } from '@ikaros-arch/react-3dhop';
 import { IIIFMultiManifestProvider, type IIIFMultiManifestStatus } from './multiManifestContext.js';
 import { loadManifest, parseManifest } from './iiif/parser.js';
 import { sceneFromManifests, type SceneFromManifests, type ToMultiModelsOptions } from './iiif/toMultiModels.js';

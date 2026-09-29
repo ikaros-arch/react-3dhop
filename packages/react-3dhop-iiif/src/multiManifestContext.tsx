@@ -1,5 +1,5 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { useThreeDHopViewer } from 'react-3dhop';
+import { useThreeDHopViewer } from '@ikaros-arch/react-3dhop';
 import type { Diagnostic, ParsedModel } from './iiif/types.js';
 import type { SceneFromManifests } from './iiif/toMultiModels.js';
 

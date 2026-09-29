@@ -6,11 +6,11 @@ manifests with 3DHOP. This page explains how it fits together; the
 unit handling, and the exact subset of the specification that is supported.
 
 ```bash
-npm install react-3dhop-iiif react-3dhop
+npm install @ikaros-arch/react-3dhop-iiif @ikaros-arch/react-3dhop @ikaros-arch/3dhop
 ```
 
 ```tsx
-import { IIIFViewer, IIIFSummary, IIIFMetadataPanel, IIIFSavedViewsPanel } from 'react-3dhop-iiif';
+import { IIIFViewer, IIIFSummary, IIIFMetadataPanel, IIIFSavedViewsPanel } from '@ikaros-arch/react-3dhop-iiif';
 
 <IIIFViewer manifest="https://example.org/iiif/object/manifest.json" assetBaseUrl="/3dhop">
   <IIIFSummary />
@@ -93,7 +93,7 @@ The parsing and geometry layer takes no React, touches no DOM, and never reads 3
 Camera conversion takes scene framing as an argument rather than reading it off a live presenter:
 
 ```ts
-import { loadManifest, sceneFromManifest, buildModelMatrix, view2track } from 'react-3dhop-iiif';
+import { loadManifest, sceneFromManifest, buildModelMatrix, view2track } from '@ikaros-arch/react-3dhop-iiif';
 
 const parsed = await loadManifest(url);
 const scene = sceneFromManifest(parsed, { displayUnit: 'cm' });

@@ -17,6 +17,12 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+/*
+MODIFIED from upstream 3DHOP 4.3 (https://github.com/cnr-isti-vclab/3DHOP).
+October 2025: jQuery removed; rewritten against the plain DOM API by Federico Ponchio
+(Visual Computing Lab, ISTI - CNR). Unmodified since. See ../PROVENANCE.md.
+*/
+
 function init3dhop() {
 	// IOS DEVICES CHECK: add viewport meta
 	if (isIOS()) {

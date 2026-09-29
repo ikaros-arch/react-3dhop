@@ -1,5 +1,5 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { useThreeDHopViewer } from 'react-3dhop';
+import { useThreeDHopViewer } from '@ikaros-arch/react-3dhop';
 import { cameraToView, track2view, view2track, viewToCameraAnnotation, type SceneFraming, type TrackballState } from './iiif/camera.js';
 import { resolveLanguageMap } from './iiif/language.js';
 import type { Diagnostic, LocalizableValue, ParsedCamera, ParsedManifest, ParsedMetadata, ParsedModel } from './iiif/types.js';

@@ -22,6 +22,12 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
+/*
+MODIFIED from upstream 3DHOP 4.3 (https://github.com/cnr-isti-vclab/3DHOP).
+Carries the "4.3.5" patch set (not an upstream release), adopted into this repository on
+2025-10-25 from the build used by the khm_3dhop_desktop project. See ../PROVENANCE.md.
+*/
+
 Nexus = function() {
 
 /* WORKER INITIALIZED ONCE */

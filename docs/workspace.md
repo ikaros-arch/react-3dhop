@@ -7,21 +7,30 @@ that exercises them lives under `examples/`.
 react-3dhop/
 ├── package.json                    private workspace root
 ├── vitest.config.ts                picks up packages/*/test/**/*.test.ts
+├── .changeset/                     Changesets config + pending release notes
+├── .github/workflows/              ci.yml (PRs) and release.yml (main)
 ├── docs/
 ├── packages/
-│   ├── react-3dhop/                the core viewer
-│   │   ├── src/
-│   │   ├── 3dhop/                  vendored 3DHOP build (see PROVENANCE.md)
-│   │   └── scripts/copy-assets.mjs postbuild copy of 3dhop/ into dist/
-│   └── react-3dhop-iiif/           IIIF Presentation 4.0 / IIIF 3D support
+│   ├── 3dhop/                      @ikaros-arch/3dhop — the vendored 3DHOP runtime (see PROVENANCE.md)
+│   │   ├── js/ skins/ stylesheet/ models-system/
+│   │   └── scripts/check-no-jquery.mjs
+│   ├── react-3dhop/                @ikaros-arch/react-3dhop — the core viewer
+│   │   └── src/
+│   └── react-3dhop-iiif/           @ikaros-arch/react-3dhop-iiif — IIIF Presentation 4.0 / IIIF 3D support
 │       ├── src/
 │       └── test/                   the whole test suite currently lives here
-└── examples/react-3dhop-demo/      Vite application using both packages
+└── examples/react-3dhop-demo/      Vite application using all three packages
 ```
 
-`react-3dhop-iiif` depends on `react-3dhop` as a **peer** dependency, and the demo depends on both.
-npm links all three through the workspace, so an edit in `packages/react-3dhop/src` is visible to
-the other two without publishing — after a rebuild, since the demo consumes the built `dist/`.
+The dependency chain is one-directional and every link is a **peer** dependency:
+`react-3dhop-iiif` → `react-3dhop` → `3dhop`. The demo depends on all three. npm links them
+through the workspace, so an edit in `packages/react-3dhop/src` is visible to the other two without
+publishing — after a rebuild, since the demo consumes the built `dist/`.
+
+`@ikaros-arch/3dhop` has no build step: it is the asset files as they sit in the repository. The
+wrapper never imports it as a module; it loads the scripts and CSS at runtime from `assetBaseUrl`,
+so the package is a peer only so that consumers get the files into `node_modules` and control the
+version.
 
 ## Scripts
 
@@ -30,11 +39,13 @@ Run from the repository root:
 | Command | Effect |
 | --- | --- |
 | `npm install` | Installs every workspace and links them together |
-| `npm run build` | Builds both libraries with tsup; copies `3dhop/` into `packages/react-3dhop/dist/` |
-| `npm run lint` | `tsc --noEmit` in both libraries |
+| `npm run build` | Builds both React libraries with tsup |
+| `npm run lint` | `tsc --noEmit` in both React libraries; the no-jQuery check in `packages/3dhop` |
 | `npm test` | Runs the Vitest suites once |
 | `npm run test:watch` | Runs Vitest in watch mode |
 | `npm run dev` | Starts the demo application |
+| `npm run pack:dry` | Lists exactly what each of the three tarballs would contain |
+| `npm run changeset` | Records a pending release note (see [Releasing](#releasing)) |
 
 The demo has its own `npm run lint` (ESLint) and `npm run build` (`tsc -b && vite build`), run from
 `examples/react-3dhop-demo`.
@@ -44,7 +55,7 @@ All of this also runs in a container, which is the reproducible way to do it:
 whole check suite. See [docker.md](docker.md).
 
 Building the libraries before starting the demo matters the first time: the demo imports
-`react-3dhop` and `react-3dhop-iiif` by package name, and both resolve to `dist/`.
+`@ikaros-arch/react-3dhop` and `@ikaros-arch/react-3dhop-iiif` by package name, and both resolve to `dist/`.
 
 The workspace root pins the same `vite` the demo uses (`npm:rolldown-vite`) so that only one copy
 of Vite exists in the tree. Vitest declares `vite` as a peer dependency and resolves to that shared
@@ -88,22 +99,49 @@ Four manifests ship in `public/manifests/`:
 
 `local.json` is the default, so the demo works offline.
 
-`vite.config.ts` contains a small plugin that serves `packages/react-3dhop/3dhop` at `/3dhop/`
+`vite.config.ts` contains a small plugin that serves `packages/3dhop` at `/3dhop/`
 during development and copies it into `dist/3dhop` on build. That is the demo's stand-in for the
 asset-hosting step a real consumer has to do themselves; see `assetBaseUrl` in the
 [core README](../packages/react-3dhop/README.md).
 
 ## Vendored 3DHOP
 
-`packages/react-3dhop/3dhop/` is a copy of 3DHOP, not a dependency. It is upstream 4.3 plus two
+`packages/3dhop/` is a copy of 3DHOP, not a dependency on upstream, published as
+`@ikaros-arch/3dhop`. It is upstream 4.3 plus two
 layers: a jQuery-free `init.js` written by Federico Ponchio (CNR-ISTI) in October 2025, and a
-patch set adopted from the build used by the `khm_3dhop_desktop` project. Both layers, and the
-per-file diff sizes, are recorded in [`PROVENANCE.md`](../packages/react-3dhop/3dhop/PROVENANCE.md).
+patch set adopted from the build used by the `khm_3dhop_desktop` project. Both layers, the
+per-file diff sizes, and the licence of every file are recorded in
+[`PROVENANCE.md`](../packages/3dhop/PROVENANCE.md).
 
 One invariant is worth repeating here, because it is the reason the rewrite exists at all: **no file
-under `3dhop/js/` may use jQuery.** jQuery is not vendored and not loaded. Before bumping the
-vendored build, check:
+under `packages/3dhop/js/` may use jQuery.** jQuery is not vendored and not loaded.
+`npm run lint` enforces it (`packages/3dhop/scripts/check-no-jquery.mjs`); by hand:
 
 ```bash
-grep -c 'jQuery(' packages/react-3dhop/3dhop/js/*.js   # must be 0 everywhere
+grep -c 'jQuery(' packages/3dhop/js/*.js   # must be 0 everywhere
 ```
+
+## Releasing
+
+All three packages are published to npm under the `@ikaros-arch` scope with
+[Changesets](https://github.com/changesets/changesets).
+
+1. With any change that should reach npm, run `npm run changeset`, pick the affected packages and
+   the bump type, write a line for the changelog, and commit the file it creates under `.changeset/`.
+2. On merge to `main`, `release.yml` runs `changeset version` and opens (or updates) a
+   **"Version Packages"** pull request that bumps versions, updates each package's `CHANGELOG.md`,
+   and bumps the inter-package peer ranges (`updateInternalDependencies: patch`).
+3. Merging that PR runs `changeset publish`, which builds (`prepack`) and publishes every package
+   whose version is not yet on the registry, and tags the commit `@ikaros-arch/<name>@<version>`.
+
+Publishing uses npm **trusted publishing** (OIDC from GitHub Actions), so no long-lived token is
+stored in the repository. Two one-off steps are needed before the workflow can publish:
+
+- The **first** version of each package has to be published by hand (`npm publish --access public
+  -w packages/<name>`), because a trusted publisher can only be configured on an existing package.
+- On npmjs.com, each package → Settings → *Trusted Publisher* → GitHub Actions, with repository
+  `ikaros-arch/react-3dhop` and workflow `release.yml`.
+
+`npm run pack:dry` shows what each tarball will contain; run it before the first publish and
+whenever `files` changes. The `3dhop` package deliberately omits the 7 MB sample model and the
+sample HTML pages.

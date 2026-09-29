@@ -13,7 +13,7 @@ import {
   ScreenshotControl,
   FullscreenControl,
   CompassNavigation
-} from 'react-3dhop'
+} from '@ikaros-arch/react-3dhop'
 import {
   IIIFViewer,
   IIIFMultiManifestViewer,
@@ -28,7 +28,7 @@ import {
   IIIFCollectionCarousel,
   useIIIFManifest,
   useIIIFCollection
-} from 'react-3dhop-iiif'
+} from '@ikaros-arch/react-3dhop-iiif'
 import './IIIFDemo.css'
 
 const MANIFESTS = [

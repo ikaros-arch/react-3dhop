@@ -1,28 +1,30 @@
-# react-3dhop-iiif
+# @ikaros-arch/react-3dhop-iiif
 
 Renders [IIIF Presentation 4.0 / IIIF 3D](https://github.com/IIIF/3d/blob/main/temp-draft-4.md)
 manifests with [3DHOP](https://3dhop.net/), on top of
-[`react-3dhop`](../react-3dhop/README.md).
+[`@ikaros-arch/react-3dhop`](https://github.com/ikaros-arch/react-3dhop/tree/main/packages/react-3dhop#readme).
 
 The IIIF 3D specification is still a draft. Keeping it in its own package means the core viewer
 does not have to move every time the draft does.
 
 ```bash
-npm install react-3dhop-iiif react-3dhop
+npm install @ikaros-arch/react-3dhop-iiif @ikaros-arch/react-3dhop @ikaros-arch/3dhop
 ```
 
-`react`, `react-dom` and `react-3dhop` are peer dependencies. The package itself has **no runtime
+`react`, `react-dom` and `@ikaros-arch/react-3dhop` are peer dependencies (and `@ikaros-arch/3dhop`
+is a peer of that, holding the 3DHOP runtime assets). The package itself has **no runtime
 dependencies**.
 
 This README is the reference for manifest authoring and specification coverage.
-[docs/iiif.md](../../docs/iiif.md) explains how the package is put together and where to extend it.
+[docs/iiif.md](https://github.com/ikaros-arch/react-3dhop/blob/main/docs/iiif.md) explains how the
+package is put together and where to extend it.
 
 ---
 
 ## Quick start
 
 ```tsx
-import { IIIFViewer, IIIFMetadataPanel, IIIFSavedViewsPanel } from 'react-3dhop-iiif';
+import { IIIFViewer, IIIFMetadataPanel, IIIFSavedViewsPanel } from '@ikaros-arch/react-3dhop-iiif';
 
 export function Viewer() {
   return (
@@ -46,7 +48,7 @@ object.
 Panels must be rendered **inside** `<IIIFViewer>` to reach its context. The viewer renders its
 children into a fixed-size, clipped box intended for canvas overlays, so to place panels elsewhere
 on the page, portal them out — React context passes through portals. See
-[`examples/react-3dhop-demo/src/IIIFDemo.tsx`](../../examples/react-3dhop-demo/src/IIIFDemo.tsx).
+[`examples/react-3dhop-demo/src/IIIFDemo.tsx`](https://github.com/ikaros-arch/react-3dhop/blob/main/examples/react-3dhop-demo/src/IIIFDemo.tsx).
 
 ### Reading the manifest yourself
 
@@ -59,7 +61,7 @@ Every parsing and geometry function is also exported standalone, with no React a
 3DHOP's globals — usable in Node, and unit-tested there:
 
 ```ts
-import { loadManifest, sceneFromManifest, buildModelMatrix, view2track } from 'react-3dhop-iiif';
+import { loadManifest, sceneFromManifest, buildModelMatrix, view2track } from '@ikaros-arch/react-3dhop-iiif';
 
 const parsed = await loadManifest(url);
 const scene = sceneFromManifest(parsed, { displayUnit: 'cm' });
@@ -205,7 +207,7 @@ so switching language does not lose the unit or inventory fields.
 
 All read from `useIIIFManifest()` unless noted otherwise, use semantic markup with no CSS
 framework, and accept `className` props on every element. There is no bundled stylesheet; the
-demo's [`IIIFDemo.css`](../../examples/react-3dhop-demo/src/IIIFDemo.css) is a starting point.
+demo's [`IIIFDemo.css`](https://github.com/ikaros-arch/react-3dhop/blob/main/examples/react-3dhop-demo/src/IIIFDemo.css) is a starting point.
 
 | Component | Shows |
 |---|---|
@@ -234,7 +236,7 @@ import {
   IIIFCollectionCarousel,
   IIIFViewer,
   useIIIFCollection
-} from 'react-3dhop-iiif';
+} from '@ikaros-arch/react-3dhop-iiif';
 
 function CollectionBrowser() {
   return (
@@ -257,9 +259,9 @@ function SelectedManifestViewer() {
 `collection` accepts a URL or an already-fetched object, mirroring `<IIIFViewer manifest>`.
 `useIIIFCollection()` also exposes `items` (id, label, thumbnail), `status`/`error`, and
 `next()`/`previous()` for building a custom control. See
-[`examples/react-3dhop-demo/src/IIIFDemo.tsx`](../../examples/react-3dhop-demo/src/IIIFDemo.tsx)
+[`examples/react-3dhop-demo/src/IIIFDemo.tsx`](https://github.com/ikaros-arch/react-3dhop/blob/main/examples/react-3dhop-demo/src/IIIFDemo.tsx)
 for a full example, including the [generator
-script](../../examples/react-3dhop-demo/scripts/generate-bitfrost-collection.mjs) that builds its
+script](https://github.com/ikaros-arch/react-3dhop/blob/main/examples/react-3dhop-demo/scripts/generate-bitfrost-collection.mjs) that builds its
 sample collection from a museum catalogue export.
 
 ---
@@ -270,7 +272,7 @@ sample collection from a museum catalogue export.
 instance, laid out side by side rather than switched between one at a time:
 
 ```tsx
-import { IIIFMultiManifestViewer, IIIFMultiManifestModelsPanel } from 'react-3dhop-iiif';
+import { IIIFMultiManifestViewer, IIIFMultiManifestModelsPanel } from '@ikaros-arch/react-3dhop-iiif';
 
 function Comparison() {
   return (
@@ -312,7 +314,7 @@ const { manifests, isModelVisible, setModelVisible } = useIIIFMultiManifest();
 // manifests: [{ key, sourceId, label, models }, …]
 ```
 
-See [`examples/react-3dhop-demo/src/IIIFDemo.tsx`](../../examples/react-3dhop-demo/src/IIIFDemo.tsx)
+See [`examples/react-3dhop-demo/src/IIIFDemo.tsx`](https://github.com/ikaros-arch/react-3dhop/blob/main/examples/react-3dhop-demo/src/IIIFDemo.tsx)
 (`"Multi-manifest viewer"` mode) for a full example that lets the user check off any number of
 objects from a collection.
 

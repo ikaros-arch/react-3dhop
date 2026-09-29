@@ -17,6 +17,12 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+/*
+MODIFIED from upstream 3DHOP 4.3 (https://github.com/cnr-isti-vclab/3DHOP).
+Carries the "4.3.5" patch set (not an upstream release), adopted into this repository on
+2025-10-25 from the build used by the khm_3dhop_desktop project. See ../PROVENANCE.md.
+*/
+
 /**
  * Constructs a SphereTrackball object.
  * @class Interactor which implements a full spherical trackball controller.

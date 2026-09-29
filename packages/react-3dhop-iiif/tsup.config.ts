@@ -9,5 +9,5 @@ export default defineConfig({
   splitting: false,
   shims: false,
   target: 'es2020',
-  external: ['react', 'react-dom', 'react-3dhop']
+  external: ['react', 'react-dom', '@ikaros-arch/react-3dhop']
 });

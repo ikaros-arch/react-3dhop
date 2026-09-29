@@ -1,18 +1,34 @@
-# react-3dhop
+# @ikaros-arch/react-3dhop
 
-React component wrapper for the [3DHOP viewer](http://vcg.isti.cnr.it/3dhop/).
+React component wrapper for the [3DHOP viewer](https://3dhop.net/) by the Visual Computing Lab,
+ISTI-CNR.
 
 ## Getting Started
 
 ```bash
-npm install react-3dhop
+npm install @ikaros-arch/react-3dhop @ikaros-arch/3dhop
 ```
 
-The library ships with prebuilt assets under `dist/3dhop`. During development you can rely on the files inside `node_modules/react-3dhop/dist/3dhop`; for production remember to copy that directory (or host it elsewhere) and point `assetBaseUrl` to the published location.
+`@ikaros-arch/3dhop` is a peer dependency: it holds the 3DHOP runtime itself (JavaScript, CSS,
+toolbar skins) in a **jQuery-free build**, with no React code. This package loads those files at
+runtime from a URL rather than bundling them, so you have to make the package directory
+reachable from your page and tell the viewer where it is with the `assetBaseUrl` prop:
 
-Current versions of 3DHOP rely on jQuery and are not easily compatible with React. This library includes a jQuery-free build of 3DHOP; jQuery is neither vendored nor loaded. What that build is, and how it differs from upstream, is recorded in [`3dhop/PROVENANCE.md`](3dhop/PROVENANCE.md).
+- **Development** — the default `assetBaseUrl` is `/node_modules/@ikaros-arch/3dhop`, which works
+  when your dev server serves `node_modules` (plain Vite does; the demo in this repository shows a
+  small plugin that serves it from `/3dhop` instead).
+- **Production** — copy `node_modules/@ikaros-arch/3dhop` into your static output (or host it on a
+  CDN) and pass that URL as `assetBaseUrl`.
 
-Longer-form documentation lives in [`docs/`](../../docs/README.md) at the repository root.
+Upstream 3DHOP relies on jQuery and is not easily compatible with React; the build in
+`@ikaros-arch/3dhop` has jQuery written out, and jQuery is neither vendored nor loaded. What that
+build is and how it differs from upstream is recorded in its
+[`PROVENANCE.md`](https://github.com/ikaros-arch/react-3dhop/blob/main/packages/3dhop/PROVENANCE.md).
+
+The upstream sample model is **not** shipped, so always pass a `modelUrl` or a `models` map.
+
+Longer-form documentation lives in
+[`docs/`](https://github.com/ikaros-arch/react-3dhop/blob/main/docs/README.md) in the repository.
 
 ### Basic Viewer
 
@@ -25,7 +41,7 @@ import {
 	ZoomOutControl,
 	LightControl,
 	FullscreenControl
-} from 'react-3dhop';
+} from '@ikaros-arch/react-3dhop';
 
 export function Example() {
 	return (
@@ -57,7 +73,7 @@ import {
 	HomeControl,
 	TransparencyControl,
 	type AnnotationDefinition
-} from 'react-3dhop';
+} from '@ikaros-arch/react-3dhop';
 
 const primaryAnnotations: AnnotationDefinition[] = [
 	{ id: 'base', label: 'Statue Base', position: [-113.6, 11.54, -48.16], radius: 5.4 }
@@ -110,14 +126,14 @@ Each model definition accepts optional transforms (`translation`, `rotation`, `s
 
 `space` and `config` are forwarded field by field, so anything you leave out keeps 3DHOP's own default. Set `centerMode`/`radiusMode` to `'scene'` when several models sit at different positions—the default frames the first instance only. `trackball.type` takes the name of one of 3DHOP's trackballs (`TurnTableTrackball`, `TurntablePanTrackball`, `PanTiltTrackball`, `SphereTrackball`, `RailTrackball`) so you never have to reach into `window`; a constructor is also accepted for custom trackballs.
 
-All three are compared structurally, so inline object literals do not rebuild the scene on every render. Every field is listed in [docs/scene-configuration.md](../../docs/scene-configuration.md).
+All three are compared structurally, so inline object literals do not rebuild the scene on every render. Every field is listed in [docs/scene-configuration.md](https://github.com/ikaros-arch/react-3dhop/blob/main/docs/scene-configuration.md).
 
 ### Compass Navigation
 
 Add the optional `CompassNavigation` overlay to expose quick view presets and a live heading indicator:
 
 ```tsx
-import { ThreeDHopViewer, CompassNavigation } from 'react-3dhop';
+import { ThreeDHopViewer, CompassNavigation } from '@ikaros-arch/react-3dhop';
 
 export function WithCompass() {
 	return (
@@ -136,7 +152,7 @@ Use `animationSeconds` (defaults to `0.8`) to control the easing duration passed
 Prefer a more spatial orientation indicator? Drop in the `CubeNavigation` overlay. It renders a CSS 3D cube that mirrors the current trackball heading and lets users click any face to animate the main scene into that view.
 
 ```tsx
-import { ThreeDHopViewer, CubeNavigation } from 'react-3dhop';
+import { ThreeDHopViewer, CubeNavigation } from '@ikaros-arch/react-3dhop';
 
 export function WithCube() {
 	return (
@@ -164,7 +180,7 @@ import {
 	HotspotControl,
 	Annotations,
 	type AnnotationDefinition
-} from 'react-3dhop';
+} from '@ikaros-arch/react-3dhop';
 
 const spots: AnnotationDefinition[] = [
 	{ id: 'base', label: 'Statue Base', position: [-113.6, 11.54, -48.16], radius: 5.4 },
@@ -201,7 +217,7 @@ If you omit a custom toolbar the default viewer toolbar automatically includes `
 
 ```tsx
 import { useEffect } from 'react';
-import { useThreeDHopViewer } from 'react-3dhop';
+import { useThreeDHopViewer } from '@ikaros-arch/react-3dhop';
 
 export function CustomPlugin() {
 	const { registerToolbarAction, registerTrackballObserver, presenter } = useThreeDHopViewer();
@@ -248,3 +264,9 @@ Available controls mirror the classic 3DHOP toolbar:
 - `ScreenshotControl`
 - `HotspotControl`
 - `FullscreenControl`
+
+## Licence
+
+GPL-3.0-or-later. 3DHOP itself is GPL-3.0, and this wrapper is a derivative of it, so applications
+that ship it are bound by the GPL as well. `@ikaros-arch/3dhop` is an unofficial packaging of
+3DHOP and is not affiliated with CNR-ISTI.

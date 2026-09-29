@@ -1,4 +1,4 @@
-import type { ModelDefinition, SceneRenderConfig, SceneSpaceConfig, TrackballConfig } from 'react-3dhop';
+import type { ModelDefinition, SceneRenderConfig, SceneSpaceConfig, TrackballConfig } from '@ikaros-arch/react-3dhop';
 import { buildModelMatrix } from './transforms.js';
 import { getUnitScaleFactor } from './units.js';
 import type { ParsedManifest, ParsedModel } from './types.js';

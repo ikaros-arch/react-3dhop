@@ -24,7 +24,7 @@ import {
   type AnnotationDefinition,
   type AnnotationPickEvent,
   type AnnotationPickHandler
-} from 'react-3dhop'
+} from '@ikaros-arch/react-3dhop'
 import { IIIFDemo } from './IIIFDemo'
 import './App.css'
 

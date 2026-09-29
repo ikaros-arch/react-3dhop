@@ -14,5 +14,5 @@ Reference material lives next to the code it describes:
   controls, annotations, and navigation overlays.
 - [`packages/react-3dhop-iiif/README.md`](../packages/react-3dhop-iiif/README.md) — manifest
   authoring, unit handling, and the supported IIIF 3D subset.
-- [`packages/react-3dhop/3dhop/PROVENANCE.md`](../packages/react-3dhop/3dhop/PROVENANCE.md) — how the
+- [`packages/3dhop/PROVENANCE.md`](../packages/3dhop/PROVENANCE.md) — how the
   vendored 3DHOP build differs from upstream, and the no-jQuery invariant.

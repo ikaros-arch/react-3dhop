@@ -6,7 +6,7 @@ import { defineConfig, loadEnv, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
 
 const here = fileURLToPath(new URL('.', import.meta.url))
-const hopAssets = resolve(here, '../../packages/react-3dhop/3dhop')
+const hopAssets = resolve(here, '../../packages/3dhop')
 
 const MIME_TYPES: Record<string, string> = {
   '.js': 'text/javascript',
@@ -23,11 +23,12 @@ const MIME_TYPES: Record<string, string> = {
 }
 
 /**
- * Serves the 3DHOP runtime assets from the workspace package at `/3dhop`.
+ * Serves the 3DHOP runtime assets from the `@ikaros-arch/3dhop` workspace package at `/3dhop`.
  *
- * The published package ships them under `dist/3dhop`, but inside the workspace the demo would
- * otherwise have to reach outside its own root, which Vite blocks. Serving them from a stable
- * URL keeps `assetBaseUrl` identical in dev, preview, and production builds.
+ * A published consumer would copy or serve `node_modules/@ikaros-arch/3dhop` themselves, but
+ * inside the workspace the demo would otherwise have to reach outside its own root, which Vite
+ * blocks. Serving them from a stable URL keeps `assetBaseUrl` identical in dev, preview, and
+ * production builds.
  */
 function serve3dhopAssets(): Plugin {
   const prefix = '/3dhop/'

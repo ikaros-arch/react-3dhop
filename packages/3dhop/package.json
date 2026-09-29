@@ -1,0 +1,38 @@
+{
+  "name": "@ikaros-arch/3dhop",
+  "version": "0.1.0",
+  "description": "Unofficial npm packaging of the 3DHOP viewer runtime (CNR-ISTI Visual Computing Lab), jQuery-free build. Runtime assets only; use with @ikaros-arch/react-3dhop.",
+  "license": "GPL-3.0-or-later",
+  "author": "Hallvard R. Indgjerd",
+  "homepage": "https://github.com/ikaros-arch/react-3dhop/tree/main/packages/3dhop#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ikaros-arch/react-3dhop.git",
+    "directory": "packages/3dhop"
+  },
+  "bugs": {
+    "url": "https://github.com/ikaros-arch/react-3dhop/issues"
+  },
+  "keywords": [
+    "3dhop",
+    "3d",
+    "viewer",
+    "webgl",
+    "nexus",
+    "cultural-heritage"
+  ],
+  "files": [
+    "js",
+    "skins",
+    "stylesheet",
+    "models-system",
+    "LICENSE.txt",
+    "PROVENANCE.md"
+  ],
+  "scripts": {
+    "lint": "node scripts/check-no-jquery.mjs"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

@@ -1,4 +1,4 @@
-import type { ModelDefinition, SceneRenderConfig, SceneSpaceConfig, TrackballConfig } from 'react-3dhop';
+import type { ModelDefinition, SceneRenderConfig, SceneSpaceConfig, TrackballConfig } from '@ikaros-arch/react-3dhop';
 import { multiply, translation } from './mat4.js';
 import { sceneFromManifest } from './toModels.js';
 import type { ParsedManifest, ParsedModel, Vector3 } from './types.js';

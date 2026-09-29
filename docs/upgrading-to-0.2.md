@@ -34,7 +34,7 @@ signature changed, so they cannot be mixed with the old presenter. Visible diffe
 geometry (picked points, measurements) has its own point size independent of the model point size,
 screenshot filenames follow `config.screenshotBaseName`/`screenshotTime`, and the light trackball
 tracks drag deltas relative to canvas size rather than a fixed divisor. Full detail in
-[`PROVENANCE.md`](../packages/react-3dhop/3dhop/PROVENANCE.md).
+[`PROVENANCE.md`](../packages/3dhop/PROVENANCE.md).
 
 If a scene looked right in 0.1 and looks subtly different now, these are the places to check first.
 

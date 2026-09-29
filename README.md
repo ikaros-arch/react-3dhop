@@ -1,12 +1,14 @@
 # react-3dhop workspace
 
-Monorepo for the React bindings to the [3DHOP viewer](http://vcg.isti.cnr.it/3dhop/).
+Monorepo for the React bindings to the [3DHOP viewer](https://3dhop.net/), published to npm under
+the `@ikaros-arch` scope.
 
-| Package | Description |
-| --- | --- |
-| [`packages/react-3dhop`](packages/react-3dhop) | Core React component wrapper around 3DHOP, with toolbar, annotations, and navigation widgets. |
-| [`packages/react-3dhop-iiif`](packages/react-3dhop-iiif) | Loads IIIF Presentation 4.0 / IIIF 3D manifests and drives `react-3dhop`. |
-| [`examples/react-3dhop-demo`](examples/react-3dhop-demo) | Vite demo application exercising both packages. |
+| Package | npm | Description |
+| --- | --- | --- |
+| [`packages/3dhop`](packages/3dhop) | `@ikaros-arch/3dhop` | The 3DHOP runtime (JS, CSS, skins) in a jQuery-free build. Runtime assets only; unofficial packaging of CNR-ISTI's 3DHOP. |
+| [`packages/react-3dhop`](packages/react-3dhop) | `@ikaros-arch/react-3dhop` | Core React component wrapper around 3DHOP, with toolbar, annotations, and navigation widgets. |
+| [`packages/react-3dhop-iiif`](packages/react-3dhop-iiif) | `@ikaros-arch/react-3dhop-iiif` | Loads IIIF Presentation 4.0 / IIIF 3D manifests and drives the core viewer. |
+| [`examples/react-3dhop-demo`](examples/react-3dhop-demo) | — | Vite demo application exercising all three. |
 
 ## Getting started
 
@@ -44,8 +46,16 @@ malformed.
 - [Upgrading to 0.2](docs/upgrading-to-0.2.md) — what changed, including the removal of jQuery.
 
 Each package's README is its own API reference:
-[react-3dhop](packages/react-3dhop/README.md) ·
-[react-3dhop-iiif](packages/react-3dhop-iiif/README.md).
+[@ikaros-arch/3dhop](packages/3dhop/README.md) ·
+[@ikaros-arch/react-3dhop](packages/react-3dhop/README.md) ·
+[@ikaros-arch/react-3dhop-iiif](packages/react-3dhop-iiif/README.md).
+
+## Releasing
+
+Versions and changelogs are managed with [Changesets](https://github.com/changesets/changesets):
+run `npm run changeset` alongside any change that should be released, commit the generated file,
+and the release workflow opens a "Version Packages" PR on `main`; merging it publishes to npm.
+See [docs/workspace.md](docs/workspace.md#releasing).
 
 ## License
 
