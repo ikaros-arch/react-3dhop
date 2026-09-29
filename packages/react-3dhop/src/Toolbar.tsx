@@ -194,12 +194,18 @@ export const ToggleImagePair: React.FC<ToggleImagePairProps> = ({ primary, secon
   const { style: primaryStyle, ...restPrimary } = primary.imgProps ?? {};
   const { style: secondaryStyle, ...restSecondary } = secondary.imgProps ?? {};
 
-  const resolvedPrimaryStyle: React.CSSProperties | undefined = primary.hidden === false
-    ? primaryStyle
-    : { position: 'absolute', visibility: 'hidden', ...(primaryStyle ?? {}) };
+  // The "on" icon sits on top of the "off" icon (as in 3DHOP's markup) and only its
+  // visibility changes, so React-controlled toggles and the DOM sync helpers agree.
+  const resolvedPrimaryStyle: React.CSSProperties = {
+    position: 'absolute',
+    visibility: primary.hidden === false ? 'visible' : 'hidden',
+    ...(primaryStyle ?? {})
+  };
   const resolvedSecondaryStyle: React.CSSProperties | undefined = secondary.hidden === true
     ? { visibility: 'hidden', ...(secondaryStyle ?? {}) }
-    : secondaryStyle;
+    : secondary.hidden === false
+      ? { visibility: 'visible', ...(secondaryStyle ?? {}) }
+      : secondaryStyle;
 
   return (
     <>

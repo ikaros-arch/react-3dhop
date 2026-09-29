@@ -7,6 +7,7 @@ import type {
   SceneObserver,
   SceneReadyObserver,
   ThemeName,
+  ToolbarActionHandler,
   TrackballObserver,
   Vector3
 } from '../src/viewer/types.js';
@@ -23,6 +24,8 @@ export type HarnessControls = {
   pick: (raw: Vector3) => void;
   toggleTool: (toolId: InteractiveTool) => void;
   getActiveTool: () => InteractiveTool | null;
+  /** Simulate a toolbar icon click reaching the lifecycle; true if a registered handler took it. */
+  toolbarAction: (action: string) => boolean;
 };
 
 type HarnessProps = {
@@ -52,6 +55,7 @@ export const ViewerHarness: React.FC<HarnessProps> = ({
   const readyObservers = useRef(new Set<SceneReadyObserver>());
   const trackballObservers = useRef(new Set<TrackballObserver>());
   const lightObservers = useRef(new Set<LightObserver>());
+  const toolbarHandlers = useRef(new Map<string, Set<ToolbarActionHandler>>());
   const [measurementValue, setMeasurementValue] = useState<number | null>(null);
   const [pickpointValue, setPickpointValue] = useState<Vector3 | null>(null);
 
@@ -116,8 +120,26 @@ export const ViewerHarness: React.FC<HarnessProps> = ({
       });
     },
     toggleTool: (toolId) => tools.toggleTool(toolId, presenterRef.current),
-    getActiveTool: () => activeInteractiveToolRef.current
+    getActiveTool: () => activeInteractiveToolRef.current,
+    toolbarAction: (action) => {
+      const p = presenterRef.current;
+      if (!p) return false;
+      let handled = false;
+      toolbarHandlers.current.get(action)?.forEach((h) => {
+        if (h(p, action) === true) handled = true;
+      });
+      return handled;
+    }
   };
+
+  const registerToolbarAction = useCallback((actions: string | string[], handler: ToolbarActionHandler) => {
+    const list = Array.isArray(actions) ? actions : [actions];
+    list.forEach((a) => {
+      if (!toolbarHandlers.current.has(a)) toolbarHandlers.current.set(a, new Set());
+      toolbarHandlers.current.get(a)!.add(handler);
+    });
+    return () => list.forEach((a) => toolbarHandlers.current.get(a)?.delete(handler));
+  }, []);
 
   const registerSceneObserver = useMemo(() => register(sceneObservers.current), []);
   const registerTrackballObserver = useMemo(() => register(trackballObservers.current), []);
@@ -128,7 +150,7 @@ export const ViewerHarness: React.FC<HarnessProps> = ({
       presenter={presenter}
       assetBaseUrl="/3dhop"
       registerSceneContribution={() => () => {}}
-      registerToolbarAction={() => () => {}}
+      registerToolbarAction={registerToolbarAction}
       registerSceneObserver={registerSceneObserver}
       registerSceneReadyObserver={registerSceneReadyObserver}
       registerTrackballObserver={registerTrackballObserver}

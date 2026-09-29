@@ -262,6 +262,7 @@ Available controls mirror the classic 3DHOP toolbar:
 - `MeasureControl` (includes the measurement output panel; honours the viewer `measurementUnits` or an override passed as `units`)
 - `PickControl` (includes the XYZ pick panel)
 - `AngleControl` (three-point angle measurement; see below)
+- `GridControl` (floor / box / fixed / axes grid overlay; see below)
 - `SectionsControl` (includes the planar section UI)
 - `InfoControl` (toggles a static info panel with custom content)
 - `ScreenshotControl`
@@ -288,6 +289,30 @@ button. A fourth pick starts a new measurement.
 Props: `title` / `icon` / `enabledImgProps` / `disabledImgProps` (as for the other toggles),
 `label`, `digits` (default 2), `initialDisplayValue`, `onAngle(degrees, [a, b, c])`. The tool id is
 `'angle'` for `toggleInteractiveTool` / `activeInteractiveTool`.
+
+#### `GridControl` / `GridOverlay`
+
+`GridControl` adds a toolbar toggle for a reference grid; while on, a sidecar picks the mode:
+
+| mode | draws |
+|---|---|
+| `flat` | a square grid on the floor plane (y = min) under the model |
+| `box` | a grid on all faces of the model's bounding box |
+| `fixed` | a grid on the world XY plane through the origin (for models registered to a site datum) |
+| `axes` | RGB = XYZ axes from the bounds centre (or `axesOrigin="world"`) |
+
+The cell size defaults to 1 cm expressed in the viewer's `measurementUnits` (`mm` → 10, `cm` → 1,
+`m` → 0.01) and is coarsened automatically for very large scenes; pass `step` to override.
+
+```tsx
+<Toolbar position="top-left">
+	<GridControl defaultOnMode="box" modes={['flat', 'box', 'axes']} />
+</Toolbar>
+```
+
+It works uncontrolled (`defaultMode`) or controlled (`mode` + `onModeChange`). `GridOverlay`
+(`mode`, `step`, `axesOrigin`) is the headless geometry on its own, for when you want to drive the
+grid from your own UI — don't mount both.
 
 ### Theming
 
