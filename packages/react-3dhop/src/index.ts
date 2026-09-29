@@ -61,6 +61,8 @@ export {
 	buildAxes
 } from './geometry/grid.js';
 export type { GridMode, AxesSpecs } from './geometry/grid.js';
+export { lightDirectionToDisc, discToLightDirection, discToRotateLightArgs } from './geometry/light.js';
+export type { DiscPoint } from './geometry/light.js';
 export { THEME_TOKENS, THEME_DEFAULTS, themeVar, themeStyle, readThemeToken, resolveThemeMode } from './theme.js';
 export type { ThemeToken } from './theme.js';
 
@@ -122,3 +124,5 @@ export { AngleControl, ANGLE_TOOL_ID } from './AngleControl.js';
 export type { AngleControlProps } from './AngleControl.js';
 export { GridControl, GridOverlay, GRID_MODE_LABELS } from './GridControl.js';
 export type { GridControlProps, GridOverlayProps } from './GridControl.js';
+export { LightDirectionWidget } from './LightDirectionWidget.js';
+export type { LightDirectionWidgetProps, LightDirectionWidgetPosition } from './LightDirectionWidget.js';

@@ -314,6 +314,21 @@ It works uncontrolled (`defaultMode`) or controlled (`mode` + `onModeChange`). `
 (`mode`, `step`, `axesOrigin`) is the headless geometry on its own, for when you want to drive the
 grid from your own UI — don't mount both.
 
+#### `LightDirectionWidget`
+
+A small draggable disc (a lit sphere) that sets the scene light direction and always shows the
+current one — including changes made through `LightControl`'s drag-on-canvas mode or `Home`. Place
+it with `position` (a viewer corner) or your own `style`.
+
+```tsx
+<ThreeDHopViewer …>
+	<LightDirectionWidget position="bottom-right" label="Light" />
+</ThreeDHopViewer>
+```
+
+Props: `position`, `size` (px, default 126), `label`, `title`, `onChange([x, y])` (disc point in
+[-0.5, 0.5], screen-y down), `className`, `style`. Uses `useLightDirection` under the hood.
+
 ### Theming
 
 Pass `theme="dark"` (or `"system"`) to `<ThreeDHopViewer>`, or set any of the `--r3dhop-*` CSS custom
