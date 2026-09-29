@@ -1,8 +1,17 @@
 name: Release
 
+# Runs on every push to main and is idempotent:
+#   - pending files in .changeset/  -> opens/updates the single "Version Packages" PR
+#   - none pending                  -> publishes any package whose version isn't on npm yet
+# Requires, once: repo Settings > Actions > General > "Allow GitHub Actions to create and approve
+# pull requests" (and the same at org level). Publishing is off until the repository variable
+# NPM_PUBLISH is set to "true" — do that after the first manual publish and after configuring the
+# trusted publisher for each package on npmjs.com. See docs/workspace.md#releasing.
+
 on:
   push:
     branches: [main]
+  workflow_dispatch:
 
 concurrency: release-${{ github.ref }}
 
@@ -39,7 +48,8 @@ jobs:
         uses: changesets/action@v1
         with:
           version: npm run version-packages
-          publish: npm run release
+          # Empty publish command = version-only mode; nothing is pushed to npm.
+          publish: ${{ vars.NPM_PUBLISH == 'true' && 'npm run release' || '' }}
           title: 'chore: version packages'
           commit: 'chore: version packages'
         env:

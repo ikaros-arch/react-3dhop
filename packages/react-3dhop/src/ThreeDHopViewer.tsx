@@ -16,7 +16,7 @@ import {
   ZoomOutControl
 } from './Toolbar';
 import type { AnnotationDefinition } from './utils/annotations.js';
-import { joinAssetPath, resolveRelativeAssetPath } from './utils/assetPaths.js';
+import { resolveRelativeAssetPath } from './utils/assetPaths.js';
 import { useStableValue } from './utils/stableValue.js';
 import { resolveBackgroundUrl } from './viewer/dom';
 import { ThreeDHopViewerProvider } from './viewer/context.js';
@@ -335,11 +335,11 @@ export const ThreeDHopViewer: React.FC<ThreeDHopViewerProps> = ({
   }, [assetBaseUrl]);
 
   /**
-   * Resolves the primary model URL to either the supplied model, a relative asset path, or
-   * the default necklace model bundled with the package.
+   * Resolves the primary model URL: absolute URLs pass through, relative paths resolve against
+   * `assetBaseUrl`. `null` when no `modelUrl` is given — there is no bundled default model.
    */
-  const resolvedModelUrl = useMemo(
-    () => resolveRelativeAssetPath(modelUrl, normalizedBaseUrl, joinAssetPath(normalizedBaseUrl, 'models/gargo.nxz')),
+  const resolvedModelUrl = useMemo<string | null>(
+    () => (modelUrl ? resolveRelativeAssetPath(modelUrl, normalizedBaseUrl, modelUrl) : null),
     [modelUrl, normalizedBaseUrl]
   );
 

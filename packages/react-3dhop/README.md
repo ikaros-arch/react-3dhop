@@ -25,7 +25,9 @@ Upstream 3DHOP relies on jQuery and is not easily compatible with React; the bui
 build is and how it differs from upstream is recorded in its
 [`PROVENANCE.md`](https://github.com/ikaros-arch/react-3dhop/blob/main/packages/3dhop/PROVENANCE.md).
 
-The upstream sample model is **not** shipped, so always pass a `modelUrl` or a `models` map.
+There is no bundled default model: pass a `modelUrl` or a `models` map. Without either the viewer
+renders an empty scene (background only), which is also what you get while a model URL is still
+being resolved.
 
 Longer-form documentation lives in
 [`docs/`](https://github.com/ikaros-arch/react-3dhop/blob/main/docs/README.md) in the repository.

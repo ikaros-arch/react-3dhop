@@ -101,7 +101,7 @@ function resolveTrackballType(type: TrackballConfig['type']): unknown {
 type SceneBuilderOptions = {
   models: Record<string, ModelDefinition | null | undefined> | undefined;
   normalizedBaseUrl: string;
-  resolvedModelUrl: string;
+  resolvedModelUrl: string | null;
   sceneContributions: Map<string, SceneContribution>;
   space?: SceneSpaceConfig;
   config?: SceneRenderConfig;
@@ -177,9 +177,17 @@ export function buildSceneConfiguration(options: SceneBuilderOptions): SceneBuil
 
     const safeKey = sanitizeIdentifier(entryKey, `model_${index + 1}`);
 
+    // An entry without its own `url` inherits the viewer-level `modelUrl`.
+    const resolvedUrl = definition.url
+      ? resolveRelativeAssetPath(definition.url, normalizedBaseUrl, definition.url)
+      : resolvedModelUrl;
+    if (!resolvedUrl) {
+      console.warn(`3DHOP model "${entryKey}" has no url and no modelUrl is set; skipping it.`);
+      return;
+    }
+
     const meshBaseName = definition.meshId ?? `mesh_${safeKey}`;
     const meshName = ensureUniqueName(meshBaseName, usedMeshNames);
-    const resolvedUrl = resolveRelativeAssetPath(definition.url, normalizedBaseUrl, resolvedModelUrl);
     addMesh(meshName, resolvedUrl);
 
     const instanceBaseName = definition.instanceId ?? `model_${safeKey}`;
@@ -271,12 +279,13 @@ export function buildSceneConfiguration(options: SceneBuilderOptions): SceneBuil
     modelEntries.forEach(([key, definition], index) => {
       processModelDefinition(key, definition, index);
     });
-  } else {
+  } else if (resolvedModelUrl) {
     const meshName = ensureUniqueName('mesh_1', usedMeshNames);
     addMesh(meshName, resolvedModelUrl);
     const instanceName = ensureUniqueName('model_1', usedInstanceNames);
     modelInstances[instanceName] = { mesh: meshName };
   }
+  // Otherwise the scene starts empty; contributions below may still add meshes.
 
   sceneContributions.forEach((contribution) => {
     if (contribution.meshes) {
@@ -334,7 +343,7 @@ export function buildSceneConfiguration(options: SceneBuilderOptions): SceneBuil
 export type UseSceneConfigurationOptions = {
   models: Record<string, ModelDefinition | null | undefined> | undefined;
   normalizedBaseUrl: string;
-  resolvedModelUrl: string;
+  resolvedModelUrl: string | null;
   sceneContributionsRef: React.MutableRefObject<Map<string, SceneContribution>>;
   sceneContributionsVersion: number;
   annotationDefinitionsRef: React.MutableRefObject<Map<string, AnnotationDefinition>>;

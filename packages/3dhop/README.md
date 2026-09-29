@@ -65,9 +65,10 @@ directory from a URL your page can reach, then load:
 
 ## Versioning
 
-This package has its own `0.x` version line, independent of 3DHOP's. The 3DHOP version it wraps
-is stated in `PROVENANCE.md` (currently 4.3 + the 4.3.5 patch set; `presenter.js` reports
-`HOP_VERSION = "4.3.5"`).
+This package has its own `0.x` version line, independent of 3DHOP's, because what it wraps is not
+an upstream release. The 3DHOP version it corresponds to is recorded in the `upstream` field of
+`package.json` and in `PROVENANCE.md`: currently **4.3.5** — upstream 4.3 (the last release, June
+2020) plus the 4.3.5 patch set; `presenter.js` reports `HOP_VERSION = "4.3.5"`.
 
 ## Licence
 

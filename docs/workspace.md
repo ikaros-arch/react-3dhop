@@ -135,12 +135,23 @@ All three packages are published to npm under the `@ikaros-arch` scope with
    whose version is not yet on the registry, and tags the commit `@ikaros-arch/<name>@<version>`.
 
 Publishing uses npm **trusted publishing** (OIDC from GitHub Actions), so no long-lived token is
-stored in the repository. Two one-off steps are needed before the workflow can publish:
+stored in the repository. The workflow runs on every push to `main` (and on demand via
+*Run workflow*); it is idempotent and does nothing when there is neither a pending changeset nor an
+unpublished version. Publishing is **switched off** until the repository variable `NPM_PUBLISH` is
+`true`, so the first-release bootstrap looks like this:
 
-- The **first** version of each package has to be published by hand (`npm publish --access public
-  -w packages/<name>`), because a trusted publisher can only be configured on an existing package.
-- On npmjs.com, each package → Settings → *Trusted Publisher* → GitHub Actions, with repository
-  `ikaros-arch/react-3dhop` and workflow `release.yml`.
+1. Repo (and org) Settings → Actions → General → tick **"Allow GitHub Actions to create and approve
+   pull requests"**. Without it the action pushes the `changeset-release/main` branch and then
+   fails when opening the PR.
+2. Let the workflow open the Version Packages PR; review and merge it. Versions and changelogs are
+   now bumped on `main`, but nothing has been published.
+3. Publish by hand from that commit, in dependency order:
+   `npm publish --access public -w packages/3dhop`, then `-w packages/react-3dhop`, then
+   `-w packages/react-3dhop-iiif` (`prepack` builds first). Requires `npm login` with 2FA.
+4. On npmjs.com, each package → Settings → *Trusted Publisher* → GitHub Actions, repository
+   `ikaros-arch/react-3dhop`, workflow `release.yml`. This can only be done on a package that exists.
+5. Repo Settings → Secrets and variables → Actions → Variables → `NPM_PUBLISH` = `true`. From
+   here on, merging a Version Packages PR publishes automatically.
 
 `npm run pack:dry` shows what each tarball will contain; run it before the first publish and
 whenever `files` changes. The `3dhop` package deliberately omits the 7 MB sample model and the
