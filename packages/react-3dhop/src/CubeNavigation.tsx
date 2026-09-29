@@ -14,19 +14,15 @@ import {
   type TrackballObserver
 } from './ThreeDHopViewer.js';
 import { themeVar } from './theme.js';
+import {
+  VIEW_PRESETS,
+  clampTheta,
+  normalizeAngle,
+  type PartialTrackballState,
+  type TrackballState
+} from './geometry/presets.js';
 
 export type CubeNavigationPosition = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
-
-type TrackballState = [number, number, number, number, number, number];
-
-type PartialTrackballState = {
-  phi?: number;
-  theta?: number;
-  panX?: number;
-  panY?: number;
-  panZ?: number;
-  distance?: number;
-};
 
 export type CubeNavigationProps = {
   className?: string;
@@ -88,14 +84,7 @@ const DEFAULT_PANEL_STYLE: React.CSSProperties = {
   boxShadow: themeVar('overlayShadow')
 };
 
-const FACE_VIEW_TARGETS: Record<string, PartialTrackballState> = {
-  front: { phi: 0, theta: 0 },
-  back: { phi: 180, theta: 0 },
-  left: { phi: 270, theta: 0 },
-  right: { phi: 90, theta: 0 },
-  top: { phi: 0, theta: 90 },
-  bottom: { phi: 0, theta: -90 }
-};
+const FACE_VIEW_TARGETS: Record<string, PartialTrackballState> = VIEW_PRESETS;
 
 type EdgeKey = 'top' | 'bottom' | 'left' | 'right';
 
@@ -107,27 +96,6 @@ const EDGE_POSITIONS: Record<EdgeKey, React.CSSProperties> = {
 };
 
 const EDGE_ORDER: EdgeKey[] = ['top', 'right', 'bottom', 'left'];
-
-/**
- * Wraps raw angles into the [0, 360) range while tolerating non-finite inputs.
- */
-const normalizeAngle = (value: number): number => {
-  if (!Number.isFinite(value)) {
-    return 0;
-  }
-  const wrapped = value % 360;
-  return wrapped < 0 ? wrapped + 360 : wrapped;
-};
-
-/**
- * Clamps camera elevation to the trackball's supported hemisphere range.
- */
-const clampTheta = (value: number): number => {
-  if (!Number.isFinite(value)) {
-    return 0;
-  }
-  return Math.max(-90, Math.min(90, value));
-};
 
 /**
  * HUD overlay that animates the presenter to known cube faces and edges while tracking

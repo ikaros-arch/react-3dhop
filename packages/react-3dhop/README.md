@@ -349,6 +349,25 @@ The underlying helpers are exported too: `captureScreenshot(presenter)` (resolve
 URL once 3DHOP has drawn the capture frame), `copyImageToClipboard`, `dataUrlToBlob`,
 `downloadDataUrl`, `screenshotFileName`.
 
+#### `ViewPresetButtons` / `useViewPresets`
+
+Snap the camera to the six standard views without the full `CubeNavigation` HUD:
+
+```tsx
+<ViewPresetButtons position="bottom-left" presets={['front', 'left', 'top']} />
+```
+
+or programmatically:
+
+```tsx
+const { viewFrom } = useViewPresets({ animationSeconds: 0.5 });
+viewFrom('top');
+viewFrom({ phi: 45, theta: 20 }, { preservePanAndDistance: false });
+```
+
+Both accept `animationSeconds` (0 = jump), `preservePanAndDistance` (default true) and
+`targetDistance`. `VIEW_PRESETS` holds the phi/theta pairs and is what `CubeNavigation` uses too.
+
 ### Theming
 
 Pass `theme="dark"` (or `"system"`) to `<ThreeDHopViewer>`, or set any of the `--r3dhop-*` CSS custom
