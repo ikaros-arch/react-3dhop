@@ -1,0 +1,285 @@
+{
+  "@context": "http://iiif.io/api/presentation/4/context.json",
+  "id": "/manifests/bitfrost/99b583ee-349c-49e3-8891-07c1e34f495a.json",
+  "type": "Manifest",
+  "label": {
+    "en": [
+      "C55000/47"
+    ]
+  },
+  "summary": {
+    "en": [
+      "sadel [see more on unimus] Kulturhistorisk museum. Universitet i Oslo. Norge"
+    ]
+  },
+  "metadata": [
+    {
+      "label": {
+        "en": [
+          "Museum"
+        ]
+      },
+      "value": {
+        "en": [
+          "KHM"
+        ]
+      }
+    },
+    {
+      "label": {
+        "en": [
+          "Inventory Number"
+        ]
+      },
+      "value": {
+        "en": [
+          "C55000/47"
+        ]
+      }
+    },
+    {
+      "label": {
+        "en": [
+          "Object ID"
+        ]
+      },
+      "value": {
+        "en": [
+          "C55000_047_1904-028_sID-490_mID-495, C55000_047_1904-028_sID-491_mID-496, C55000_047_1904-032_sID-489_mID-458"
+        ]
+      }
+    },
+    {
+      "label": {
+        "en": [
+          "Measure Unit"
+        ]
+      },
+      "value": {
+        "en": [
+          "mm"
+        ]
+      }
+    },
+    {
+      "label": {
+        "en": [
+          "Display Unit"
+        ]
+      },
+      "value": {
+        "en": [
+          "mm"
+        ]
+      }
+    },
+    {
+      "label": {
+        "en": [
+          "Material"
+        ]
+      },
+      "value": {
+        "en": [
+          "tre "
+        ]
+      }
+    },
+    {
+      "label": {
+        "en": [
+          "Category"
+        ]
+      },
+      "value": {
+        "en": [
+          "sadel"
+        ]
+      }
+    },
+    {
+      "label": {
+        "en": [
+          "Author"
+        ]
+      },
+      "value": {
+        "en": [
+          "Bjarte Aarseth; Mårten Teigen;  Justin J.L. Kimball"
+        ]
+      }
+    }
+  ],
+  "requiredStatement": {
+    "label": {
+      "en": [
+        "Attribution"
+      ]
+    },
+    "value": {
+      "en": [
+        "Kulturhistorisk museum. Universitet i Oslo. Norge"
+      ]
+    }
+  },
+  "items": [
+    {
+      "id": "/manifests/bitfrost/99b583ee-349c-49e3-8891-07c1e34f495a.json/scene/1",
+      "type": "Scene",
+      "label": {
+        "en": [
+          "C55000/47"
+        ]
+      },
+      "items": [
+        {
+          "id": "/manifests/bitfrost/99b583ee-349c-49e3-8891-07c1e34f495a.json/page/1",
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "/manifests/bitfrost/99b583ee-349c-49e3-8891-07c1e34f495a.json/anno/0",
+              "type": "Annotation",
+              "motivation": [
+                "painting"
+              ],
+              "label": {
+                "en": [
+                  "C55000_047_1904-028_sID-490_mID-495"
+                ]
+              },
+              "body": {
+                "type": "SpecificResource",
+                "source": [
+                  {
+                    "id": "https://3d.unimus.no/data/99b583ee-349c-49e3-8891-07c1e34f495a/models/C55000_047_1904-028_sID-490_mID-495.nxz",
+                    "type": "Model",
+                    "format": "Nexus"
+                  }
+                ],
+                "transform": [
+                  {
+                    "type": "RotateTransform",
+                    "x": 90,
+                    "y": 180,
+                    "z": 0
+                  }
+                ]
+              },
+              "target": {
+                "type": "SpecificResource",
+                "source": [
+                  {
+                    "id": "/manifests/bitfrost/99b583ee-349c-49e3-8891-07c1e34f495a.json/scene/1",
+                    "type": "Scene"
+                  }
+                ],
+                "selector": [
+                  {
+                    "type": "PointSelector",
+                    "x": 0,
+                    "y": 0,
+                    "z": 0
+                  }
+                ]
+              }
+            },
+            {
+              "id": "/manifests/bitfrost/99b583ee-349c-49e3-8891-07c1e34f495a.json/anno/1",
+              "type": "Annotation",
+              "motivation": [
+                "painting"
+              ],
+              "label": {
+                "en": [
+                  "C55000_047_1904-028_sID-491_mID-496"
+                ]
+              },
+              "body": {
+                "type": "SpecificResource",
+                "source": [
+                  {
+                    "id": "https://3d.unimus.no/data/99b583ee-349c-49e3-8891-07c1e34f495a/models/C55000_047_1904-028_sID-491_mID-496.nxz",
+                    "type": "Model",
+                    "format": "Nexus"
+                  }
+                ],
+                "transform": [
+                  {
+                    "type": "RotateTransform",
+                    "x": 90,
+                    "y": 180,
+                    "z": 0
+                  }
+                ]
+              },
+              "target": {
+                "type": "SpecificResource",
+                "source": [
+                  {
+                    "id": "/manifests/bitfrost/99b583ee-349c-49e3-8891-07c1e34f495a.json/scene/1",
+                    "type": "Scene"
+                  }
+                ],
+                "selector": [
+                  {
+                    "type": "PointSelector",
+                    "x": 300,
+                    "y": 0,
+                    "z": 0
+                  }
+                ]
+              }
+            },
+            {
+              "id": "/manifests/bitfrost/99b583ee-349c-49e3-8891-07c1e34f495a.json/anno/2",
+              "type": "Annotation",
+              "motivation": [
+                "painting"
+              ],
+              "label": {
+                "en": [
+                  "C55000_047_1904-032_sID-489_mID-458"
+                ]
+              },
+              "body": {
+                "type": "SpecificResource",
+                "source": [
+                  {
+                    "id": "https://3d.unimus.no/data/99b583ee-349c-49e3-8891-07c1e34f495a/models/C55000_047_1904-032_sID-489_mID-458.nxz",
+                    "type": "Model",
+                    "format": "Nexus"
+                  }
+                ],
+                "transform": [
+                  {
+                    "type": "RotateTransform",
+                    "x": 90,
+                    "y": 180,
+                    "z": 0
+                  }
+                ]
+              },
+              "target": {
+                "type": "SpecificResource",
+                "source": [
+                  {
+                    "id": "/manifests/bitfrost/99b583ee-349c-49e3-8891-07c1e34f495a.json/scene/1",
+                    "type": "Scene"
+                  }
+                ],
+                "selector": [
+                  {
+                    "type": "PointSelector",
+                    "x": 600,
+                    "y": 0,
+                    "z": 0
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

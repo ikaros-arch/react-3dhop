@@ -1,0 +1,403 @@
+{
+  "@context": "http://iiif.io/api/presentation/4/context.json",
+  "id": "/manifests/bitfrost/a0765680-e2c9-4436-b5b2-58b910781e1b.json",
+  "type": "Manifest",
+  "label": {
+    "en": [
+      "C10468"
+    ]
+  },
+  "summary": {
+    "en": [
+      "Tuft-portalen dokumentert med krysspolarisert belyst fotogrammetri for VTM-prosjektet. God detalj- og nøyaktighetsnivå, men noen områder i okkluderte soner har krevd manuell reparasjon. Dette er en nedskalert versjon med maksimum 8k tekstur. Større elementer kan fremstå med lavere kvalitet som et resultat. Teksturer er produsert i p3 fargeområde og kan fremstå som mettet på noen skjermer. [see more on unimus] Kulturhistorisk Museum. Universitet i Oslo"
+    ]
+  },
+  "metadata": [
+    {
+      "label": {
+        "en": [
+          "Museum"
+        ]
+      },
+      "value": {
+        "en": [
+          "KHM"
+        ]
+      }
+    },
+    {
+      "label": {
+        "en": [
+          "Inventory Number"
+        ]
+      },
+      "value": {
+        "en": [
+          "C10468"
+        ]
+      }
+    },
+    {
+      "label": {
+        "en": [
+          "Object ID"
+        ]
+      },
+      "value": {
+        "en": [
+          "c10468_a_20240320_10mil_8k, c10468_b_20240320_10mil_8k, c10468_c_20240320_10mil_8k, c10468_d_20240320_10mil_8k, c10468_e_20240320_10mil_8k"
+        ]
+      }
+    },
+    {
+      "label": {
+        "en": [
+          "Measure Unit"
+        ]
+      },
+      "value": {
+        "en": [
+          "m"
+        ]
+      }
+    },
+    {
+      "label": {
+        "en": [
+          "Display Unit"
+        ]
+      },
+      "value": {
+        "en": [
+          "m"
+        ]
+      }
+    },
+    {
+      "label": {
+        "en": [
+          "Acquisition Method"
+        ]
+      },
+      "value": {
+        "en": [
+          "Photogrammetry"
+        ]
+      }
+    },
+    {
+      "label": {
+        "en": [
+          "Material"
+        ]
+      },
+      "value": {
+        "en": [
+          "tre"
+        ]
+      }
+    },
+    {
+      "label": {
+        "en": [
+          "Category"
+        ]
+      },
+      "value": {
+        "en": [
+          "stavkirkeportal"
+        ]
+      }
+    },
+    {
+      "label": {
+        "en": [
+          "Author"
+        ]
+      },
+      "value": {
+        "en": [
+          "Alexis Pantos"
+        ]
+      }
+    },
+    {
+      "label": {
+        "en": [
+          "Date"
+        ]
+      },
+      "value": {
+        "en": [
+          "19.7.2024"
+        ]
+      }
+    }
+  ],
+  "requiredStatement": {
+    "label": {
+      "en": [
+        "Attribution"
+      ]
+    },
+    "value": {
+      "en": [
+        "Kulturhistorisk Museum. Universitet i Oslo"
+      ]
+    }
+  },
+  "items": [
+    {
+      "id": "/manifests/bitfrost/a0765680-e2c9-4436-b5b2-58b910781e1b.json/scene/1",
+      "type": "Scene",
+      "label": {
+        "en": [
+          "C10468"
+        ]
+      },
+      "items": [
+        {
+          "id": "/manifests/bitfrost/a0765680-e2c9-4436-b5b2-58b910781e1b.json/page/1",
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "/manifests/bitfrost/a0765680-e2c9-4436-b5b2-58b910781e1b.json/anno/0",
+              "type": "Annotation",
+              "motivation": [
+                "painting"
+              ],
+              "label": {
+                "en": [
+                  "c10468_a_20240320_10mil_8k"
+                ]
+              },
+              "body": {
+                "type": "SpecificResource",
+                "source": [
+                  {
+                    "id": "https://3d.unimus.no/data/a0765680-e2c9-4436-b5b2-58b910781e1b/models/c10468_a_20240320_10mil_8k.nxz",
+                    "type": "Model",
+                    "format": "Nexus"
+                  }
+                ],
+                "transform": [
+                  {
+                    "type": "RotateTransform",
+                    "x": -90,
+                    "y": 0,
+                    "z": 0
+                  }
+                ]
+              },
+              "target": {
+                "type": "SpecificResource",
+                "source": [
+                  {
+                    "id": "/manifests/bitfrost/a0765680-e2c9-4436-b5b2-58b910781e1b.json/scene/1",
+                    "type": "Scene"
+                  }
+                ],
+                "selector": [
+                  {
+                    "type": "PointSelector",
+                    "x": 0,
+                    "y": 0,
+                    "z": 0
+                  }
+                ]
+              }
+            },
+            {
+              "id": "/manifests/bitfrost/a0765680-e2c9-4436-b5b2-58b910781e1b.json/anno/1",
+              "type": "Annotation",
+              "motivation": [
+                "painting"
+              ],
+              "label": {
+                "en": [
+                  "c10468_b_20240320_10mil_8k"
+                ]
+              },
+              "body": {
+                "type": "SpecificResource",
+                "source": [
+                  {
+                    "id": "https://3d.unimus.no/data/a0765680-e2c9-4436-b5b2-58b910781e1b/models/c10468_b_20240320_10mil_8k.nxz",
+                    "type": "Model",
+                    "format": "Nexus"
+                  }
+                ],
+                "transform": [
+                  {
+                    "type": "RotateTransform",
+                    "x": -90,
+                    "y": 0,
+                    "z": 0
+                  }
+                ]
+              },
+              "target": {
+                "type": "SpecificResource",
+                "source": [
+                  {
+                    "id": "/manifests/bitfrost/a0765680-e2c9-4436-b5b2-58b910781e1b.json/scene/1",
+                    "type": "Scene"
+                  }
+                ],
+                "selector": [
+                  {
+                    "type": "PointSelector",
+                    "x": 1.5,
+                    "y": 0,
+                    "z": 0
+                  }
+                ]
+              }
+            },
+            {
+              "id": "/manifests/bitfrost/a0765680-e2c9-4436-b5b2-58b910781e1b.json/anno/2",
+              "type": "Annotation",
+              "motivation": [
+                "painting"
+              ],
+              "label": {
+                "en": [
+                  "c10468_c_20240320_10mil_8k"
+                ]
+              },
+              "body": {
+                "type": "SpecificResource",
+                "source": [
+                  {
+                    "id": "https://3d.unimus.no/data/a0765680-e2c9-4436-b5b2-58b910781e1b/models/c10468_c_20240320_10mil_8k.nxz",
+                    "type": "Model",
+                    "format": "Nexus"
+                  }
+                ],
+                "transform": [
+                  {
+                    "type": "RotateTransform",
+                    "x": -90,
+                    "y": 0,
+                    "z": 0
+                  }
+                ]
+              },
+              "target": {
+                "type": "SpecificResource",
+                "source": [
+                  {
+                    "id": "/manifests/bitfrost/a0765680-e2c9-4436-b5b2-58b910781e1b.json/scene/1",
+                    "type": "Scene"
+                  }
+                ],
+                "selector": [
+                  {
+                    "type": "PointSelector",
+                    "x": 3,
+                    "y": 0,
+                    "z": 0
+                  }
+                ]
+              }
+            },
+            {
+              "id": "/manifests/bitfrost/a0765680-e2c9-4436-b5b2-58b910781e1b.json/anno/3",
+              "type": "Annotation",
+              "motivation": [
+                "painting"
+              ],
+              "label": {
+                "en": [
+                  "c10468_d_20240320_10mil_8k"
+                ]
+              },
+              "body": {
+                "type": "SpecificResource",
+                "source": [
+                  {
+                    "id": "https://3d.unimus.no/data/a0765680-e2c9-4436-b5b2-58b910781e1b/models/c10468_d_20240320_10mil_8k.nxz",
+                    "type": "Model",
+                    "format": "Nexus"
+                  }
+                ],
+                "transform": [
+                  {
+                    "type": "RotateTransform",
+                    "x": -90,
+                    "y": 0,
+                    "z": 0
+                  }
+                ]
+              },
+              "target": {
+                "type": "SpecificResource",
+                "source": [
+                  {
+                    "id": "/manifests/bitfrost/a0765680-e2c9-4436-b5b2-58b910781e1b.json/scene/1",
+                    "type": "Scene"
+                  }
+                ],
+                "selector": [
+                  {
+                    "type": "PointSelector",
+                    "x": 4.5,
+                    "y": 0,
+                    "z": 0
+                  }
+                ]
+              }
+            },
+            {
+              "id": "/manifests/bitfrost/a0765680-e2c9-4436-b5b2-58b910781e1b.json/anno/4",
+              "type": "Annotation",
+              "motivation": [
+                "painting"
+              ],
+              "label": {
+                "en": [
+                  "c10468_e_20240320_10mil_8k"
+                ]
+              },
+              "body": {
+                "type": "SpecificResource",
+                "source": [
+                  {
+                    "id": "https://3d.unimus.no/data/a0765680-e2c9-4436-b5b2-58b910781e1b/models/c10468_e_20240320_10mil_8k.nxz",
+                    "type": "Model",
+                    "format": "Nexus"
+                  }
+                ],
+                "transform": [
+                  {
+                    "type": "RotateTransform",
+                    "x": -90,
+                    "y": 0,
+                    "z": 0
+                  }
+                ]
+              },
+              "target": {
+                "type": "SpecificResource",
+                "source": [
+                  {
+                    "id": "/manifests/bitfrost/a0765680-e2c9-4436-b5b2-58b910781e1b.json/scene/1",
+                    "type": "Scene"
+                  }
+                ],
+                "selector": [
+                  {
+                    "type": "PointSelector",
+                    "x": 6,
+                    "y": 0,
+                    "z": 0
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

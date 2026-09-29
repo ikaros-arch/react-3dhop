@@ -25,6 +25,7 @@ import {
   type AnnotationPickEvent,
   type AnnotationPickHandler
 } from 'react-3dhop'
+import { IIIFDemo } from './IIIFDemo'
 import './App.css'
 
 const demoAnnotations: AnnotationDefinition[] = [
@@ -56,14 +57,50 @@ function AnnotationEventBridge({ onPick }: { onPick: AnnotationPickHandler }) {
   return null
 }
 
+/**
+ * Which demo to show. Kept in the query string rather than behind a router, since two views do not
+ * justify the dependency. `?manifest=` implies the IIIF view.
+ */
+function useDemoRoute(): 'core' | 'iiif' {
+  if (typeof window === 'undefined') {
+    return 'core'
+  }
+  const params = new URLSearchParams(window.location.search)
+  return params.get('view') === 'iiif' || params.has('manifest') ? 'iiif' : 'core'
+}
+
+function DemoNav({ active }: { active: 'core' | 'iiif' }) {
+  return (
+    <nav className="demo-nav">
+      <a href="?" aria-current={active === 'core' ? 'page' : undefined}>
+        Core viewer
+      </a>
+      <a href="?view=iiif" aria-current={active === 'iiif' ? 'page' : undefined}>
+        IIIF viewer
+      </a>
+    </nav>
+  )
+}
+
 function App() {
+  const route = useDemoRoute()
   const [picked, setPicked] = useState<AnnotationPickEvent | null>(null)
   const handleAnnotationPick = useCallback<AnnotationPickHandler>((event) => {
     setPicked(event)
   }, [])
 
+  if (route === 'iiif') {
+    return (
+      <>
+        <DemoNav active="iiif" />
+        <IIIFDemo />
+      </>
+    )
+  }
+
   return (
     <div className="viewer-wrapper">
+      <DemoNav active="core" />
       <h1>react-3dhop Demo</h1>
       <p className="description">
         Minimal integration of the 3DHOP viewer in a React + Vite environment. The scene renders two
@@ -77,6 +114,7 @@ function App() {
       ) : null}
       <div className="viewer-container">
         <ThreeDHopViewer
+          assetBaseUrl="/3dhop"
           models={{
             primary: {
               url: '/models/C42183_sID-576_mID-913.nxz',

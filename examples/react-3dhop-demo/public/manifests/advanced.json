@@ -1,0 +1,353 @@
+{
+  "@context": "http://iiif.io/api/presentation/4/context.json",
+  "id": "https://humgis.uiocloud.no/3d/iiif/advanced/manifest.json",
+  "type": "Manifest",
+  "label": { 
+    "en": ["Advanced Multi-Model Scene"],
+    "no": ["Avansert fleremodellscene"]
+  },
+  "summary": { 
+    "en": ["Demonstrates multiple models with transforms, positioning, and camera views"],
+    "no": ["Demonstrerer flere modeller med transformasjoner, posisjonering og kameravisninger"]
+  },
+  "metadata": [
+    {
+      "label": { "en": ["Collection"], "no": ["Samling"], "se": ["Sámáldu"] },
+      "value": { "en": ["IIIF 3D Examples"], "no": ["IIIF 3D-eksempler"], "se": ["IIIF 3D Exempela"] }
+    },
+    {
+      "label": { "en": ["Object ID"], "no": ["Objekt-ID"], "se": ["Objekt-ID"] },
+      "value": { "en": ["multi_model_scene"], "no": ["multi_model_scene"], "se": ["multi_model_scene"] }
+    },
+    {
+      "label": { "en": ["Measure Unit"], "no": ["Måleenhet"] },
+      "value": { "en": ["m"], "no": ["m"] }
+    },
+    {
+      "label": { "en": ["Display Unit"], "no": ["Visningsenhet"] },
+      "value": { "en": ["m"], "no": ["m"] }
+    },
+    {
+      "label": { "en": ["Date Created"], "no": ["Opprettelsesdato"] },
+      "value": { "en": ["2025"], "no": ["2025"] }
+    }
+  ],
+  "requiredStatement": {
+    "label": { "en": ["Attribution"], "no": ["Tilskrivning"] },
+    "value": { 
+      "en": ["Models from IIIF 3D Community Group. CC-BY 4.0"],
+      "no": ["Modeller fra IIIF 3D Community Group. CC-BY 4.0"]
+    }
+  },
+  "items": [
+    {
+      "id": "https://humgis.uiocloud.no/3d/iiif/advanced/scene/1",
+      "type": "Scene",
+      "label": { 
+        "en": ["Comparison Scene"],
+        "no": ["Sammenligningsscene"]
+      },
+      "items": [
+        {
+          "id": "https://humgis.uiocloud.no/3d/iiif/advanced/page/1",
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "https://humgis.uiocloud.no/3d/iiif/advanced/anno/model1",
+              "type": "Annotation",
+              "motivation": ["painting"],
+              "label": {
+                "en": ["Original Scale Model"],
+                "no": ["Original skalamodell"]
+              },
+              "body": {
+                "id": "https://3d.unimus.no/data/beta/iiif3d_astronaut/models/astronaut.nxz",
+                "type": "Model",
+                "format": "Nexus"
+              },
+              "target": {
+                "type": "SpecificResource",
+                "source": [
+                  {
+                    "id": "https://humgis.uiocloud.no/3d/iiif/advanced/scene/1",
+                    "type": "Scene"
+                  }
+                ],
+                "selector": [
+                  {
+                    "type": "PointSelector",
+                    "x": -2.0,
+                    "y": 0.0,
+                    "z": 0.0
+                  }
+                ]
+              }
+            },
+            {
+              "id": "https://humgis.uiocloud.no/3d/iiif/advanced/anno/model2",
+              "type": "Annotation",
+              "motivation": ["painting"],
+              "label": {
+                "en": ["Scaled and Rotated Model from Alvim"],
+                "no": ["Skalert og rotert modell"]
+              },
+              "body": {
+                "type": "SpecificResource",
+                "source": [
+                  {
+                    "id": "https://3d.unimus.no/data/858eb5e9-0c86-43cf-921d-1450e55b9b5e/models/alvim_2.nxz",
+                    "type": "Model",
+                    "format": "Nexus",
+                    "measureUnit": "mm" 
+                  }
+                ],
+                "transform": [
+                  {
+                    "type": "ScaleTransform",
+                    "x": 1.5,
+                    "y": 1.5,
+                    "z": 1.5
+                  },
+                  {
+                    "type": "RotateTransform",
+                    "x": -90.0,
+                    "y": -90.0,
+                    "z": 0.0
+                  },
+                  {
+                    "type": "TranslateTransform",
+                    "x": 0.0,
+                    "y": 0.5,
+                    "z": 0.0
+                  }
+                ]
+              },
+              "target": {
+                "type": "SpecificResource",
+                "source": [
+                  {
+                    "id": "https://humgis.uiocloud.no/3d/iiif/advanced/scene/1",
+                    "type": "Scene"
+                  }
+                ],
+                "selector": [
+                  {
+                    "type": "PointSelector",
+                    "x": 2.0,
+                    "y": 0.0,
+                    "z": 0.0
+                  }
+                ]
+              }
+            },
+            {
+              "id": "https://humgis.uiocloud.no/3d/iiif/advanced/anno/model3",
+              "type": "Annotation",
+              "motivation": ["painting"],
+              "label": {
+                "en": ["Small Model Behind PLY"],
+                "no": ["Liten modell bak"]
+              },
+              "body": {
+                "type": "SpecificResource",
+                "source": [
+                  {
+                    "id": "https://3d.unimus.no/data/beta/iiif3d_astronaut/models/astronaut.ply",
+                    "type": "Model",
+                    "format": "PLY"
+                  },
+                  {
+                    "id": "https://3d.unimus.no/data/beta/iiif3d_astronaut/models/astronaut.nxz",
+                    "type": "Model",
+                    "format": "Nexus"
+                  }
+                ],
+                "transform": [
+                  {
+                    "type": "ScaleTransform",
+                    "x": 0.5,
+                    "y": 0.5,
+                    "z": 0.5
+                  },
+                  {
+                    "type": "TranslateTransform",
+                    "x": 3.0,
+                    "y": 0.0,
+                    "z": -1.0
+                  },
+                  {
+                    "type": "RotateTransform",
+                    "x": 90.0,
+                    "y": 0.0,
+                    "z": 180.0
+                  }
+                ]
+              },
+              "target": {
+                "type": "SpecificResource",
+                "source": [
+                  {
+                    "id": "https://humgis.uiocloud.no/3d/iiif/advanced/scene/1",
+                    "type": "Scene"
+                  }
+                ],
+                "selector": [
+                  {
+                    "type": "PointSelector",
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 2.0
+                  }
+                ]
+              }
+            },
+            {
+              "id": "https://humgis.uiocloud.no/3d/iiif/advanced/anno/camera1",
+              "type": "Annotation",
+              "motivation": ["painting"],
+              "body": {
+                "id": "https://humgis.uiocloud.no/3d/iiif/advanced/camera/default",
+                "type": "PerspectiveCamera",
+                "label": {
+                  "en": ["Default Overview"],
+                  "no": ["Standard oversikt"]
+                },
+                "fov": 50.0
+              },
+              "target": {
+                "type": "SpecificResource",
+                "source": [
+                  {
+                    "id": "https://humgis.uiocloud.no/3d/iiif/advanced/scene/1",
+                    "type": "Scene"
+                  }
+                ],
+                "selector": [
+                  {
+                    "type": "PointSelector",
+                    "x": 0.0,
+                    "y": 3.0,
+                    "z": -8.0
+                  }
+                ]
+              }
+            },
+            {
+              "id": "https://humgis.uiocloud.no/3d/iiif/advanced/anno/camera2",
+              "type": "Annotation",
+              "motivation": ["painting"],
+              "body": {
+                "id": "https://humgis.uiocloud.no/3d/iiif/advanced/camera/closeup",
+                "type": "OrthographicCamera",
+                "label": {
+                  "en": ["Close-up View"],
+                  "no": ["Nærbildevisning"]
+                },
+                "fov": 35.0,
+                "lookAt": {
+                  "id": "https://humgis.uiocloud.no/3d/iiif/advanced/anno/model2",
+                  "type": "Annotation"
+                }
+              },
+              "target": {
+                "type": "SpecificResource",
+                "source": [
+                  {
+                    "id": "https://humgis.uiocloud.no/3d/iiif/advanced/scene/1",
+                    "type": "Scene"
+                  }
+                ],
+                "selector": [
+                  {
+                    "type": "PointSelector",
+                    "x": 3.0,
+                    "y": 1.5,
+                    "z": -2.0
+                  }
+                ]
+              }
+            },
+                        {
+              "id": "https://example.org/iiif/3d/camera_saved",
+              "type": "Annotation",
+              "motivation": ["painting"],
+              "body": [
+                {
+                  "id": "https://example.org/iiif/3d/cameras/saved",
+                  "type": "PerspectiveCamera",
+                  "label": { "en": ["Saved View"], "no": ["Lagret visning"] },
+                  "lookAt": {
+                    "type": "PointSelector",
+                    "x": -1.375,
+                    "y": -0.924,
+                    "z": -0.952
+                  },
+                  "fieldOfView": 60
+                }
+              ],
+              "target": [
+                {
+                  "type": "SpecificResource",
+                  "source": {
+                    "id": "https://humgis.uiocloud.no/3d/iiif/advanced/scene/1",
+                    "type": "Scene"
+                  },
+                  "selector": [
+                    {
+                      "type": "PointSelector",
+                      "x": -4.465,
+                      "y": 0.767,
+                      "z": 5.813
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "https://example.org/iiif/3d/camera_1769423096407",
+              "type": "Annotation",
+              "motivation": [
+                "painting"
+              ],
+              "body": [
+                {
+                  "id": "https://example.org/iiif/3d/cameras/1769423096407",
+                  "type": "PerspectiveCamera",
+                  "label": {
+                    "en": [
+                      "Saved View 1/26/2026, 11:24:56 AM"
+                    ]
+                  },
+                  "lookAt": {
+                    "type": "PointSelector",
+                    "x": 9.314,
+                    "y": 1.868,
+                    "z": 3.184
+                  },
+                  "fieldOfView": 60
+                }
+              ],
+              "target": [
+                {
+                  "type": "SpecificResource",
+                  "source": {
+                    "id": "https://example.org/iiif/scene/1",
+                    "type": "Scene"
+                  },
+                  "selector": [
+                    {
+                      "type": "PointSelector",
+                      "x": -0.596,
+                      "y": 0.324,
+                      "z": -1.327
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

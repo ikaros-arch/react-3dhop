@@ -1,0 +1,167 @@
+{
+  "@context": "http://iiif.io/api/presentation/4/context.json",
+  "id": "/manifests/bitfrost/collection.json",
+  "type": "Collection",
+  "label": {
+    "en": [
+      "BITTFROST sample objects"
+    ]
+  },
+  "summary": {
+    "en": [
+      "A curated subset of the Museum of Cultural History BITTFROST catalogue, for exercising the collection picker and carousel."
+    ]
+  },
+  "items": [
+    {
+      "id": "/manifests/bitfrost/f9d83cf6-8394-447c-8eb8-fc3f0cb2229a.json",
+      "type": "Manifest",
+      "label": {
+        "en": [
+          "C55000/152 h"
+        ]
+      },
+      "thumbnail": [
+        {
+          "id": "https://3d.unimus.no/images/C55000_152-7.png",
+          "type": "Image"
+        }
+      ]
+    },
+    {
+      "id": "/manifests/bitfrost/f6d9b2bb-7afc-4a88-b099-2b2825e2ac67.json",
+      "type": "Manifest",
+      "label": {
+        "en": [
+          "UEM2444"
+        ]
+      },
+      "thumbnail": [
+        {
+          "id": "https://3d.unimus.no/images/f6d9b2bb-7afc-4a88-b099-2b2825e2ac67.png",
+          "type": "Image"
+        }
+      ]
+    },
+    {
+      "id": "/manifests/bitfrost/eef19846-6475-49ae-baea-ecdacde8e135.json",
+      "type": "Manifest",
+      "label": {
+        "en": [
+          "C55000/499.2"
+        ]
+      },
+      "thumbnail": [
+        {
+          "id": "https://3d.unimus.no/images/C55000_aare1.png",
+          "type": "Image"
+        }
+      ]
+    },
+    {
+      "id": "/manifests/bitfrost/bf4c9866-3fc1-4f75-8cb6-0e2745039bd5.json",
+      "type": "Manifest",
+      "label": {
+        "en": [
+          "C22007"
+        ]
+      },
+      "thumbnail": [
+        {
+          "id": "https://3d.unimus.no/images/C22007.png",
+          "type": "Image"
+        }
+      ]
+    },
+    {
+      "id": "/manifests/bitfrost/b82803b2-659e-4821-ac3a-db0a8cac0853.json",
+      "type": "Manifest",
+      "label": {
+        "en": [
+          "C41792"
+        ]
+      },
+      "thumbnail": [
+        {
+          "id": "https://3d.unimus.no/images/b82803b2-659e-4821-ac3a-db0a8cac0853.png",
+          "type": "Image"
+        }
+      ]
+    },
+    {
+      "id": "/manifests/bitfrost/ac13b546-7ac6-4892-ad4c-4613afe424a3.json",
+      "type": "Manifest",
+      "label": {
+        "en": [
+          "C55000/192 a"
+        ]
+      },
+      "thumbnail": [
+        {
+          "id": "https://3d.unimus.no/images/C55000_192_239a.png",
+          "type": "Image"
+        }
+      ]
+    },
+    {
+      "id": "/manifests/bitfrost/690dd2be-e18f-457c-8c50-0acf8cdfe6c8.json",
+      "type": "Manifest",
+      "label": {
+        "en": [
+          "C33448_G06098"
+        ]
+      },
+      "thumbnail": [
+        {
+          "id": "https://3d.unimus.no/images/690dd2be-e18f-457c-8c50-0acf8cdfe6c8.png",
+          "type": "Image"
+        }
+      ]
+    },
+    {
+      "id": "/manifests/bitfrost/a0765680-e2c9-4436-b5b2-58b910781e1b.json",
+      "type": "Manifest",
+      "label": {
+        "en": [
+          "C10468"
+        ]
+      },
+      "thumbnail": [
+        {
+          "id": "https://3d.unimus.no/images/a0765680-e2c9-4436-b5b2-58b910781e1b.png",
+          "type": "Image"
+        }
+      ]
+    },
+    {
+      "id": "/manifests/bitfrost/5545e30d-4e5e-47b0-841a-a8b3d640cd77.json",
+      "type": "Manifest",
+      "label": {
+        "en": [
+          "Kviljo"
+        ]
+      },
+      "thumbnail": [
+        {
+          "id": "https://3d.unimus.no/images/Kviljo.png",
+          "type": "Image"
+        }
+      ]
+    },
+    {
+      "id": "/manifests/bitfrost/99b583ee-349c-49e3-8891-07c1e34f495a.json",
+      "type": "Manifest",
+      "label": {
+        "en": [
+          "C55000/47"
+        ]
+      },
+      "thumbnail": [
+        {
+          "id": "https://3d.unimus.no/images/C55000_047.png",
+          "type": "Image"
+        }
+      ]
+    }
+  ]
+}

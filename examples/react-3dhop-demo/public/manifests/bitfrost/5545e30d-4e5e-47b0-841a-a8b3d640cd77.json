@@ -1,0 +1,212 @@
+{
+  "@context": "http://iiif.io/api/presentation/4/context.json",
+  "id": "/manifests/bitfrost/5545e30d-4e5e-47b0-841a-a8b3d640cd77.json",
+  "type": "Manifest",
+  "label": {
+    "en": [
+      "Kviljo"
+    ]
+  },
+  "summary": {
+    "en": [
+      "[see more on kulturminnesok] Kulturhistorisk museum. Universitet i Oslo. Norge"
+    ]
+  },
+  "metadata": [
+    {
+      "label": {
+        "en": [
+          "Museum"
+        ]
+      },
+      "value": {
+        "en": [
+          "Ask"
+        ]
+      }
+    },
+    {
+      "label": {
+        "en": [
+          "Inventory Number"
+        ]
+      },
+      "value": {
+        "en": [
+          "Kviljo"
+        ]
+      }
+    },
+    {
+      "label": {
+        "en": [
+          "Object ID"
+        ]
+      },
+      "value": {
+        "en": [
+          "Kviljo_GS_3D, Kviljo_Stangkamera"
+        ]
+      }
+    },
+    {
+      "label": {
+        "en": [
+          "Measure Unit"
+        ]
+      },
+      "value": {
+        "en": [
+          "mm"
+        ]
+      }
+    },
+    {
+      "label": {
+        "en": [
+          "Display Unit"
+        ]
+      },
+      "value": {
+        "en": [
+          "mm"
+        ]
+      }
+    },
+    {
+      "label": {
+        "en": [
+          "Material"
+        ]
+      },
+      "value": {
+        "en": [
+          "bergart"
+        ]
+      }
+    },
+    {
+      "label": {
+        "en": [
+          "Category"
+        ]
+      },
+      "value": {
+        "en": [
+          "bergkunst"
+        ]
+      }
+    },
+    {
+      "label": {
+        "en": [
+          "Author"
+        ]
+      },
+      "value": {
+        "en": [
+          "Magne Samdal"
+        ]
+      }
+    }
+  ],
+  "requiredStatement": {
+    "label": {
+      "en": [
+        "Attribution"
+      ]
+    },
+    "value": {
+      "en": [
+        "Kulturhistorisk museum. Universitet i Oslo. Norge"
+      ]
+    }
+  },
+  "items": [
+    {
+      "id": "/manifests/bitfrost/5545e30d-4e5e-47b0-841a-a8b3d640cd77.json/scene/1",
+      "type": "Scene",
+      "label": {
+        "en": [
+          "Kviljo"
+        ]
+      },
+      "items": [
+        {
+          "id": "/manifests/bitfrost/5545e30d-4e5e-47b0-841a-a8b3d640cd77.json/page/1",
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "/manifests/bitfrost/5545e30d-4e5e-47b0-841a-a8b3d640cd77.json/anno/0",
+              "type": "Annotation",
+              "motivation": [
+                "painting"
+              ],
+              "label": {
+                "en": [
+                  "Kviljo_GS_3D"
+                ]
+              },
+              "body": {
+                "id": "https://3d.unimus.no/data/5545e30d-4e5e-47b0-841a-a8b3d640cd77/models/Kviljo_GS_3D.nxz",
+                "type": "Model",
+                "format": "Nexus"
+              },
+              "target": {
+                "type": "SpecificResource",
+                "source": [
+                  {
+                    "id": "/manifests/bitfrost/5545e30d-4e5e-47b0-841a-a8b3d640cd77.json/scene/1",
+                    "type": "Scene"
+                  }
+                ],
+                "selector": [
+                  {
+                    "type": "PointSelector",
+                    "x": 0,
+                    "y": 0,
+                    "z": 0
+                  }
+                ]
+              }
+            },
+            {
+              "id": "/manifests/bitfrost/5545e30d-4e5e-47b0-841a-a8b3d640cd77.json/anno/1",
+              "type": "Annotation",
+              "motivation": [
+                "painting"
+              ],
+              "label": {
+                "en": [
+                  "Kviljo_Stangkamera"
+                ]
+              },
+              "body": {
+                "id": "https://3d.unimus.no/data/5545e30d-4e5e-47b0-841a-a8b3d640cd77/models/Kviljo_Stangkamera.nxz",
+                "type": "Model",
+                "format": "Nexus"
+              },
+              "target": {
+                "type": "SpecificResource",
+                "source": [
+                  {
+                    "id": "/manifests/bitfrost/5545e30d-4e5e-47b0-841a-a8b3d640cd77.json/scene/1",
+                    "type": "Scene"
+                  }
+                ],
+                "selector": [
+                  {
+                    "type": "PointSelector",
+                    "x": 300,
+                    "y": 0,
+                    "z": 0
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,38 +1,23 @@
 {
-  "name": "react-3dhop",
-  "version": "0.1.0",
-  "description": "React wrapper for the 3DHOP viewer",
-  "main": "dist/index.js",
-  "module": "dist/index.mjs",
-  "types": "dist/index.d.ts",
-  "files": [
-    "dist",
-    "3dhop"
+  "name": "react-3dhop-workspace",
+  "private": true,
+  "description": "Workspace root for the react-3dhop packages",
+  "license": "GPL-3.0-or-later",
+  "author": "Hallvard R. Indgjerd",
+  "workspaces": [
+    "packages/*",
+    "examples/*"
   ],
   "scripts": {
-    "build": "tsup",
-    "postbuild": "node scripts/copy-assets.mjs",
-    "dev": "tsup --watch",
-    "lint": "tsc --noEmit"
-  },
-  "keywords": [
-    "react",
-    "3dhop",
-    "3d",
-    "viewer"
-  ],
-  "author": "Hallvard R. Indgjerd",
-  "license": "GPL-3.0-or-later",
-  "peerDependencies": {
-    "react": ">=17.0.0",
-    "react-dom": ">=17.0.0"
+    "build": "npm run build --workspace=react-3dhop --workspace=react-3dhop-iiif",
+    "dev": "npm run dev --workspace=react-3dhop-demo",
+    "lint": "npm run lint --workspace=react-3dhop --workspace=react-3dhop-iiif",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "devDependencies": {
-    "@types/react": "^18.2.37",
-    "@types/react-dom": "^18.2.15",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "tsup": "^8.0.1",
-    "typescript": "^5.3.3"
+    "typescript": "^5.3.3",
+    "vite": "npm:rolldown-vite@7.1.14",
+    "vitest": "^2.1.8"
   }
 }

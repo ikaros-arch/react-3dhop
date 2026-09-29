@@ -1,0 +1,97 @@
+{
+  "@context": "http://iiif.io/api/presentation/4/context.json",
+  "id": "/manifests/local.json",
+  "type": "Manifest",
+  "label": {
+    "en": ["Local Demo Object"],
+    "no": ["Lokalt demoobjekt"]
+  },
+  "summary": {
+    "en": ["Two instances of the mesh bundled with this demo, so it renders without network access."],
+    "no": ["To instansar av modellen som følgjer med demoen, så han viser utan nettilgang."]
+  },
+  "metadata": [
+    {
+      "label": { "en": ["Museum"], "no": ["Museum"] },
+      "value": { "en": ["Museum of Cultural History"], "no": ["Kulturhistorisk museum"] }
+    },
+    {
+      "label": { "en": ["Inventory Number"], "no": ["Inventarnummer"] },
+      "value": { "en": ["C42183"], "no": ["C42183"] }
+    },
+    {
+      "label": { "en": ["Measure Unit"], "no": ["Måleenhet"] },
+      "value": { "en": ["mm"], "no": ["mm"] }
+    },
+    {
+      "label": { "en": ["Display Unit"], "no": ["Visningsenhet"] },
+      "value": { "en": ["mm"], "no": ["mm"] }
+    }
+  ],
+  "requiredStatement": {
+    "label": { "en": ["Attribution"], "no": ["Tilskrivning"] },
+    "value": {
+      "en": ["Scanned by the Museum of Cultural History, University of Oslo."],
+      "no": ["Skanna av Kulturhistorisk museum, Universitetet i Oslo."]
+    }
+  },
+  "items": [
+    {
+      "id": "/manifests/local.json/scene/1",
+      "type": "Scene",
+      "label": { "en": ["Main Scene"], "no": ["Hovudscene"] },
+      "items": [
+        {
+          "id": "/manifests/local.json/page/1",
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "/manifests/local.json/anno/original",
+              "type": "Annotation",
+              "motivation": ["painting"],
+              "label": { "en": ["Original"], "no": ["Original"] },
+              "body": {
+                "id": "/models/C42183_sID-576_mID-913.nxz",
+                "type": "Model",
+                "format": "Nexus"
+              },
+              "target": {
+                "type": "SpecificResource",
+                "source": [{ "id": "/manifests/local.json/scene/1", "type": "Scene" }],
+                "selector": [{ "type": "PointSelector", "x": 0.0, "y": 0.0, "z": 0.0 }]
+              }
+            },
+            {
+              "id": "/manifests/local.json/anno/turned",
+              "type": "Annotation",
+              "motivation": ["painting"],
+              "label": {
+                "en": ["Turned and reduced copy"],
+                "no": ["Snudd og forminska kopi"]
+              },
+              "body": {
+                "type": "SpecificResource",
+                "source": [
+                  {
+                    "id": "/models/C42183_sID-576_mID-913.nxz",
+                    "type": "Model",
+                    "format": "Nexus"
+                  }
+                ],
+                "transform": [
+                  { "type": "ScaleTransform", "x": 0.6, "y": 0.6, "z": 0.6 },
+                  { "type": "RotateTransform", "x": 0.0, "y": 180.0, "z": 0.0 }
+                ]
+              },
+              "target": {
+                "type": "SpecificResource",
+                "source": [{ "id": "/manifests/local.json/scene/1", "type": "Scene" }],
+                "selector": [{ "type": "PointSelector", "x": 400.0, "y": 0.0, "z": 0.0 }]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
