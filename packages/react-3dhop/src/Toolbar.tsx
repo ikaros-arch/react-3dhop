@@ -15,6 +15,7 @@ import React, {
 } from 'react';
 import { useThreeDHopViewer } from './ThreeDHopViewer.js';
 import { useOptionalThreeDHopViewer } from './viewer/context.js';
+import { captureScreenshot, copyImageToClipboard, downloadDataUrl, screenshotFileName } from './viewer/screenshot.js';
 import { themeVar } from './theme.js';
 import { joinAssetPath, resolveRelativeAssetPath } from './utils/assetPaths';
 
@@ -588,15 +589,71 @@ export type ScreenshotControlProps = {
   title?: string;
   icon?: string;
   imgProps?: React.ImgHTMLAttributes<HTMLImageElement>;
+  /** Also copy the PNG to the clipboard (where the browser allows image writes). */
+  copyToClipboard?: boolean;
+  /** Download the PNG (default true). Set false for clipboard-only or callback-only use. */
+  download?: boolean;
+  /** File name stem for the download; falls back to the scene's `screenshotBaseName`, then "screenshot". */
+  baseName?: string;
+  /** Append `_HHMMSS` to the file name (default: the scene's `screenshotTime`, else true). */
+  withTime?: boolean;
+  /** Receives the PNG data URL after every capture. */
+  onScreenshot?: (dataUrl: string) => void;
+  /** Called when the capture or the clipboard write fails. */
+  onError?: (error: unknown) => void;
 };
 
 /**
- * Adds a screenshot button that invokes the presenter's capture action.
+ * Adds a screenshot button. Without extra props it defers to 3DHOP's own capture (which downloads
+ * the PNG). With `copyToClipboard`, `onScreenshot`, `baseName`, `withTime` or `download={false}`
+ * the control takes over the capture so it can copy, hand over or rename the image.
  */
-export const ScreenshotControl: React.FC<ScreenshotControlProps> = ({ title, icon, imgProps }) => {
+export const ScreenshotControl: React.FC<ScreenshotControlProps> = ({
+  title,
+  icon,
+  imgProps,
+  copyToClipboard = false,
+  download = true,
+  baseName,
+  withTime,
+  onScreenshot,
+  onError
+}) => {
   const { assetBaseUrl } = useToolbarAssets();
-  const resolvedTitle = title ?? 'Save Screenshot';
+  const { registerToolbarAction } = useThreeDHopViewer();
+  const resolvedTitle = title ?? (copyToClipboard && !download ? 'Copy Screenshot' : 'Save Screenshot');
   const resolvedIcon = resolveRelativeAssetPath(icon, assetBaseUrl, joinAssetPath(assetBaseUrl, 'skins/dark/screenshot.png'));
+
+  const takesOver =
+    copyToClipboard || !download || onScreenshot !== undefined || baseName !== undefined || withTime !== undefined;
+  const latest = useRef({ copyToClipboard, download, baseName, withTime, onScreenshot, onError });
+  latest.current = { copyToClipboard, download, baseName, withTime, onScreenshot, onError };
+
+  useEffect(() => {
+    if (!takesOver) return;
+    return registerToolbarAction('screenshot', (presenter) => {
+      const opts = latest.current;
+      void captureScreenshot(presenter)
+        .then(async (dataUrl) => {
+          opts.onScreenshot?.(dataUrl);
+          if (opts.download) {
+            const config = presenter._scene?.config;
+            downloadDataUrl(
+              dataUrl,
+              screenshotFileName(opts.baseName ?? config?.screenshotBaseName ?? 'screenshot', opts.withTime ?? config?.screenshotTime ?? true)
+            );
+          }
+          if (opts.copyToClipboard) {
+            await copyImageToClipboard(dataUrl);
+          }
+        })
+        .catch((error: unknown) => {
+          if (opts.onError) opts.onError(error);
+          else console.error('[react-3dhop] screenshot failed', error);
+        });
+      return true;
+    });
+  }, [registerToolbarAction, takesOver]);
 
   return (
     <>

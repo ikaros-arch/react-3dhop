@@ -63,6 +63,8 @@ export {
 export type { GridMode, AxesSpecs } from './geometry/grid.js';
 export { lightDirectionToDisc, discToLightDirection, discToRotateLightArgs } from './geometry/light.js';
 export type { DiscPoint } from './geometry/light.js';
+export { captureScreenshot, copyImageToClipboard, dataUrlToBlob, downloadDataUrl, screenshotFileName } from './viewer/screenshot.js';
+export type { CaptureOptions } from './viewer/screenshot.js';
 export { THEME_TOKENS, THEME_DEFAULTS, themeVar, themeStyle, readThemeToken, resolveThemeMode } from './theme.js';
 export type { ThemeToken } from './theme.js';
 

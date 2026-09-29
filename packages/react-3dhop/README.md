@@ -265,7 +265,7 @@ Available controls mirror the classic 3DHOP toolbar:
 - `GridControl` (floor / box / fixed / axes grid overlay; see below)
 - `SectionsControl` (includes the planar section UI)
 - `InfoControl` (toggles a static info panel with custom content)
-- `ScreenshotControl`
+- `ScreenshotControl` (downloads a PNG; can also copy it to the clipboard, rename it or hand it to a callback — see below)
 - `HotspotControl`
 - `FullscreenControl`
 
@@ -328,6 +328,26 @@ it with `position` (a viewer corner) or your own `style`.
 
 Props: `position`, `size` (px, default 126), `label`, `title`, `onChange([x, y])` (disc point in
 [-0.5, 0.5], screen-y down), `className`, `style`. Uses `useLightDirection` under the hood.
+
+#### `ScreenshotControl` extras
+
+With no extra props the button defers to 3DHOP, which downloads the PNG. Any of the following make
+the control take over the capture:
+
+```tsx
+<ScreenshotControl
+	copyToClipboard          // also put the PNG on the clipboard (Chromium/Safari; Firefox needs a flag)
+	baseName="gargoyle"      // file stem; default: scene screenshotBaseName, then "screenshot"
+	withTime={false}         // drop the _HHMMSS suffix
+	download={false}         // clipboard/callback only
+	onScreenshot={(dataUrl) => upload(dataUrl)}
+	onError={(e) => toast(String(e))}
+/>
+```
+
+The underlying helpers are exported too: `captureScreenshot(presenter)` (resolves with a PNG data
+URL once 3DHOP has drawn the capture frame), `copyImageToClipboard`, `dataUrlToBlob`,
+`downloadDataUrl`, `screenshotFileName`.
 
 ### Theming
 
