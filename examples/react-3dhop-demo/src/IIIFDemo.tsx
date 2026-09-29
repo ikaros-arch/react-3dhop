@@ -98,6 +98,15 @@ function Sidebar({ host }: { host: HTMLElement | null }) {
   )
 }
 
+/** Same portal arrangement as `Sidebar`, for the multi-manifest viewer's single panel. */
+function MultiManifestSidebar({ host }: { host: HTMLElement | null }) {
+  if (!host) {
+    return null
+  }
+
+  return createPortal(<IIIFMultiManifestModelsPanel />, host)
+}
+
 /** The toolbar is identical for every manifest shown, whether picked singly or from a collection. */
 function ViewerToolbar() {
   return (
@@ -322,7 +331,7 @@ function MultiManifestPicker() {
             >
               <ViewerToolbar />
               <CompassNavigation position="bottom-right" />
-              {sidebarHost ? createPortal(<IIIFMultiManifestModelsPanel />, sidebarHost) : null}
+              <MultiManifestSidebar host={sidebarHost} />
             </IIIFMultiManifestViewer>
           </div>
 

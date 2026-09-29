@@ -9,7 +9,7 @@ function makeModel(id: string, url: string, position: Vector3 = [0, 0, 0]): Pars
 function makeManifest(id: string, models: ParsedModel[]): ParsedManifest {
   return {
     manifest: { id },
-    metadata: { label: id, measureUnit: 'mm', displayUnit: 'mm' },
+    metadata: { label: id, measureUnit: 'mm', displayUnit: 'mm', fields: [] },
     models,
     cameras: [],
     languages: []
