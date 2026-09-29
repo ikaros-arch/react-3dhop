@@ -96,9 +96,9 @@ asset-hosting step a real consumer has to do themselves; see `assetBaseUrl` in t
 ## Vendored 3DHOP
 
 `packages/react-3dhop/3dhop/` is a copy of 3DHOP, not a dependency. It is upstream 4.3 plus two
-local layers: a rewrite of `init.js` against the plain DOM API, and a patch set adopted from the
-build used by the `khm_3dhop_desktop` project. Both layers, and the per-file diff sizes, are
-recorded in [`PROVENANCE.md`](../packages/react-3dhop/3dhop/PROVENANCE.md).
+layers: a jQuery-free `init.js` written by Federico Ponchio (CNR-ISTI) in October 2025, and a
+patch set adopted from the build used by the `khm_3dhop_desktop` project. Both layers, and the
+per-file diff sizes, are recorded in [`PROVENANCE.md`](../packages/react-3dhop/3dhop/PROVENANCE.md).
 
 One invariant is worth repeating here, because it is the reason the rewrite exists at all: **no file
 under `3dhop/js/` may use jQuery.** jQuery is not vendored and not loaded. Before bumping the
