@@ -1,4 +1,5 @@
 export { ThreeDHopViewer, useThreeDHopViewer } from './ThreeDHopViewer.js';
+export { useOptionalThreeDHopViewer } from './viewer/context.js';
 export type {
 	ThreeDHopViewerProps,
 	ModelDefinition,
@@ -48,6 +49,8 @@ export type { UseLightDirectionResult } from './hooks/useLightDirection.js';
 export { computeSceneBounds } from './geometry/bounds.js';
 export { transformPoint, multiply as multiplyMat4, IDENTITY as IDENTITY_MAT4 } from './geometry/mat4.js';
 export type { Mat4 } from './geometry/mat4.js';
+export { computeAngle, formatAngle, angleEntities } from './geometry/angle.js';
+export type { AngleEntities } from './geometry/angle.js';
 export { THEME_TOKENS, THEME_DEFAULTS, themeVar, themeStyle, readThemeToken, resolveThemeMode } from './theme.js';
 export type { ThemeToken } from './theme.js';
 
@@ -61,6 +64,11 @@ export {
 	Toolbar,
 	ToolbarAssetsProvider,
 	ToolbarSeparator,
+	ToggleImagePair,
+	CopyableOutput,
+	useToolbarSidecar,
+	useToolbarAssets,
+	resolveToggleIcon,
 	HomeControl,
 	ZoomInControl,
 	ZoomOutControl,
@@ -80,6 +88,12 @@ export {
 } from './Toolbar.js';
 export type {
 	ToolbarProps,
+	ToggleImagePairProps,
+	ToggleImageConfig,
+	CopyableOutputProps,
+	ToggleLabels,
+	ToggleIcons,
+	ToggleImgProps,
 	LightControlProps,
 	LightingControlProps,
 	ColorControlProps,
@@ -94,3 +108,5 @@ export type {
 	HotspotControlProps,
 	InfoControlProps
 } from './Toolbar.js';
+export { AngleControl, ANGLE_TOOL_ID } from './AngleControl.js';
+export type { AngleControlProps } from './AngleControl.js';

@@ -261,11 +261,33 @@ Available controls mirror the classic 3DHOP toolbar:
 - `CameraControl` (perspective vs orthographic)
 - `MeasureControl` (includes the measurement output panel; honours the viewer `measurementUnits` or an override passed as `units`)
 - `PickControl` (includes the XYZ pick panel)
+- `AngleControl` (three-point angle measurement; see below)
 - `SectionsControl` (includes the planar section UI)
 - `InfoControl` (toggles a static info panel with custom content)
 - `ScreenshotControl`
 - `HotspotControl`
 - `FullscreenControl`
+
+Controls beyond the classic toolbar (ported from the BITFROST viewer at KHM, University of Oslo):
+
+#### `AngleControl`
+
+Measures the angle between three points picked on the model. It shares 3DHOP's pick-point mode
+with `PickControl`, so the two are mutually exclusive; the picked points, both arms and a
+translucent wedge are drawn as scene entities, and the angle appears in a sidecar with a copy
+button. A fourth pick starts a new measurement.
+
+```tsx
+<Toolbar position="top-left">
+	<MeasureControl />
+	<PickControl />
+	<AngleControl digits={1} onAngle={(degrees, points) => console.log(degrees, points)} />
+</Toolbar>
+```
+
+Props: `title` / `icon` / `enabledImgProps` / `disabledImgProps` (as for the other toggles),
+`label`, `digits` (default 2), `initialDisplayValue`, `onAngle(degrees, [a, b, c])`. The tool id is
+`'angle'` for `toggleInteractiveTool` / `activeInteractiveTool`.
 
 ### Theming
 
