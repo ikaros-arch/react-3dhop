@@ -29,6 +29,11 @@ export type UseInteractiveToolsResult = {
   toggleTool: (toolId: InteractiveTool, presenter?: PresenterInstance | null) => void;
   deactivateTool: (toolId: InteractiveTool, presenter?: PresenterInstance | null) => boolean;
   resetActiveTool: () => void;
+  /**
+   * Re-enables the active tool on the presenter. 3DHOP's `setScene` clears its measurement and
+   * pick-point flags, so the lifecycle calls this after every scene apply.
+   */
+  reassertActiveTool: (presenter?: PresenterInstance | null) => void;
   /** Routes a pick-point result to the active tool, or to the pick tool's output when none. */
   dispatchPick: (context: InteractiveToolPickContext) => void;
   hasTool: (toolId: InteractiveTool) => boolean;
@@ -153,6 +158,17 @@ export function useInteractiveTools({
     setActiveInteractiveTool(null);
   }, [activeInteractiveToolRef]);
 
+  const reassertActiveTool = useCallback(
+    (presenterOverride?: PresenterInstance | null) => {
+      const presenter = presenterOverride ?? presenterRef.current;
+      const activeId = activeInteractiveToolRef.current;
+      const config = activeId ? registry.get(activeId) : undefined;
+      if (!presenter || !config) return;
+      config.enable?.(presenter, true);
+    },
+    [activeInteractiveToolRef, presenterRef, registry]
+  );
+
   const dispatchPick = useCallback(
     (context: InteractiveToolPickContext) => {
       const activeId = activeInteractiveToolRef.current;
@@ -176,6 +192,7 @@ export function useInteractiveTools({
     toggleTool,
     deactivateTool,
     resetActiveTool,
+    reassertActiveTool,
     dispatchPick,
     hasTool
   };

@@ -18,6 +18,8 @@ import {
   VIEW_PRESETS,
   clampTheta,
   normalizeAngle,
+  toPresenterTrackballState,
+  toTrackballState,
   type PartialTrackballState,
   type TrackballState
 } from './geometry/presets.js';
@@ -132,6 +134,8 @@ export const CubeNavigation: React.FC<CubeNavigationProps> = ({
   const [projectionMode, setProjectionMode] = useState<'perspective' | 'orthographic'>('perspective');
   const [rotation, setRotation] = useState<{ x: number; y: number }>({ x: -DEFAULT_TRACKBALL_STATE[1], y: -DEFAULT_TRACKBALL_STATE[0] });
   const lastTrackballStateRef = useRef<TrackballState>(DEFAULT_TRACKBALL_STATE);
+  /** Shape of the last state the presenter reported (3 or 6 values), to send back the same. */
+  const reportedShapeRef = useRef<number[] | null>(null);
 
   /**
    * Normalizes incoming trackball arrays into a stable six-value tuple and caches the
@@ -142,15 +146,8 @@ export const CubeNavigation: React.FC<CubeNavigationProps> = ({
     if (!Array.isArray(state) || state.length === 0) {
       return current;
     }
-
-    const next: TrackballState = [...current];
-    const limit = Math.min(state.length, 6);
-    for (let index = 0; index < limit; index += 1) {
-      const value = Number(state[index]);
-      if (Number.isFinite(value)) {
-        next[index] = value;
-      }
-    }
+    reportedShapeRef.current = state;
+    const next = toTrackballState(state, current);
     lastTrackballStateRef.current = next;
     return next;
   }, []);
@@ -223,7 +220,7 @@ export const CubeNavigation: React.FC<CubeNavigationProps> = ({
     ];
 
     const duration = Number.isFinite(animationSeconds) && animationSeconds > 0 ? animationSeconds : undefined;
-    presenter.animateToTrackballPosition(next, duration);
+    presenter.animateToTrackballPosition(toPresenterTrackballState(next, reportedShapeRef.current), duration);
     lastTrackballStateRef.current = next;
     applyRotationFromTrackball(next);
   }, [presenter, getCurrentTrackballState, preservePanAndDistance, targetDistance, animationSeconds, applyRotationFromTrackball]);

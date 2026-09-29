@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { VIEW_PRESETS, clampTheta, normalizeAngle, toTrackballState, viewPresetState } from '../src/geometry/presets.js';
+import { VIEW_PRESETS, clampTheta, normalizeAngle, toPresenterTrackballState, toTrackballState, viewPresetState } from '../src/geometry/presets.js';
 
 const current: [number, number, number, number, number, number] = [35, 15, 0.1, 0.2, 0.3, 2.5];
 
@@ -21,6 +21,20 @@ describe('toTrackballState', () => {
     expect(toTrackballState([1, 2], current)).toEqual([1, 2, 0.1, 0.2, 0.3, 2.5]);
     expect(toTrackballState([NaN, 5, 0, 0, 0, 1, 99], current)).toEqual([35, 5, 0, 0, 0, 1]);
     expect(toTrackballState(undefined, current)).toEqual(current);
+  });
+
+  it('widens the plain turntable\'s [phi, theta, distance] into the six-value form', () => {
+    expect(toTrackballState([35, 15, 2.5], current)).toEqual([35, 15, 0, 0, 0, 2.5]);
+  });
+});
+
+describe('toPresenterTrackballState', () => {
+  it('returns three values when the presenter reported three', () => {
+    expect(toPresenterTrackballState([0, 90, 0.1, 0.2, 0.3, 2.5], [35, 15, 2.5])).toEqual([0, 90, 2.5]);
+  });
+  it('keeps six values otherwise', () => {
+    expect(toPresenterTrackballState([0, 90, 0.1, 0.2, 0.3, 2.5], [35, 15, 0, 0, 0, 2.5])).toEqual([0, 90, 0.1, 0.2, 0.3, 2.5]);
+    expect(toPresenterTrackballState([0, 90, 0.1, 0.2, 0.3, 2.5], null)).toEqual([0, 90, 0.1, 0.2, 0.3, 2.5]);
   });
 });
 

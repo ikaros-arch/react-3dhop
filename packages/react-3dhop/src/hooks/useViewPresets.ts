@@ -2,6 +2,7 @@ import { useCallback, useMemo } from 'react';
 import { useThreeDHopViewer } from '../viewer/context.js';
 import {
   VIEW_PRESETS,
+  toPresenterTrackballState,
   toTrackballState,
   viewPresetState,
   type PartialTrackballState,
@@ -35,8 +36,9 @@ export function useViewPresets(defaults: UseViewPresetsOptions = {}): UseViewPre
     (target: ViewPreset | PartialTrackballState, overrides: UseViewPresetsOptions = {}) => {
       if (!presenter) return;
       const { animationSeconds = 0.8, ...stateOptions } = { ...defaults, ...overrides };
-      const current = toTrackballState(presenter.getTrackballPosition?.(), DEFAULT_TRACKBALL_STATE);
-      const next = viewPresetState(target, current, stateOptions);
+      const reported = presenter.getTrackballPosition?.();
+      const current = toTrackballState(reported, DEFAULT_TRACKBALL_STATE);
+      const next = toPresenterTrackballState(viewPresetState(target, current, stateOptions), reported);
       const duration = Number.isFinite(animationSeconds) && animationSeconds > 0 ? animationSeconds : 0;
       if (duration > 0 && typeof presenter.animateToTrackballPosition === 'function') {
         presenter.animateToTrackballPosition(next, duration);

@@ -51,6 +51,19 @@ describe('interactive tool registry', () => {
     expect(controls().getActiveTool()).toBe('pick');
   });
 
+  it('keeps the active tool enabled across a scene apply (3DHOP resets it in setScene)', () => {
+    const { presenter, controls } = setup();
+    act(() => controls().toggleTool('pick'));
+    expect(presenter.__pickEnabled).toBe(true);
+    act(() => controls().applyScene());
+    expect(presenter.__pickEnabled).toBe(true);
+    expect(controls().getActiveTool()).toBe('pick');
+
+    act(() => controls().toggleTool('pick'));
+    act(() => controls().applyScene());
+    expect(presenter.__pickEnabled).toBe(false);
+  });
+
   it('accepts a custom tool and keeps it exclusive with built-ins', () => {
     const enable = vi.fn();
     const seen: Array<string | null> = [];

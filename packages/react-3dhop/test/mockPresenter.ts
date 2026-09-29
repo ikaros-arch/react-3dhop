@@ -50,6 +50,9 @@ export function createMockPresenter(scene?: Partial<MockScene>): MockPresenter {
         space: incoming.space
       };
       this.__ready = false;
+      // Like 3DHOP: a new scene clears the measurement / pick-point modes.
+      this.__measureEnabled = false;
+      this.__pickEnabled = false;
     }),
     _testReady: vi.fn(function (this: MockPresenter) {
       this.__ready = true;

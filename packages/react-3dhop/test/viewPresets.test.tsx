@@ -41,6 +41,15 @@ describe('useViewPresets', () => {
     result.current.viewFrom({ phi: 45 }, { preservePanAndDistance: false, targetDistance: 3, animationSeconds: 2 });
     expect(presenter.animateToTrackballPosition).toHaveBeenCalledWith([45, 15, 0, 0, 0, 3], 2);
   });
+
+  it('sends [phi, theta, distance] to the plain TurnTableTrackball', () => {
+    const presenter = createMockPresenter();
+    presenter.__trackball = [35, 15, 2.5];
+    presenter.animateToTrackballPosition = vi.fn();
+    const { result } = renderHook(() => useViewPresets(), { wrapper: wrap(presenter) });
+    result.current.viewFrom('top');
+    expect(presenter.animateToTrackballPosition).toHaveBeenCalledWith([0, 90, 2.5], 0.8);
+  });
 });
 
 describe('ViewPresetButtons', () => {

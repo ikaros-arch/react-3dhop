@@ -1,9 +1,14 @@
 /**
- * Named camera orientations for 3DHOP's TurnTable trackball, shared by `CubeNavigation`,
+ * Named camera orientations for 3DHOP's turntable trackballs, shared by `CubeNavigation`,
  * `ViewPresetButtons` and `useViewPresets`.
+ *
+ * 3DHOP ships two turntables with different state shapes: `TurnTableTrackball` reports
+ * `[phi, theta, distance]`, `TurnTablePanTrackball` reports `[phi, theta, panX, panY, panZ,
+ * distance]`. The helpers below work on the six-value form internally and convert back to whatever
+ * the presenter reported, so `distance` never lands in a pan slot.
  */
 
-/** `[phi, theta, panX, panY, panZ, distance]` as 3DHOP's TurnTable trackball reports it. */
+/** `[phi, theta, panX, panY, panZ, distance]` — the six-value (pan turntable) form. */
 export type TrackballState = [number, number, number, number, number, number];
 
 export type PartialTrackballState = {
@@ -51,15 +56,30 @@ export function clampTheta(value: number): number {
   return Math.max(-90, Math.min(90, value));
 }
 
-/** Coerces whatever the presenter returns into a six-value tuple, filling gaps from `fallback`. */
+/**
+ * Coerces whatever the presenter returns into the six-value form, filling gaps from `fallback`.
+ * A three-value `[phi, theta, distance]` state is widened with zero pan.
+ */
 export function toTrackballState(state: readonly number[] | null | undefined, fallback: TrackballState): TrackballState {
   const next: TrackballState = [...fallback];
   if (!Array.isArray(state)) return next;
-  for (let i = 0; i < Math.min(state.length, 6); i++) {
-    const v = Number(state[i]);
+  const source = state.length === 3 ? [state[0], state[1], 0, 0, 0, state[2]] : state;
+  for (let i = 0; i < Math.min(source.length, 6); i++) {
+    const v = Number(source[i]);
     if (Number.isFinite(v)) next[i] = v;
   }
   return next;
+}
+
+/**
+ * Converts a six-value state back to the shape the presenter reported: three values for the plain
+ * turntable, six for the pan turntable (default when the shape is unknown).
+ */
+export function toPresenterTrackballState(state: TrackballState, reported: readonly number[] | null | undefined): number[] {
+  if (Array.isArray(reported) && reported.length === 3) {
+    return [state[0], state[1], state[5]];
+  }
+  return [...state];
 }
 
 export type ViewStateOptions = {

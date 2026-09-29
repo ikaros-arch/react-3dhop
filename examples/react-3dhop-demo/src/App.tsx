@@ -18,12 +18,17 @@ import {
   FullscreenControl,
   HotspotControl,
   InfoControl,
+  AngleControl,
+  GridControl,
+  LightDirectionWidget,
+  ViewPresetButtons,
   CompassNavigation,
   CubeNavigation,
   useThreeDHopViewer,
   type AnnotationDefinition,
   type AnnotationPickEvent,
-  type AnnotationPickHandler
+  type AnnotationPickHandler,
+  type ThreeDHopViewerProps
 } from '@ikaros-arch/react-3dhop'
 import { IIIFDemo } from './IIIFDemo'
 import './App.css'
@@ -46,6 +51,28 @@ const demoAnnotations: AnnotationDefinition[] = [
     color: [0.2, 0.7, 1]
   }
 ]
+
+// Hoisted so re-renders of App (e.g. after a pick) keep the same object identity; the viewer
+// re-applies the scene whenever `models` changes.
+const demoModels: ThreeDHopViewerProps['models'] = {
+  primary: {
+    url: '/models/C42183_sID-576_mID-913.nxz',
+    annotations: demoAnnotations
+  },
+  ghost: {
+    url: '/models/C42183_sID-576_mID-913.nxz',
+    transform: {
+      translation: [0, 0, -85]
+    },
+    scale: 0.94,
+    tags: ['ghost'],
+    useSolidColor: true,
+    color: [0.6, 0.75, 1],
+    transparency: { enabled: true, alpha: 0.28 }
+  }
+}
+
+const demoCoordinateCorrections = { x: 10000, y: 440000, z: 0 }
 
 function AnnotationEventBridge({ onPick }: { onPick: AnnotationPickHandler }) {
   const { registerAnnotationHandler } = useThreeDHopViewer()
@@ -85,6 +112,7 @@ function DemoNav({ active }: { active: 'core' | 'iiif' }) {
 function App() {
   const route = useDemoRoute()
   const [picked, setPicked] = useState<AnnotationPickEvent | null>(null)
+  const [lastAngle, setLastAngle] = useState<number | null>(null)
   const handleAnnotationPick = useCallback<AnnotationPickHandler>((event) => {
     setPicked(event)
   }, [])
@@ -112,30 +140,17 @@ function App() {
           Last annotation: {picked.annotation.label ?? picked.id}
         </div>
       ) : null}
+      {lastAngle != null ? (
+        <div className="annotation-output">Last angle: {lastAngle.toFixed(2)}°</div>
+      ) : null}
       <div className="viewer-container">
         <ThreeDHopViewer
           assetBaseUrl="/3dhop"
-          models={{
-            primary: {
-              url: '/models/C42183_sID-576_mID-913.nxz',
-              annotations: demoAnnotations
-            },
-            ghost: {
-              url: '/models/C42183_sID-576_mID-913.nxz',
-              transform: {
-                translation: [0, 0, -85]
-              },
-              scale: 0.94,
-              tags: ['ghost'],
-              useSolidColor: true,
-              color: [0.6, 0.75, 1],
-              transparency: { enabled: true, alpha: 0.28 }
-            }
-          }}
+          models={demoModels}
           width={1000}
           height={800}
           backgroundUrl="skins/backgrounds/cyan_gradient.jpg"
-          coordinateCorrections={{ x: 10000, y: 440000, z: 0 }}
+          coordinateCorrections={demoCoordinateCorrections}
         >
           <Toolbar position="top-left">
             <HomeControl
@@ -178,6 +193,15 @@ function App() {
               title={{ enabled: 'Skru av punktvalg', disabled: 'Velg punkt' }}
               label="XYZ punkt"
             />
+            <AngleControl
+              title={{ enabled: 'Skru av vinkelmåling', disabled: 'Mål vinkel' }}
+              label="Målt vinkel"
+              onAngle={(degrees) => setLastAngle(degrees)}
+            />
+            <GridControl
+              title={{ enabled: 'Skjul rutenett', disabled: 'Vis rutenett' }}
+              label="Rutenett"
+            />
             <InfoControl
               label="Modellinfo"
               content={(
@@ -194,7 +218,7 @@ function App() {
               showPlanesLabel="Vis plan"
               showEdgesLabel="Vis kant"
             />
-            <ScreenshotControl title="Lagre skjermbilde" />
+            <ScreenshotControl title="Lagre skjermbilde (og kopier)" copyToClipboard baseName="C42183" />
             <FullscreenControl
               title={{ enabled: 'Avslutt Fullskjerm', disabled: 'Gå til Fullskjerm' }}
               icon={{ enabled: 'skins/dark/full_on.png', disabled: 'skins/dark/full.png' }}
@@ -203,6 +227,8 @@ function App() {
           <AnnotationEventBridge onPick={handleAnnotationPick} />
           <CompassNavigation position="bottom-right" />
           <CubeNavigation position="top-right" />
+          <LightDirectionWidget position="bottom-left" label="Lys" />
+          <ViewPresetButtons style={{ position: 'absolute', bottom: 16, left: 170 }} />
         </ThreeDHopViewer>
       </div>
     </div>

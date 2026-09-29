@@ -44,6 +44,8 @@ export function captureScreenshot(presenter: PresenterInstance, { timeoutMs = 20
         return;
       }
       if (Date.now() - started > timeoutMs) {
+        // Cancel the pending capture so a late frame doesn't trigger 3DHOP's own download.
+        presenter.isCapturingScreenshot = false;
         restore();
         reject(new Error('Timed out waiting for the screenshot frame'));
         return;

@@ -172,7 +172,7 @@ export const ThreeDHopViewer: React.FC<ThreeDHopViewerProps> = ({
     setPickpointValue
   });
 
-  const { toggleTool, deactivateTool, resetActiveTool, registerInteractiveTool, dispatchPick, hasTool, activeInteractiveTool } =
+  const { toggleTool, deactivateTool, resetActiveTool, reassertActiveTool, registerInteractiveTool, dispatchPick, hasTool, activeInteractiveTool } =
     useInteractiveTools({
       presenterRef,
       activeInteractiveToolRef,
@@ -496,7 +496,8 @@ export const ThreeDHopViewer: React.FC<ThreeDHopViewerProps> = ({
     annotationDefinitionsRef,
     annotationHandlersRef,
     trackballObserversRef,
-    resetActiveTool
+    resetActiveTool,
+    reassertActiveTool
   });
 
   useEffect(() => {

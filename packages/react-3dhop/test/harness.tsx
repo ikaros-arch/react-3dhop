@@ -97,6 +97,7 @@ export const ViewerHarness: React.FC<HarnessProps> = ({
       const p = presenterRef.current;
       if (!p) return;
       p.setScene({ meshes: p._scene.meshes, modelInstances: p._scene.modelInstances, space: p._scene.space });
+      tools.reassertActiveTool(p); // as the lifecycle's setScene wrapper does
       sceneObservers.current.forEach((o) => o(p));
     },
     finishLoading: () => {
