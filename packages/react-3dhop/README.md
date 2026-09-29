@@ -267,6 +267,21 @@ Available controls mirror the classic 3DHOP toolbar:
 - `HotspotControl`
 - `FullscreenControl`
 
+### Theming
+
+Pass `theme="dark"` (or `"system"`) to `<ThreeDHopViewer>`, or set any of the `--r3dhop-*` CSS custom
+properties on an ancestor to restyle the viewer's own panels and overlays. The root element carries
+`data-r3dhop-theme` for your own selectors. Token list and details in
+[docs/extending.md](https://github.com/ikaros-arch/react-3dhop/blob/main/docs/extending.md#theming).
+
+### Building your own tools and overlays
+
+The hooks the built-in controls use are exported: `useSceneEntity` keeps helper geometry alive
+across scene rebuilds, `useSceneBounds` gives the loaded scene's extents, `registerInteractiveTool`
+(on the viewer context) adds a canvas tool that is mutually exclusive with measure/pick, and
+`useLightDirection` reads and sets the light. See
+[docs/extending.md](https://github.com/ikaros-arch/react-3dhop/blob/main/docs/extending.md).
+
 ## Licence
 
 GPL-3.0-or-later. 3DHOP itself is GPL-3.0, and this wrapper is a derivative of it, so applications

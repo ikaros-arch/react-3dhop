@@ -43,6 +43,7 @@ malformed.
 - [Scene configuration](docs/scene-configuration.md) — the `space`, `config`, `trackball` and
   `nexusTargetError` props.
 - [IIIF 3D](docs/iiif.md) — how a manifest becomes a scene.
+- [Extending](docs/extending.md) — hooks for custom tools, helper geometry and theming.
 - [Upgrading to 0.2](docs/upgrading-to-0.2.md) — what changed, including the removal of jQuery.
 
 Each package's README is its own API reference:

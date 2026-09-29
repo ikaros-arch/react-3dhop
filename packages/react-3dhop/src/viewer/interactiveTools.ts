@@ -1,171 +1,147 @@
 /**
- * interactiveTools.ts keeps the viewer's mutually exclusive presenter tools in one place,
- * exposing a hook that coordinates presenter method calls with UI state tracking.
- *
- * The module defines shared tool metadata plus the React-facing helpers that callers use when
- * toggling measurement or pickpoint modes, ensuring state stays consistent across refs and UI.
+ * interactiveTools.ts keeps the viewer's mutually exclusive canvas tools in one place: a registry
+ * of tool descriptors (built-in `measure` and `pick`, plus anything registered at runtime) and a
+ * hook that toggles them so at most one is active, keeping presenter state and UI in step.
  */
 import { useCallback, useMemo, useState } from 'react';
 import type React from 'react';
-import type { PresenterInstance } from './types.js';
+import type {
+  InteractiveTool,
+  InteractiveToolConfig,
+  InteractiveToolPickContext,
+  PresenterInstance,
+  Vector3
+} from './types.js';
 
-export type InteractiveTool = 'measure' | 'pick';
-
-export type InteractiveToolConfig = {
-  id: InteractiveTool;
-  enable?: (presenter: PresenterInstance, enabled: boolean) => void;
-  isEnabled?: (presenter: PresenterInstance) => boolean | undefined;
-  syncUi: (enabled?: boolean) => void;
-};
+export type { InteractiveTool, InteractiveToolConfig, InteractiveToolPickContext };
 
 export type UseInteractiveToolsOptions = {
   presenterRef: React.MutableRefObject<PresenterInstance | null>;
   activeInteractiveToolRef: React.MutableRefObject<InteractiveTool | null>;
   syncMeasurementUi: (enabled?: boolean) => void;
   syncPickpointUi: (enabled?: boolean) => void;
+  setPickpointValue: React.Dispatch<React.SetStateAction<Vector3 | null>>;
 };
 
 export type UseInteractiveToolsResult = {
   activeInteractiveTool: InteractiveTool | null;
+  registerInteractiveTool: (config: InteractiveToolConfig) => () => void;
   toggleTool: (toolId: InteractiveTool, presenter?: PresenterInstance | null) => void;
   deactivateTool: (toolId: InteractiveTool, presenter?: PresenterInstance | null) => boolean;
   resetActiveTool: () => void;
+  /** Routes a pick-point result to the active tool, or to the pick tool's output when none. */
+  dispatchPick: (context: InteractiveToolPickContext) => void;
+  hasTool: (toolId: InteractiveTool) => boolean;
 };
 
 /**
- * Custom React hook that manages mutually exclusive interactive tools (e.g. measurement, pickpoint)
- * for a 3D viewer presenter instance.
+ * Manages mutually exclusive canvas tools for a presenter.
  *
- * The hook:
- * - Maintains a local React state `activeInteractiveTool` for the currently active tool (or null).
- * - Uses the provided presenter reference and interactive-tool config callbacks to enable/disable tools
- *   on the presenter and to keep external UI in sync.
- * - Mutates and respects an external ref `activeInteractiveToolRef` that mirrors the active tool state.
- *
- * Notes on behavior:
- * - Tool configurations are built from the supplied sync callbacks and presenter methods (e.g.
- *   `enableMeasurementTool`, `isMeasurementToolEnabled`, `enablePickpointMode`, `isPickpointModeEnabled`).
- * - Only one interactive tool is active at a time; enabling a tool will attempt to deactivate any other
- *   currently active tool.
- * - UI synchronization callbacks (`syncMeasurementUi`, `syncPickpointUi`) are invoked with the new enabled
- *   state whenever a tool is toggled or deactivated.
- *
- * @param options - Options object
- * @param options.presenterRef - Mutable ref to the presenter instance used to enable/disable tools.
- *   If a presenter override is passed to the returned functions, that override will be used instead.
- * @param options.activeInteractiveToolRef - Mutable ref that mirrors the currently active tool id (or null).
- *   This ref will be read to determine active state when presenter query functions are not available,
- *   and will be updated when tools are activated/deactivated.
- * @param options.syncMeasurementUi - Callback to synchronize the measurement UI when its enabled state changes.
- *   Called with `true` when the measurement tool is enabled and `false` when disabled.
- * @param options.syncPickpointUi - Callback to synchronize the pickpoint UI when its enabled state changes.
- *   Called with `true` when the pick tool is enabled and `false` when disabled.
- *
- * @returns An object with:
- * - `activeInteractiveTool`: the currently active tool id or `null`.
- * - `toggleTool(toolId, presenterOverride?)`: toggles the requested tool. If `presenterOverride` is provided it
- *   will be used instead of `presenterRef.current`. When enabling a tool, any other active tool will be
- *   deactivated first. No value is returned.
- * - `deactivateTool(toolId, presenterOverride?)`: deactivates the specified tool if it is active. Returns
- *   `true` if the tool was active and was deactivated, otherwise `false`. Uses `presenterOverride` if provided.
- * - `resetActiveTool()`: clears both the external `activeInteractiveToolRef.current` and the local
- *   `activeInteractiveTool` state to `null`.
+ * - The built-in `measure` and `pick` tools are always registered; further tools are added with
+ *   `registerInteractiveTool`, which returns a disposer.
+ * - `toggleTool` enables a tool, first deactivating whichever other tool is active; toggling the
+ *   active tool deactivates it.
+ * - `activeInteractiveToolRef` mirrors the active id for non-React callers; `activeInteractiveTool`
+ *   is the React state.
+ * - `dispatchPick` is what the presenter's `_onEndPickingPoint` should call: pick results go to
+ *   the active tool's `onPick` when it has one, otherwise into the shared `pickpointValue`.
  */
 export function useInteractiveTools({
   presenterRef,
   activeInteractiveToolRef,
   syncMeasurementUi,
-  syncPickpointUi
+  syncPickpointUi,
+  setPickpointValue
 }: UseInteractiveToolsOptions): UseInteractiveToolsResult {
   const [activeInteractiveTool, setActiveInteractiveTool] = useState<InteractiveTool | null>(null);
 
-  const interactiveToolConfigs = useMemo(() => {
-    const configs: Map<InteractiveTool, InteractiveToolConfig> = new Map();
-
-    configs.set('measure', {
+  // Held in a Map rather than state: registration happens in effects and must not re-render.
+  const registry = useMemo(() => {
+    const map = new Map<InteractiveTool, InteractiveToolConfig>();
+    map.set('measure', {
       id: 'measure',
       enable: (presenter, enabled) => presenter.enableMeasurementTool?.(enabled),
       isEnabled: (presenter) => presenter.isMeasurementToolEnabled?.(),
       syncUi: syncMeasurementUi
     });
-
-    configs.set('pick', {
+    map.set('pick', {
       id: 'pick',
       enable: (presenter, enabled) => presenter.enablePickpointMode?.(enabled),
       isEnabled: (presenter) => presenter.isPickpointModeEnabled?.(),
-      syncUi: syncPickpointUi
+      syncUi: syncPickpointUi,
+      onPick: ({ corrected }) => setPickpointValue(corrected)
     });
+    return map;
+  }, [setPickpointValue, syncMeasurementUi, syncPickpointUi]);
 
-    return configs;
-  }, [syncMeasurementUi, syncPickpointUi]);
+  const isActive = useCallback(
+    (config: InteractiveToolConfig, presenter: PresenterInstance) => {
+      if (typeof config.isEnabled === 'function') {
+        const reported = config.isEnabled(presenter);
+        if (typeof reported === 'boolean') return reported;
+      }
+      return activeInteractiveToolRef.current === config.id;
+    },
+    [activeInteractiveToolRef]
+  );
 
   const deactivateTool = useCallback(
     (toolId: InteractiveTool, presenterOverride?: PresenterInstance | null) => {
       const presenter = presenterOverride ?? presenterRef.current;
-      if (!presenter) {
-        return false;
-      }
+      const config = registry.get(toolId);
+      if (!presenter || !config) return false;
+      if (!isActive(config, presenter)) return false;
 
-      const config = interactiveToolConfigs.get(toolId);
-      if (!config || typeof config.enable !== 'function') {
-        return false;
-      }
-
-      const isActive =
-        typeof config.isEnabled === 'function'
-          ? Boolean(config.isEnabled(presenter))
-          : activeInteractiveToolRef.current === toolId;
-
-      if (!isActive) {
-        return false;
-      }
-
-      config.enable(presenter, false);
-      config.syncUi(false);
+      config.enable?.(presenter, false);
+      config.syncUi?.(false);
 
       if (activeInteractiveToolRef.current === toolId) {
         activeInteractiveToolRef.current = null;
       }
       setActiveInteractiveTool((current) => (current === toolId ? null : current));
-
       return true;
     },
-    [activeInteractiveToolRef, interactiveToolConfigs, presenterRef]
+    [activeInteractiveToolRef, isActive, presenterRef, registry]
   );
 
   const toggleTool = useCallback(
     (toolId: InteractiveTool, presenterOverride?: PresenterInstance | null) => {
       const presenter = presenterOverride ?? presenterRef.current;
-      if (!presenter) {
-        return;
-      }
+      const config = registry.get(toolId);
+      if (!presenter || !config) return;
 
-      const config = interactiveToolConfigs.get(toolId);
-      if (!config || typeof config.enable !== 'function') {
-        return;
-      }
-
-      const currentlyEnabled =
-        typeof config.isEnabled === 'function'
-          ? Boolean(config.isEnabled(presenter))
-          : activeInteractiveToolRef.current === toolId;
-      const nextEnabled = !currentlyEnabled;
-
-      if (nextEnabled) {
-        const { current: activeTool } = activeInteractiveToolRef;
-        if (activeTool && activeTool !== toolId) {
-          deactivateTool(activeTool, presenter);
-        }
-
-        config.enable(presenter, true);
-        config.syncUi(true);
-        activeInteractiveToolRef.current = toolId;
-        setActiveInteractiveTool(toolId);
-      } else {
+      if (isActive(config, presenter)) {
         void deactivateTool(toolId, presenter);
+        return;
       }
+
+      const activeTool = activeInteractiveToolRef.current;
+      if (activeTool && activeTool !== toolId) {
+        deactivateTool(activeTool, presenter);
+      }
+
+      config.enable?.(presenter, true);
+      config.syncUi?.(true);
+      activeInteractiveToolRef.current = toolId;
+      setActiveInteractiveTool(toolId);
     },
-    [activeInteractiveToolRef, deactivateTool, interactiveToolConfigs, presenterRef]
+    [activeInteractiveToolRef, deactivateTool, isActive, presenterRef, registry]
+  );
+
+  const registerInteractiveTool = useCallback(
+    (config: InteractiveToolConfig) => {
+      registry.set(config.id, config);
+      return () => {
+        // Only forget the tool if it hasn't been re-registered under the same id meanwhile.
+        if (registry.get(config.id) === config) {
+          if (activeInteractiveToolRef.current === config.id) {
+            deactivateTool(config.id);
+          }
+          registry.delete(config.id);
+        }
+      };
+    },
+    [activeInteractiveToolRef, deactivateTool, registry]
   );
 
   const resetActiveTool = useCallback(() => {
@@ -173,10 +149,30 @@ export function useInteractiveTools({
     setActiveInteractiveTool(null);
   }, [activeInteractiveToolRef]);
 
+  const dispatchPick = useCallback(
+    (context: InteractiveToolPickContext) => {
+      const activeId = activeInteractiveToolRef.current;
+      const active = activeId ? registry.get(activeId) : undefined;
+      if (active?.onPick) {
+        active.onPick(context);
+        return;
+      }
+      // A pick with no owning tool (e.g. 3DHOP's own pickpoint mode toggled elsewhere) still
+      // surfaces in the shared output.
+      setPickpointValue(context.corrected);
+    },
+    [activeInteractiveToolRef, registry, setPickpointValue]
+  );
+
+  const hasTool = useCallback((toolId: InteractiveTool) => registry.has(toolId), [registry]);
+
   return {
     activeInteractiveTool,
+    registerInteractiveTool,
     toggleTool,
     deactivateTool,
-    resetActiveTool
+    resetActiveTool,
+    dispatchPick,
+    hasTool
   };
 }

@@ -1,6 +1,52 @@
 import React from 'react';
 import type { AnnotationDefinition } from '../utils/annotations.js';
 
+export type Vector3 = [number, number, number];
+
+/** Primitive kinds accepted by 3DHOP's `createEntity`. */
+export type SceneEntityType = 'points' | 'lines' | 'triangles';
+
+/**
+ * A helper-geometry entity as 3DHOP stores it in `_scene.entities`. Entities are drawn on top
+ * of the models (grids, axes, measurement guides); they are wiped by every `setScene`.
+ */
+export type SceneEntity = {
+  visible: boolean;
+  type: SceneEntityType;
+  color: [number, number, number, number];
+  useTransparency: boolean;
+  pointSize: number;
+  zOff: number;
+  transform: { matrix: number[] };
+  renderable: unknown;
+};
+
+/** Declarative description of an entity; see `useSceneEntity`. */
+export type SceneEntitySpec = {
+  type: SceneEntityType;
+  vertices: Vector3[];
+  color?: [number, number, number, number];
+  useTransparency?: boolean;
+  pointSize?: number;
+  zOff?: number;
+  visible?: boolean;
+};
+
+/** Axis-aligned bounds of the loaded scene in model space; see `useSceneBounds`. */
+export type SceneBounds = {
+  min: Vector3;
+  max: Vector3;
+  center: Vector3;
+  size: Vector3;
+  /** Half the diagonal. */
+  radius: number;
+  /**
+   * `vertices` when every visible mesh contributed real geometry (Nexus base level or PLY
+   * bounding box); `spheres` when at least one fell back to 3DHOP's bounding-sphere estimate.
+   */
+  source: 'vertices' | 'spheres';
+};
+
 export type PresenterInstance = {
   setScene: (scene: unknown) => void;
   resetTrackball: () => void;
@@ -36,6 +82,28 @@ export type PresenterInstance = {
   getNexusTargetError?: () => number;
   toggleInstanceVisibilityByName?: (name: string, redraw?: boolean) => void;
   toggleInstanceTransparencyByName?: (name: string, redraw?: boolean) => void;
+  /** Helper geometry drawn over the models. Wiped by `setScene`; see `useSceneEntity`. */
+  createEntity?: (name: string, type: SceneEntityType, vertices: Vector3[] | number[][]) => SceneEntity;
+  deleteEntity?: (name: string) => void;
+  clearEntities?: () => void;
+  /**
+   * Sets the light direction from a point in the unit disc: `x`, `y` in [-0.5, 0.5], `y` up.
+   * Stores the result in `_lightDirection` as a unit vector pointing *towards* the light.
+   */
+  rotateLight?: (x: number, y: number) => void;
+  _lightDirection?: number[];
+  /** Set by `saveScreenshot()`; the PNG data URL is written to `screenshotData` on the next draw. */
+  screenshotData?: string | null;
+  isCapturingScreenshot?: boolean;
+  /** Recomputes `_sceneBbox*` from every clippable instance's bounding sphere. */
+  _calculateBounding?: () => void;
+  _sceneBboxMin?: number[];
+  _sceneBboxMax?: number[];
+  _sceneBboxCenter?: number[];
+  _sceneBboxDiag?: number;
+  /** True once every mesh/texture/background of the current scene has loaded. */
+  _isSceneReady?: () => boolean;
+  _testReady?: () => void;
   /**
    * Centre of the scene in model space, and the reciprocal of its radius. The presenter derives
    * both from `space.centerMode`/`space.radiusMode` once the scene is set, and uses them to map
@@ -51,16 +119,43 @@ export type PresenterInstance = {
   repaint?: () => void;
   ui?: {
     postDrawEvent?: () => void;
+    gl?: unknown;
   };
   _scene?: {
-    modelInstances?: Record<string, {
-      useTransparency?: boolean;
-      specularColor?: number[];
-    }>;
-    space?: SceneSpaceConfig;
+    meshes?: Record<string, SceneMeshRuntime>;
+    modelInstances?: Record<string, SceneInstanceRuntime>;
+    entities?: Record<string, SceneEntity>;
+    space?: SceneSpaceConfig & { transform?: { matrix?: number[] } };
     config?: SceneRenderConfig;
   };
 } & Record<string, unknown>;
+
+/** A mesh as 3DHOP holds it at runtime, after `setScene` has created the renderable. */
+export type SceneMeshRuntime = {
+  url?: string;
+  mType?: 'nexus' | 'ply';
+  transform?: { matrix?: number[] };
+  renderable?: {
+    isReady?: boolean;
+    datasetCenter?: number[];
+    datasetRadius?: number;
+    /** PLY only. */
+    boundingBox?: { min: number[]; max: number[] };
+    /** Nexus only; `basev` is the base-level vertex buffer once node 0 has loaded. */
+    mesh?: { basev?: Float32Array; sphere?: { center: number[]; radius: number } };
+  } | null;
+};
+
+/** A model instance as 3DHOP holds it at runtime. */
+export type SceneInstanceRuntime = {
+  mesh?: string;
+  visible?: boolean;
+  clippable?: boolean;
+  useTransparency?: boolean;
+  specularColor?: number[];
+  transform?: { matrix?: number[] };
+  [key: string]: unknown;
+};
 
 export type CameraType = 'perspective' | 'orthographic';
 
@@ -192,7 +287,39 @@ export type SceneContribution = {
 
 export type ToolbarActionHandler = (presenter: PresenterInstance, action: string) => boolean | void;
 export type SceneObserver = (presenter: PresenterInstance) => void;
+/** Fires once per scene apply, when every mesh of that scene has finished loading. */
+export type SceneReadyObserver = (presenter: PresenterInstance) => void;
 export type TrackballObserver = (trackState: number[]) => void;
+/** Receives 3DHOP's `_lightDirection` (unit vector towards the light) whenever it changes. */
+export type LightObserver = (direction: Vector3) => void;
+
+/** Identifier of a mutually exclusive canvas tool. Built-ins are `'measure'` and `'pick'`. */
+export type InteractiveTool = string;
+
+export type InteractiveToolPickContext = {
+  /** The picked point as 3DHOP reports it, in scene space — use this for entities. */
+  raw: Vector3;
+  /** `raw` with `coordinateCorrections` applied — use this for display. */
+  corrected: Vector3;
+  presenter: PresenterInstance;
+};
+
+/**
+ * Describes a canvas tool to the viewer's exclusivity manager. `enable` switches the underlying
+ * presenter mode; `isEnabled` reads it back (falls back to the manager's own record); `syncUi`
+ * mirrors state into non-React DOM (used by the legacy toolbar); `onPick` receives pick-point
+ * results while this tool is active.
+ */
+export type InteractiveToolConfig = {
+  id: InteractiveTool;
+  enable?: (presenter: PresenterInstance, enabled: boolean) => void;
+  isEnabled?: (presenter: PresenterInstance) => boolean | undefined;
+  syncUi?: (enabled?: boolean) => void;
+  onPick?: (context: InteractiveToolPickContext) => void;
+};
+
+export type ThemeName = 'light' | 'dark';
+export type ThemeMode = ThemeName | 'system';
 
 export type AnnotationPickEvent = {
   id: string;
@@ -213,8 +340,15 @@ export type ThreeDHopViewerContextValue = {
   registerSceneContribution: (key: string, contribution: SceneContribution | null) => () => void;
   registerToolbarAction: (actions: string | string[], handler: ToolbarActionHandler) => () => void;
   registerSceneObserver: (observer: SceneObserver) => () => void;
+  registerSceneReadyObserver: (observer: SceneReadyObserver) => () => void;
   registerTrackballObserver: (observer: TrackballObserver) => () => void;
+  registerLightObserver: (observer: LightObserver) => () => void;
   registerAnnotationHandler: (handler: AnnotationPickHandler) => () => void;
+  registerInteractiveTool: (config: InteractiveToolConfig) => () => void;
+  toggleInteractiveTool: (toolId: InteractiveTool) => void;
+  activeInteractiveTool: InteractiveTool | null;
+  /** The theme in effect after resolving `'system'`. */
+  theme: ThemeName;
   hasHotspotContribution: boolean;
   measurementUnits: string;
   measurementValue: number | null;
@@ -260,5 +394,11 @@ export type ThreeDHopViewerProps = {
    * the presenter defaults to `1.0`.
    */
   nexusTargetError?: number;
+  /**
+   * Colour scheme for the viewer's own UI (toolbar sidecars, overlays). `'system'` follows
+   * `prefers-color-scheme`. Applied as `data-r3dhop-theme` on the root and, for `dark`, as inline
+   * CSS custom properties; `light` sets none so stylesheet overrides of `--r3dhop-*` win.
+   */
+  theme?: ThemeMode;
   children?: React.ReactNode;
 };

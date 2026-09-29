@@ -13,6 +13,7 @@ import {
   useThreeDHopViewer,
   type TrackballObserver
 } from './ThreeDHopViewer.js';
+import { readThemeToken, themeVar } from './theme.js';
 
 const POSITION_STYLES: Record<CompassNavigationPosition, React.CSSProperties> = {
   'top-left': { top: '16px', left: '16px' },
@@ -24,10 +25,10 @@ const POSITION_STYLES: Record<CompassNavigationPosition, React.CSSProperties> = 
 const DEFAULT_TRACKBALL_STATE: TrackballState = [35, 15, 0, 0, 0, 2.5];
 
 const DEFAULT_BUTTON_STYLE: React.CSSProperties = {
-  background: 'rgba(0, 0, 0, 0.45)',
-  border: '1px solid rgba(255, 255, 255, 0.4)',
+  background: themeVar('overlayBg'),
+  border: `1px solid ${themeVar('overlayBorder')}`,
   borderRadius: '4px',
-  color: '#FFFFFF',
+  color: themeVar('overlayText'),
   cursor: 'pointer',
   fontSize: '12px',
   lineHeight: 1.2,
@@ -43,12 +44,12 @@ const DEFAULT_CANVAS_WRAPPER_STYLE: React.CSSProperties = {
 };
 
 const DEFAULT_PANEL_STYLE: React.CSSProperties = {
-  background: 'rgba(0, 0, 0, 0.55)',
+  background: themeVar('overlayBgStrong'),
   borderRadius: '8px',
   padding: '12px',
-  color: '#FFFFFF',
+  color: themeVar('overlayText'),
   minWidth: '140px',
-  boxShadow: '0 6px 20px rgba(0, 0, 0, 0.35)'
+  boxShadow: themeVar('overlayShadow')
 };
 
 export type CompassNavigationPosition = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
@@ -155,6 +156,8 @@ export const CompassNavigation: React.FC<CompassNavigationProps> = ({
     const width = canvas.width;
     const height = canvas.height;
     const radius = Math.min(width, height) * 0.45;
+    const ink = readThemeToken(canvas, 'ink');
+    const accent = readThemeToken(canvas, 'accent');
 
     context.clearRect(0, 0, width, height);
     context.save();
@@ -164,7 +167,7 @@ export const CompassNavigation: React.FC<CompassNavigationProps> = ({
     context.beginPath();
     context.arc(0, 0, radius, 0, Math.PI * 2, false);
     context.lineWidth = Math.max(2, radius * 0.04);
-    context.strokeStyle = 'rgba(255, 255, 255, 0.85)';
+    context.strokeStyle = ink;
     context.stroke();
 
     context.beginPath();
@@ -172,13 +175,13 @@ export const CompassNavigation: React.FC<CompassNavigationProps> = ({
     context.lineTo(0, -radius * 1.05);
     context.lineWidth = Math.max(4, radius * 0.18);
     context.lineCap = 'round';
-    context.strokeStyle = '#FFC20A';
+    context.strokeStyle = accent;
     context.stroke();
 
     const tickLength = radius * 0.2;
     const tickWidth = Math.max(2, radius * 0.06);
     context.lineWidth = tickWidth;
-    context.strokeStyle = 'rgba(255, 255, 255, 0.85)';
+    context.strokeStyle = ink;
     context.beginPath();
     context.moveTo(-tickLength, 0);
     context.lineTo(-radius * 1.1, 0);
@@ -195,7 +198,7 @@ export const CompassNavigation: React.FC<CompassNavigationProps> = ({
 
     context.beginPath();
     context.arc(0, 0, radius * 0.35, 0, Math.PI * 2, false);
-    context.fillStyle = 'rgba(255, 255, 255, 0.85)';
+    context.fillStyle = ink;
     context.fill();
     context.restore();
   }, [ensureCanvasDimensions]);
