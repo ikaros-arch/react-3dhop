@@ -1,5 +1,11 @@
 # @ikaros-arch/3dhop
 
+## 0.3.0
+
+### Minor Changes
+
+- [#5](https://github.com/ikaros-arch/react-3dhop/pull/5) [`ecc3787`](https://github.com/ikaros-arch/react-3dhop/commit/ecc378750afb1da2ffd20259a26229a647f8eab0) Thanks [@hallvard-indgjerd](https://github.com/hallvard-indgjerd)! - Add skin assets for the new react-3dhop controls: `skins/dark/angle.png` / `angle_on.png` (angle-measurement toolbar icon, by Alexis Pantos, from BITFROST), `skins/dark/grid.svg` / `grid_on.svg` (grid overlay toolbar icon), and `skins/icons/mouse2-left.svg` / `mouse2-right.svg` (mouse-button hint glyphs). See `PROVENANCE.md`.
+
 ## 0.2.0
 
 ### Minor Changes

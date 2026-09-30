@@ -57,7 +57,7 @@
     "react-dom": "^17.0.0 || ^18.0.0 || ^19.0.0"
   },
   "devDependencies": {
-    "@ikaros-arch/react-3dhop": "^0.3.0",
+    "@ikaros-arch/react-3dhop": "^0.4.0",
     "@types/react": "^18.2.37",
     "@types/react-dom": "^18.2.15",
     "react": "^18.2.0",

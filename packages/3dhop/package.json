@@ -1,6 +1,6 @@
 {
   "name": "@ikaros-arch/3dhop",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Unofficial npm packaging of the 3DHOP viewer runtime (CNR-ISTI Visual Computing Lab): upstream 4.3 + the 4.3.5 patch set, jQuery-free. Runtime assets only; use with @ikaros-arch/react-3dhop.",
   "upstream": {
     "name": "3DHOP",
