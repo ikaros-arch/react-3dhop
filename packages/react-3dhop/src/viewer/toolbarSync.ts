@@ -99,11 +99,18 @@ export function useToolbarSync({
         'info-box': ['info', 'info_on']
       };
 
-      Object.entries(anchorMap).forEach(([sidecarId, anchorIds]) => {
-        const sidecar = container.querySelector<HTMLElement>(
-          `[data-hop-sidecar="${sidecarId}"][data-hop-toolbar-owner="${toolbarId}"]`
-        );
-        if (!sidecar) {
+      const sidecars = Array.from(
+        container.querySelectorAll<HTMLElement>(`[data-hop-sidecar][data-hop-toolbar-owner="${toolbarId}"]`)
+      );
+
+      sidecars.forEach((sidecar) => {
+        const sidecarId = sidecar.getAttribute('data-hop-sidecar') ?? '';
+        // A sidecar may name its own anchor images; the built-ins are known by id.
+        const declared = sidecar.getAttribute('data-hop-anchor');
+        const anchorIds = declared
+          ? declared.split(',').map((value) => value.trim()).filter(Boolean)
+          : anchorMap[sidecarId];
+        if (!anchorIds || anchorIds.length === 0) {
           return;
         }
 

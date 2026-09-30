@@ -261,11 +261,112 @@ Available controls mirror the classic 3DHOP toolbar:
 - `CameraControl` (perspective vs orthographic)
 - `MeasureControl` (includes the measurement output panel; honours the viewer `measurementUnits` or an override passed as `units`)
 - `PickControl` (includes the XYZ pick panel)
+- `AngleControl` (three-point angle measurement; see below)
+- `GridControl` (floor / box / fixed / axes grid overlay; see below)
 - `SectionsControl` (includes the planar section UI)
 - `InfoControl` (toggles a static info panel with custom content)
-- `ScreenshotControl`
+- `ScreenshotControl` (downloads a PNG; can also copy it to the clipboard, rename it or hand it to a callback — see below)
 - `HotspotControl`
 - `FullscreenControl`
+
+Controls beyond the classic toolbar (ported from the BITFROST viewer at KHM, University of Oslo):
+
+#### `AngleControl`
+
+Measures the angle between three points picked on the model. It shares 3DHOP's pick-point mode
+with `PickControl`, so the two are mutually exclusive; the picked points, both arms and a
+translucent wedge are drawn as scene entities, and the angle appears in a sidecar with a copy
+button. A fourth pick starts a new measurement.
+
+```tsx
+<Toolbar position="top-left">
+	<MeasureControl />
+	<PickControl />
+	<AngleControl digits={1} onAngle={(degrees, points) => console.log(degrees, points)} />
+</Toolbar>
+```
+
+Props: `title` / `icon` / `enabledImgProps` / `disabledImgProps` (as for the other toggles),
+`label`, `digits` (default 2), `initialDisplayValue`, `onAngle(degrees, [a, b, c])`. The tool id is
+`'angle'` for `toggleInteractiveTool` / `activeInteractiveTool`.
+
+#### `GridControl` / `GridOverlay`
+
+`GridControl` adds a toolbar toggle for a reference grid; while on, a sidecar picks the mode:
+
+| mode | draws |
+|---|---|
+| `flat` | a square grid on the floor plane (y = min) under the model |
+| `box` | a grid on all faces of the model's bounding box |
+| `fixed` | a grid on the world XY plane through the origin (for models registered to a site datum) |
+| `axes` | RGB = XYZ axes from the bounds centre (or `axesOrigin="world"`) |
+
+The cell size defaults to 1 cm expressed in the viewer's `measurementUnits` (`mm` → 10, `cm` → 1,
+`m` → 0.01) and is coarsened automatically for very large scenes; pass `step` to override.
+
+```tsx
+<Toolbar position="top-left">
+	<GridControl defaultOnMode="box" modes={['flat', 'box', 'axes']} />
+</Toolbar>
+```
+
+It works uncontrolled (`defaultMode`) or controlled (`mode` + `onModeChange`). `GridOverlay`
+(`mode`, `step`, `axesOrigin`) is the headless geometry on its own, for when you want to drive the
+grid from your own UI — don't mount both.
+
+#### `LightDirectionWidget`
+
+A small draggable disc (a lit sphere) that sets the scene light direction and always shows the
+current one — including changes made through `LightControl`'s drag-on-canvas mode or `Home`. Place
+it with `position` (a viewer corner) or your own `style`.
+
+```tsx
+<ThreeDHopViewer …>
+	<LightDirectionWidget position="bottom-right" label="Light" />
+</ThreeDHopViewer>
+```
+
+Props: `position`, `size` (px, default 126), `label`, `title`, `onChange([x, y])` (disc point in
+[-0.5, 0.5], screen-y down), `className`, `style`. Uses `useLightDirection` under the hood.
+
+#### `ScreenshotControl` extras
+
+With no extra props the button defers to 3DHOP, which downloads the PNG. Any of the following make
+the control take over the capture:
+
+```tsx
+<ScreenshotControl
+	copyToClipboard          // also put the PNG on the clipboard (Chromium/Safari; Firefox needs a flag)
+	baseName="gargoyle"      // file stem; default: scene screenshotBaseName, then "screenshot"
+	withTime={false}         // drop the _HHMMSS suffix
+	download={false}         // clipboard/callback only
+	onScreenshot={(dataUrl) => upload(dataUrl)}
+	onError={(e) => toast(String(e))}
+/>
+```
+
+The underlying helpers are exported too: `captureScreenshot(presenter)` (resolves with a PNG data
+URL once 3DHOP has drawn the capture frame), `copyImageToClipboard`, `dataUrlToBlob`,
+`downloadDataUrl`, `screenshotFileName`.
+
+#### `ViewPresetButtons` / `useViewPresets`
+
+Snap the camera to the six standard views without the full `CubeNavigation` HUD:
+
+```tsx
+<ViewPresetButtons position="bottom-left" presets={['front', 'left', 'top']} />
+```
+
+or programmatically:
+
+```tsx
+const { viewFrom } = useViewPresets({ animationSeconds: 0.5 });
+viewFrom('top');
+viewFrom({ phi: 45, theta: 20 }, { preservePanAndDistance: false });
+```
+
+Both accept `animationSeconds` (0 = jump), `preservePanAndDistance` (default true) and
+`targetDistance`. `VIEW_PRESETS` holds the phi/theta pairs and is what `CubeNavigation` uses too.
 
 ### Theming
 

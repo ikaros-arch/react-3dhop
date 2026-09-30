@@ -14,19 +14,17 @@ import {
   type TrackballObserver
 } from './ThreeDHopViewer.js';
 import { themeVar } from './theme.js';
+import {
+  VIEW_PRESETS,
+  clampTheta,
+  normalizeAngle,
+  toPresenterTrackballState,
+  toTrackballState,
+  type PartialTrackballState,
+  type TrackballState
+} from './geometry/presets.js';
 
 export type CubeNavigationPosition = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
-
-type TrackballState = [number, number, number, number, number, number];
-
-type PartialTrackballState = {
-  phi?: number;
-  theta?: number;
-  panX?: number;
-  panY?: number;
-  panZ?: number;
-  distance?: number;
-};
 
 export type CubeNavigationProps = {
   className?: string;
@@ -88,14 +86,7 @@ const DEFAULT_PANEL_STYLE: React.CSSProperties = {
   boxShadow: themeVar('overlayShadow')
 };
 
-const FACE_VIEW_TARGETS: Record<string, PartialTrackballState> = {
-  front: { phi: 0, theta: 0 },
-  back: { phi: 180, theta: 0 },
-  left: { phi: 270, theta: 0 },
-  right: { phi: 90, theta: 0 },
-  top: { phi: 0, theta: 90 },
-  bottom: { phi: 0, theta: -90 }
-};
+const FACE_VIEW_TARGETS: Record<string, PartialTrackballState> = VIEW_PRESETS;
 
 type EdgeKey = 'top' | 'bottom' | 'left' | 'right';
 
@@ -107,27 +98,6 @@ const EDGE_POSITIONS: Record<EdgeKey, React.CSSProperties> = {
 };
 
 const EDGE_ORDER: EdgeKey[] = ['top', 'right', 'bottom', 'left'];
-
-/**
- * Wraps raw angles into the [0, 360) range while tolerating non-finite inputs.
- */
-const normalizeAngle = (value: number): number => {
-  if (!Number.isFinite(value)) {
-    return 0;
-  }
-  const wrapped = value % 360;
-  return wrapped < 0 ? wrapped + 360 : wrapped;
-};
-
-/**
- * Clamps camera elevation to the trackball's supported hemisphere range.
- */
-const clampTheta = (value: number): number => {
-  if (!Number.isFinite(value)) {
-    return 0;
-  }
-  return Math.max(-90, Math.min(90, value));
-};
 
 /**
  * HUD overlay that animates the presenter to known cube faces and edges while tracking
@@ -164,6 +134,8 @@ export const CubeNavigation: React.FC<CubeNavigationProps> = ({
   const [projectionMode, setProjectionMode] = useState<'perspective' | 'orthographic'>('perspective');
   const [rotation, setRotation] = useState<{ x: number; y: number }>({ x: -DEFAULT_TRACKBALL_STATE[1], y: -DEFAULT_TRACKBALL_STATE[0] });
   const lastTrackballStateRef = useRef<TrackballState>(DEFAULT_TRACKBALL_STATE);
+  /** Shape of the last state the presenter reported (3 or 6 values), to send back the same. */
+  const reportedShapeRef = useRef<number[] | null>(null);
 
   /**
    * Normalizes incoming trackball arrays into a stable six-value tuple and caches the
@@ -174,15 +146,8 @@ export const CubeNavigation: React.FC<CubeNavigationProps> = ({
     if (!Array.isArray(state) || state.length === 0) {
       return current;
     }
-
-    const next: TrackballState = [...current];
-    const limit = Math.min(state.length, 6);
-    for (let index = 0; index < limit; index += 1) {
-      const value = Number(state[index]);
-      if (Number.isFinite(value)) {
-        next[index] = value;
-      }
-    }
+    reportedShapeRef.current = state;
+    const next = toTrackballState(state, current);
     lastTrackballStateRef.current = next;
     return next;
   }, []);
@@ -255,7 +220,7 @@ export const CubeNavigation: React.FC<CubeNavigationProps> = ({
     ];
 
     const duration = Number.isFinite(animationSeconds) && animationSeconds > 0 ? animationSeconds : undefined;
-    presenter.animateToTrackballPosition(next, duration);
+    presenter.animateToTrackballPosition(toPresenterTrackballState(next, reportedShapeRef.current), duration);
     lastTrackballStateRef.current = next;
     applyRotationFromTrackball(next);
   }, [presenter, getCurrentTrackballState, preservePanAndDistance, targetDistance, animationSeconds, applyRotationFromTrackball]);

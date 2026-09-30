@@ -8,11 +8,14 @@ import React, {
   useContext,
   useEffect,
   useId,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState
 } from 'react';
 import { useThreeDHopViewer } from './ThreeDHopViewer.js';
+import { useOptionalThreeDHopViewer } from './viewer/context.js';
+import { captureScreenshot, copyImageToClipboard, downloadDataUrl, screenshotFileName } from './viewer/screenshot.js';
 import { themeVar } from './theme.js';
 import { joinAssetPath, resolveRelativeAssetPath } from './utils/assetPaths';
 
@@ -43,7 +46,7 @@ export const ToolbarAssetsProvider: React.FC<{ assetBaseUrl: string; children: R
 /**
  * Retrieves the current toolbar asset context, allowing controls to locate icons.
  */
-function useToolbarAssets(): ToolbarAssetsContextValue {
+export function useToolbarAssets(): ToolbarAssetsContextValue {
   return useContext(ToolbarAssetsContext);
 }
 
@@ -87,6 +90,14 @@ export const Toolbar: React.FC<ToolbarProps> = ({ position, style, children, ...
   }, []);
 
   const sidecarContext = useMemo<SidecarRegistry>(() => ({ register, unregister }), [register, unregister]);
+
+  // Sidecars are absolutely positioned next to their anchor icon; re-measure whenever the set
+  // of sidecars (or a sidecar's rendered element, e.g. its display style) changes.
+  const viewer = useOptionalThreeDHopViewer();
+  const realign = viewer?.realignToolbar;
+  useLayoutEffect(() => {
+    realign?.();
+  }, [realign, sidecars]);
 
   const inlineStyle: React.CSSProperties | undefined = position
     ? { position: 'absolute', pointerEvents: 'auto', ...POSITION_STYLES[position], ...style }
@@ -139,9 +150,10 @@ export const ToolbarSeparator: React.FC = () => <br />;
 
 /**
  * Registers an auxiliary HUD element with the nearest toolbar so it can be positioned as
- * a floating sidecar alongside the main toolbar surface.
+ * a floating sidecar alongside the main toolbar surface. Give the element
+ * `data-hop-sidecar="<key>"` and, for a custom anchor, `data-hop-anchor="<img id>,<img id_on>"`.
  */
-function useToolbarSidecar(key: string, element: React.ReactNode | null) {
+export function useToolbarSidecar(key: string, element: React.ReactNode | null) {
   const sidecar = useContext(ToolbarSidecarContext);
 
   useEffect(() => {
@@ -156,11 +168,11 @@ function useToolbarSidecar(key: string, element: React.ReactNode | null) {
 /**
  * Resolves an icon path, honoring optional overrides while defaulting to bundled assets.
  */
-function resolveToggleIcon(assetBaseUrl: string, override: string | undefined, fallback: string): string {
+export function resolveToggleIcon(assetBaseUrl: string, override: string | undefined, fallback: string): string {
   return resolveRelativeAssetPath(override, assetBaseUrl, joinAssetPath(assetBaseUrl, fallback));
 }
 
-type ToggleImageConfig = {
+export type ToggleImageConfig = {
   id: string;
   title: string;
   src: string;
@@ -168,7 +180,7 @@ type ToggleImageConfig = {
   hidden?: boolean;
 };
 
-type ToggleImagePairProps = {
+export type ToggleImagePairProps = {
   primary: ToggleImageConfig;
   secondary: ToggleImageConfig;
   includeSeparator?: boolean;
@@ -176,20 +188,30 @@ type ToggleImagePairProps = {
 
 /**
  * Renders the enabled/disabled icon pair expected by 3DHOP toggles, optionally inserting
- * a separator after the pair.
+ * a separator after the pair. `primary` is the "on" icon and starts hidden unless
+ * `hidden: false`; `secondary` is the "off" icon and starts visible unless `hidden: true`.
  */
-const ToggleImagePair: React.FC<ToggleImagePairProps> = ({ primary, secondary, includeSeparator = true }) => {
+export const ToggleImagePair: React.FC<ToggleImagePairProps> = ({ primary, secondary, includeSeparator = true }) => {
   const { style: primaryStyle, ...restPrimary } = primary.imgProps ?? {};
   const { style: secondaryStyle, ...restSecondary } = secondary.imgProps ?? {};
 
-  const resolvedPrimaryStyle: React.CSSProperties | undefined = primary.hidden === false
-    ? primaryStyle
-    : { position: 'absolute', visibility: 'hidden', ...(primaryStyle ?? {}) };
+  // The "on" icon sits on top of the "off" icon (as in 3DHOP's markup) and only its
+  // visibility changes, so React-controlled toggles and the DOM sync helpers agree.
+  const resolvedPrimaryStyle: React.CSSProperties = {
+    position: 'absolute',
+    visibility: primary.hidden === false ? 'visible' : 'hidden',
+    ...(primaryStyle ?? {})
+  };
+  const resolvedSecondaryStyle: React.CSSProperties | undefined = secondary.hidden === true
+    ? { visibility: 'hidden', ...(secondaryStyle ?? {}) }
+    : secondary.hidden === false
+      ? { visibility: 'visible', ...(secondaryStyle ?? {}) }
+      : secondaryStyle;
 
   return (
     <>
       <ToolbarImage id={primary.id} title={primary.title} src={primary.src} style={resolvedPrimaryStyle} {...restPrimary} />
-      <ToolbarImage id={secondary.id} title={secondary.title} src={secondary.src} style={secondaryStyle} {...restSecondary} />
+      <ToolbarImage id={secondary.id} title={secondary.title} src={secondary.src} style={resolvedSecondaryStyle} {...restSecondary} />
       {includeSeparator ? <ToolbarSeparator /> : null}
     </>
   );
@@ -214,7 +236,7 @@ const CopyIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
   </svg>
 );
 
-type CopyableOutputProps = {
+export type CopyableOutputProps = {
   id: string;
   value: string;
 };
@@ -223,7 +245,7 @@ type CopyableOutputProps = {
  * Displays measurement or pickpoint output alongside a copy button that copies the value
  * using the modern clipboard API when available.
  */
-const CopyableOutput: React.FC<CopyableOutputProps> = ({ id, value }) => {
+export const CopyableOutput: React.FC<CopyableOutputProps> = ({ id, value }) => {
   const [copied, setCopied] = useState(false);
   const resetTimerRef = useRef<number | null>(null);
 
@@ -342,17 +364,17 @@ export const ZoomOutControl: React.FC<BasicControlProps> = ({ title, icon, imgPr
   );
 };
 
-type ToggleLabels = {
+export type ToggleLabels = {
   enabled?: string;
   disabled?: string;
 };
 
-type ToggleIcons = {
+export type ToggleIcons = {
   enabled?: string;
   disabled?: string;
 };
 
-type ToggleImgProps = {
+export type ToggleImgProps = {
   enabledImgProps?: React.ImgHTMLAttributes<HTMLImageElement>;
   disabledImgProps?: React.ImgHTMLAttributes<HTMLImageElement>;
 };
@@ -567,15 +589,71 @@ export type ScreenshotControlProps = {
   title?: string;
   icon?: string;
   imgProps?: React.ImgHTMLAttributes<HTMLImageElement>;
+  /** Also copy the PNG to the clipboard (where the browser allows image writes). */
+  copyToClipboard?: boolean;
+  /** Download the PNG (default true). Set false for clipboard-only or callback-only use. */
+  download?: boolean;
+  /** File name stem for the download; falls back to the scene's `screenshotBaseName`, then "screenshot". */
+  baseName?: string;
+  /** Append `_HHMMSS` to the file name (default: the scene's `screenshotTime`, else true). */
+  withTime?: boolean;
+  /** Receives the PNG data URL after every capture. */
+  onScreenshot?: (dataUrl: string) => void;
+  /** Called when the capture or the clipboard write fails. */
+  onError?: (error: unknown) => void;
 };
 
 /**
- * Adds a screenshot button that invokes the presenter's capture action.
+ * Adds a screenshot button. Without extra props it defers to 3DHOP's own capture (which downloads
+ * the PNG). With `copyToClipboard`, `onScreenshot`, `baseName`, `withTime` or `download={false}`
+ * the control takes over the capture so it can copy, hand over or rename the image.
  */
-export const ScreenshotControl: React.FC<ScreenshotControlProps> = ({ title, icon, imgProps }) => {
+export const ScreenshotControl: React.FC<ScreenshotControlProps> = ({
+  title,
+  icon,
+  imgProps,
+  copyToClipboard = false,
+  download = true,
+  baseName,
+  withTime,
+  onScreenshot,
+  onError
+}) => {
   const { assetBaseUrl } = useToolbarAssets();
-  const resolvedTitle = title ?? 'Save Screenshot';
+  const { registerToolbarAction } = useThreeDHopViewer();
+  const resolvedTitle = title ?? (copyToClipboard && !download ? 'Copy Screenshot' : 'Save Screenshot');
   const resolvedIcon = resolveRelativeAssetPath(icon, assetBaseUrl, joinAssetPath(assetBaseUrl, 'skins/dark/screenshot.png'));
+
+  const takesOver =
+    copyToClipboard || !download || onScreenshot !== undefined || baseName !== undefined || withTime !== undefined;
+  const latest = useRef({ copyToClipboard, download, baseName, withTime, onScreenshot, onError });
+  latest.current = { copyToClipboard, download, baseName, withTime, onScreenshot, onError };
+
+  useEffect(() => {
+    if (!takesOver) return;
+    return registerToolbarAction('screenshot', (presenter) => {
+      const opts = latest.current;
+      void captureScreenshot(presenter)
+        .then(async (dataUrl) => {
+          opts.onScreenshot?.(dataUrl);
+          if (opts.download) {
+            const config = presenter._scene?.config;
+            downloadDataUrl(
+              dataUrl,
+              screenshotFileName(opts.baseName ?? config?.screenshotBaseName ?? 'screenshot', opts.withTime ?? config?.screenshotTime ?? true)
+            );
+          }
+          if (opts.copyToClipboard) {
+            await copyImageToClipboard(dataUrl);
+          }
+        })
+        .catch((error: unknown) => {
+          if (opts.onError) opts.onError(error);
+          else console.error('[react-3dhop] screenshot failed', error);
+        });
+      return true;
+    });
+  }, [registerToolbarAction, takesOver]);
 
   return (
     <>

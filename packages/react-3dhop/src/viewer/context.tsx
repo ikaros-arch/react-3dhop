@@ -35,6 +35,7 @@ export type ThreeDHopViewerProviderProps = {
   registerInteractiveTool: (config: InteractiveToolConfig) => () => void;
   toggleInteractiveTool: (toolId: InteractiveTool) => void;
   activeInteractiveTool: InteractiveTool | null;
+  realignToolbar: () => void;
   theme: ThemeName;
   hasHotspotContribution: boolean;
   measurementUnits: string;
@@ -60,6 +61,9 @@ export const useThreeDHopViewer = (): ThreeDHopViewerContextValue => {
   return context;
 };
 
+/** Like `useThreeDHopViewer`, but returns `null` outside a provider instead of throwing. */
+export const useOptionalThreeDHopViewer = (): ThreeDHopViewerContextValue | null => useContext(ThreeDHopViewerContext);
+
 /**
  * Wraps the viewer subtree with a context that shares presenter references, registration
  * helpers, and derived measurement state with any child component that opts in via the
@@ -78,6 +82,7 @@ export const ThreeDHopViewerProvider: React.FC<ThreeDHopViewerProviderProps> = (
   registerInteractiveTool,
   toggleInteractiveTool,
   activeInteractiveTool,
+  realignToolbar,
   theme,
   hasHotspotContribution,
   measurementUnits,
@@ -102,6 +107,7 @@ export const ThreeDHopViewerProvider: React.FC<ThreeDHopViewerProviderProps> = (
       registerInteractiveTool,
       toggleInteractiveTool,
       activeInteractiveTool,
+      realignToolbar,
       theme,
       hasHotspotContribution,
       measurementUnits,
@@ -124,6 +130,7 @@ export const ThreeDHopViewerProvider: React.FC<ThreeDHopViewerProviderProps> = (
       registerInteractiveTool,
       toggleInteractiveTool,
       activeInteractiveTool,
+      realignToolbar,
       theme,
       hasHotspotContribution,
       measurementUnits,

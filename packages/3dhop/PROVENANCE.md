@@ -103,7 +103,19 @@ de-jQueryed `init.js` for.
 ## Unmodified from upstream 4.3
 
 `js/ply.js`, `js/corto.js`, `js/corto.em.js`, `js/meco.js`, `js/helpers.js`, `js/spidergl.js`,
-and everything under `skins/`, `stylesheet/`, `models/`, `models-system/`.
+and everything under `stylesheet/`, `models/`, `models-system/`, and `skins/` **except** the
+files listed in the next section.
+
+## Not from upstream, but published (added skin assets)
+
+These live alongside the upstream skin files and ship in the npm tarball. They are GPL-3.0 like
+the rest of the package.
+
+| File | Origin |
+|---|---|
+| `skins/dark/angle.png`, `skins/dark/angle_on.png` | Toolbar icons for the angle-measurement tool, drawn by Alexis Pantos for the BITFROST viewer (KHM, University of Oslo; `BItFROST-khm` repository, `experimental` branch, 2026). Copied unchanged. |
+| `skins/icons/mouse2-left.svg`, `skins/icons/mouse2-right.svg` | Mouse-button hint glyphs used by BITFROST's angle/measurement instructions, from the same source. Copied unchanged. |
+| `skins/dark/grid.svg`, `skins/dark/grid_on.svg` | Toolbar icons for the grid overlay, drawn for this package in the style of the existing `transparency.svg` / `transparency_on.svg` pair. |
 
 ## Not from upstream, and not published
 

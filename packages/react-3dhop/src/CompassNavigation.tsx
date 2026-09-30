@@ -14,6 +14,7 @@ import {
   type TrackballObserver
 } from './ThreeDHopViewer.js';
 import { readThemeToken, themeVar } from './theme.js';
+import { toPresenterTrackballState, toTrackballState } from './geometry/presets.js';
 
 const POSITION_STYLES: Record<CompassNavigationPosition, React.CSSProperties> = {
   'top-left': { top: '16px', left: '16px' },
@@ -109,6 +110,7 @@ export const CompassNavigation: React.FC<CompassNavigationProps> = ({
   } = useThreeDHopViewer();
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const lastTrackballStateRef = useRef<TrackballState>(DEFAULT_TRACKBALL_STATE);
+  const reportedShapeRef = useRef<number[] | null>(null);
   const [projectionMode, setProjectionMode] = useState<'perspective' | 'orthographic'>('perspective');
 
   const containerStyle = useMemo<React.CSSProperties>(() => {
@@ -212,15 +214,8 @@ export const CompassNavigation: React.FC<CompassNavigationProps> = ({
     if (!Array.isArray(state) || state.length === 0) {
       return current;
     }
-
-    const next: TrackballState = [...current];
-    const limit = Math.min(state.length, 6);
-    for (let index = 0; index < limit; index += 1) {
-      const value = Number(state[index]);
-      if (Number.isFinite(value)) {
-        next[index] = value;
-      }
-    }
+    reportedShapeRef.current = state;
+    const next = toTrackballState(state, current);
     lastTrackballStateRef.current = next;
     return next;
   }, []);
@@ -285,7 +280,7 @@ export const CompassNavigation: React.FC<CompassNavigationProps> = ({
     ];
 
     const duration = Number.isFinite(animationSeconds) && animationSeconds > 0 ? animationSeconds : undefined;
-    presenter.animateToTrackballPosition(next, duration);
+    presenter.animateToTrackballPosition(toPresenterTrackballState(next, reportedShapeRef.current), duration);
     lastTrackballStateRef.current = next;
     drawCompass(next[0]);
   }, [presenter, getCurrentTrackballState, preservePanAndDistance, animationSeconds, drawCompass]);

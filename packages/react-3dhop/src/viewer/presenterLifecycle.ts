@@ -57,6 +57,7 @@ export type PresenterLifecycleOptions = {
   annotationHandlersRef: React.MutableRefObject<Set<AnnotationPickHandler>>;
   trackballObserversRef: React.MutableRefObject<Set<TrackballObserver>>;
   resetActiveTool: () => void;
+  reassertActiveTool: (presenter?: PresenterInstance | null) => void;
 };
 
 export type PresenterLifecycleResult = {
@@ -98,7 +99,8 @@ export function usePresenterLifecycle({
   annotationDefinitionsRef,
   annotationHandlersRef,
   trackballObserversRef,
-  resetActiveTool
+  resetActiveTool,
+  reassertActiveTool
 }: PresenterLifecycleOptions): PresenterLifecycleResult {
   const previousActionsRef = useRef<typeof window.actionsToolbar>();
   const previousPresenterRef = useRef<typeof window.presenter>();
@@ -403,7 +405,10 @@ export function usePresenterLifecycle({
           previousSetSceneRef.current = originalSetScene;
           presenter.setScene = function wrappedSetScene(scene: unknown) {
             announcedReady = false;
-            return originalSetScene.call(presenter, scene);
+            const result = originalSetScene.call(presenter, scene);
+            // 3DHOP's setScene resets its measurement/pick-point flags; keep the active tool on.
+            reassertActiveTool(presenter);
+            return result;
           };
           presenter._testReady = function wrappedTestReady() {
             originalTestReady.call(presenter);
