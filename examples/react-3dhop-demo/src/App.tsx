@@ -184,6 +184,14 @@ function App() {
             <CameraControl
               title={{ enabled: 'Perspektivkamera', disabled: 'Ortograft kamera' }}
             />
+            <ScreenshotControl title="Lagre skjermbilde (og kopier)" copyToClipboard baseName="C42183" />
+            <FullscreenControl
+              title={{ enabled: 'Avslutt Fullskjerm', disabled: 'Gå til Fullskjerm' }}
+              icon={{ enabled: 'skins/dark/full_on.png', disabled: 'skins/dark/full.png' }}
+            />
+          </Toolbar>
+          {/* Second column: the controls with sidecars, so their panels open into free space. */}
+          <Toolbar position="top-left" style={{ left: 72 }}>
             <MeasureControl
               title={{ enabled: 'Fjern måleverktøy', disabled: 'Aktiver måleverktøy' }}
               label="Målt lengde"
@@ -218,17 +226,12 @@ function App() {
               showPlanesLabel="Vis plan"
               showEdgesLabel="Vis kant"
             />
-            <ScreenshotControl title="Lagre skjermbilde (og kopier)" copyToClipboard baseName="C42183" />
-            <FullscreenControl
-              title={{ enabled: 'Avslutt Fullskjerm', disabled: 'Gå til Fullskjerm' }}
-              icon={{ enabled: 'skins/dark/full_on.png', disabled: 'skins/dark/full.png' }}
-            />
           </Toolbar>
           <AnnotationEventBridge onPick={handleAnnotationPick} />
           <CompassNavigation position="bottom-right" />
           <CubeNavigation position="top-right" />
-          <LightDirectionWidget position="bottom-left" label="Lys" />
-          <ViewPresetButtons style={{ position: 'absolute', bottom: 16, left: 170 }} />
+          <LightDirectionWidget style={{ position: 'absolute', top: 260, right: 16 }} label="Lys" />
+          <ViewPresetButtons position="bottom-left" />
         </ThreeDHopViewer>
       </div>
     </div>
