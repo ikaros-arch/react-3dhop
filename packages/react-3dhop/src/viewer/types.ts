@@ -63,6 +63,8 @@ export type PresenterInstance = {
   setInstanceSpecularity?: (tag: unknown, color: [number, number, number], hardness: number, redraw?: boolean) => void;
   enableMeasurementTool?: (enabled: boolean) => void;
   isMeasurementToolEnabled?: () => boolean;
+  /** Re-displays a previously completed measurement without requiring the two points be re-picked. */
+  restoreMeasurement?: (pointA: Vector3, pointB: Vector3) => void;
   enablePickpointMode?: (enabled: boolean) => void;
   isPickpointModeEnabled?: () => boolean;
   toggleSpotVisibility?: (tag: unknown, redraw?: boolean) => void;
@@ -112,7 +114,8 @@ export type PresenterInstance = {
    */
   sceneCenter?: number[];
   sceneRadiusInv?: number;
-  _onEndMeasurement?: (measure: number) => void;
+  /** `pointA`/`pointB` are only passed once a measurement completes (the second pick). */
+  _onEndMeasurement?: (measure: number, pointA?: Vector3, pointB?: Vector3) => void;
   _onEndPickingPoint?: (point: number[]) => void;
   _onPickedSpot?: (id: string) => void;
   destroy?: () => void;
@@ -316,6 +319,15 @@ export type InteractiveToolConfig = {
   isEnabled?: (presenter: PresenterInstance) => boolean | undefined;
   syncUi?: (enabled?: boolean) => void;
   onPick?: (context: InteractiveToolPickContext) => void;
+  /**
+   * Snapshots this tool's in-progress state (e.g. picked points), for a caller to persist
+   * alongside a saved camera view. Omit when the tool has nothing capturable, or when its state
+   * lives somewhere this wrapper can't read (3DHOP's `measure` tool only ever reports a final
+   * distance, never the points behind it, so it has no `captureState`).
+   */
+  captureState?: () => unknown;
+  /** Restores state previously returned by `captureState`. Only called while this tool is active. */
+  restoreState?: (state: unknown) => void;
 };
 
 export type ThemeName = 'light' | 'dark';
@@ -347,6 +359,13 @@ export type ThreeDHopViewerContextValue = {
   registerInteractiveTool: (config: InteractiveToolConfig) => () => void;
   toggleInteractiveTool: (toolId: InteractiveTool) => void;
   activeInteractiveTool: InteractiveTool | null;
+  /**
+   * Snapshots a tool's in-progress state via its `captureState` (defaults to whichever tool is
+   * active); `null` when there's no active tool, or that tool declared no `captureState`.
+   */
+  captureToolState: (toolId?: InteractiveTool) => { toolId: InteractiveTool; state: unknown } | null;
+  /** Activates `toolId` (if it isn't already) and passes `state` to its `restoreState`. */
+  restoreToolState: (toolId: InteractiveTool, state: unknown) => void;
   /** Re-positions toolbar sidecars next to their anchor icons; call after showing/hiding one. */
   realignToolbar: () => void;
   /** The theme in effect after resolving `'system'`. */

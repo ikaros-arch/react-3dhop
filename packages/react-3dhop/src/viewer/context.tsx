@@ -35,6 +35,8 @@ export type ThreeDHopViewerProviderProps = {
   registerInteractiveTool: (config: InteractiveToolConfig) => () => void;
   toggleInteractiveTool: (toolId: InteractiveTool) => void;
   activeInteractiveTool: InteractiveTool | null;
+  captureToolState: (toolId?: InteractiveTool) => { toolId: InteractiveTool; state: unknown } | null;
+  restoreToolState: (toolId: InteractiveTool, state: unknown) => void;
   realignToolbar: () => void;
   theme: ThemeName;
   hasHotspotContribution: boolean;
@@ -82,6 +84,8 @@ export const ThreeDHopViewerProvider: React.FC<ThreeDHopViewerProviderProps> = (
   registerInteractiveTool,
   toggleInteractiveTool,
   activeInteractiveTool,
+  captureToolState,
+  restoreToolState,
   realignToolbar,
   theme,
   hasHotspotContribution,
@@ -107,6 +111,8 @@ export const ThreeDHopViewerProvider: React.FC<ThreeDHopViewerProviderProps> = (
       registerInteractiveTool,
       toggleInteractiveTool,
       activeInteractiveTool,
+      captureToolState,
+      restoreToolState,
       realignToolbar,
       theme,
       hasHotspotContribution,
@@ -130,6 +136,8 @@ export const ThreeDHopViewerProvider: React.FC<ThreeDHopViewerProviderProps> = (
       registerInteractiveTool,
       toggleInteractiveTool,
       activeInteractiveTool,
+      captureToolState,
+      restoreToolState,
       realignToolbar,
       theme,
       hasHotspotContribution,

@@ -3,7 +3,7 @@
  * of tool descriptors (built-in `measure` and `pick`, plus anything registered at runtime) and a
  * hook that toggles them so at most one is active, keeping presenter state and UI in step.
  */
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import type React from 'react';
 import type {
   InteractiveTool,
@@ -21,6 +21,11 @@ export type UseInteractiveToolsOptions = {
   syncMeasurementUi: (enabled?: boolean) => void;
   syncPickpointUi: (enabled?: boolean) => void;
   setPickpointValue: React.Dispatch<React.SetStateAction<Vector3 | null>>;
+  /** Current pick-point value, so the built-in `pick` tool can capture it. */
+  pickpointValue: Vector3 | null;
+  setMeasurementValue: React.Dispatch<React.SetStateAction<number | null>>;
+  /** The last completed measurement's two points, so the built-in `measure` tool can capture them. */
+  measurementPoints: [Vector3, Vector3] | null;
 };
 
 export type UseInteractiveToolsResult = {
@@ -28,6 +33,8 @@ export type UseInteractiveToolsResult = {
   registerInteractiveTool: (config: InteractiveToolConfig) => () => void;
   toggleTool: (toolId: InteractiveTool, presenter?: PresenterInstance | null) => void;
   deactivateTool: (toolId: InteractiveTool, presenter?: PresenterInstance | null) => boolean;
+  captureToolState: (toolId?: InteractiveTool) => { toolId: InteractiveTool; state: unknown } | null;
+  restoreToolState: (toolId: InteractiveTool, state: unknown) => void;
   resetActiveTool: () => void;
   /**
    * Re-enables the active tool on the presenter. 3DHOP's `setScene` clears its measurement and
@@ -56,9 +63,19 @@ export function useInteractiveTools({
   activeInteractiveToolRef,
   syncMeasurementUi,
   syncPickpointUi,
-  setPickpointValue
+  setPickpointValue,
+  pickpointValue,
+  setMeasurementValue,
+  measurementPoints
 }: UseInteractiveToolsOptions): UseInteractiveToolsResult {
   const [activeInteractiveTool, setActiveInteractiveTool] = useState<InteractiveTool | null>(null);
+
+  // So `pick`/`measure`'s captureState always read the latest value without forcing the registry
+  // below to be rebuilt (and re-keyed in any Map callers hold) on every pick/measurement.
+  const pickpointValueRef = useRef(pickpointValue);
+  pickpointValueRef.current = pickpointValue;
+  const measurementPointsRef = useRef(measurementPoints);
+  measurementPointsRef.current = measurementPoints;
 
   // Held in a Map rather than state: registration happens in effects and must not re-render.
   const registry = useMemo(() => {
@@ -67,17 +84,27 @@ export function useInteractiveTools({
       id: 'measure',
       enable: (presenter, enabled) => presenter.enableMeasurementTool?.(enabled),
       isEnabled: (presenter) => presenter.isMeasurementToolEnabled?.(),
-      syncUi: syncMeasurementUi
+      syncUi: syncMeasurementUi,
+      captureState: () => measurementPointsRef.current,
+      restoreState: (state) => {
+        const points = state as [Vector3, Vector3] | null;
+        if (!points) return;
+        const [a, b] = points;
+        presenterRef.current?.restoreMeasurement?.(a, b);
+        setMeasurementValue(Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]));
+      }
     });
     map.set('pick', {
       id: 'pick',
       enable: (presenter, enabled) => presenter.enablePickpointMode?.(enabled),
       isEnabled: (presenter) => presenter.isPickpointModeEnabled?.(),
       syncUi: syncPickpointUi,
-      onPick: ({ corrected }) => setPickpointValue(corrected)
+      onPick: ({ corrected }) => setPickpointValue(corrected),
+      captureState: () => pickpointValueRef.current,
+      restoreState: (state) => setPickpointValue(Array.isArray(state) ? (state as Vector3) : null)
     });
     return map;
-  }, [setPickpointValue, syncMeasurementUi, syncPickpointUi]);
+  }, [presenterRef, setMeasurementValue, setPickpointValue, syncMeasurementUi, syncPickpointUi]);
 
   const isActive = useCallback(
     (config: InteractiveToolConfig, presenter: PresenterInstance) => {
@@ -186,6 +213,30 @@ export function useInteractiveTools({
 
   const hasTool = useCallback((toolId: InteractiveTool) => registry.has(toolId), [registry]);
 
+  const captureToolState = useCallback(
+    (toolId?: InteractiveTool) => {
+      const id = toolId ?? activeInteractiveToolRef.current;
+      if (!id) return null;
+      const config = registry.get(id);
+      if (!config?.captureState) return null;
+      return { toolId: id, state: config.captureState() };
+    },
+    [activeInteractiveToolRef, registry]
+  );
+
+  const restoreToolState = useCallback(
+    (toolId: InteractiveTool, state: unknown) => {
+      const presenter = presenterRef.current;
+      const config = registry.get(toolId);
+      if (!presenter || !config) return;
+      if (activeInteractiveToolRef.current !== toolId) {
+        toggleTool(toolId, presenter);
+      }
+      config.restoreState?.(state);
+    },
+    [activeInteractiveToolRef, presenterRef, registry, toggleTool]
+  );
+
   return {
     activeInteractiveTool,
     registerInteractiveTool,
@@ -194,6 +245,8 @@ export function useInteractiveTools({
     resetActiveTool,
     reassertActiveTool,
     dispatchPick,
-    hasTool
+    hasTool,
+    captureToolState,
+    restoreToolState
   };
 }

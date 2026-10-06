@@ -17,6 +17,7 @@ export type MockPresenter = PresenterInstance & {
   __measureEnabled: boolean;
   __pickEnabled: boolean;
   __trackball: number[];
+  __measurementPoints?: [number[], number[]];
 };
 
 /**
@@ -111,6 +112,10 @@ export function createMockPresenter(scene?: Partial<MockScene>): MockPresenter {
     }),
     isMeasurementToolEnabled: vi.fn(function (this: MockPresenter) {
       return this.__measureEnabled;
+    }),
+    restoreMeasurement: vi.fn(function (this: MockPresenter, pointA, pointB) {
+      this.__measureEnabled = true;
+      this.__measurementPoints = [pointA, pointB];
     }),
     enablePickpointMode: vi.fn(function (this: MockPresenter, on: boolean) {
       this.__pickEnabled = on;

@@ -100,6 +100,17 @@ are the toolbar auto-repeat interval (100 ms → 150 ms), a jQuery call that Pon
 already removed, and two commented-out `preventDefault()` calls — nothing worth giving up the
 de-jQueryed `init.js` for.
 
+## Layer 3 — `restoreMeasurement()` (this repo, 2026-10)
+
+Added `presenter.restoreMeasurement(pointA, pointB)` to `js/presenter.js`, next to
+`enableMeasurementTool`/`isMeasurementToolEnabled`. It re-displays a previously completed
+measurement (sets `_pointA`/`_pointB`/`measurement`/`_measurementStage = 3` and repaints) without
+making the user re-pick both points — needed so `@ikaros-arch/react-3dhop`'s `measure` interactive
+tool can support `captureState`/`restoreState` (e.g. for an app restoring a saved camera view
+together with whatever was being measured). It's a small new method alongside existing ones, not a
+change to any upstream behaviour; `_measureRefresh`'s own completion branch is unmodified and is
+where `restoreMeasurement`'s body was copied from, substituting given points for a pick event.
+
 ## Unmodified from upstream 4.3
 
 `js/ply.js`, `js/corto.js`, `js/corto.em.js`, `js/meco.js`, `js/helpers.js`, `js/spidergl.js`,

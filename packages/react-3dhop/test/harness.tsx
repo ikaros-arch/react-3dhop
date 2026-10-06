@@ -22,10 +22,14 @@ export type HarnessControls = {
   emitLight: () => void;
   /** The presenter's pick callback as the lifecycle would install it. */
   pick: (raw: Vector3) => void;
+  /** Simulates the presenter's `_onEndMeasurement(measure, pointA, pointB)` callback. */
+  completeMeasurement: (pointA: Vector3, pointB: Vector3) => void;
   toggleTool: (toolId: InteractiveTool) => void;
   getActiveTool: () => InteractiveTool | null;
   /** Simulate a toolbar icon click reaching the lifecycle; true if a registered handler took it. */
   toolbarAction: (action: string) => boolean;
+  captureToolState: (toolId?: InteractiveTool) => { toolId: InteractiveTool; state: unknown } | null;
+  restoreToolState: (toolId: InteractiveTool, state: unknown) => void;
 };
 
 type HarnessProps = {
@@ -57,6 +61,7 @@ export const ViewerHarness: React.FC<HarnessProps> = ({
   const lightObservers = useRef(new Set<LightObserver>());
   const toolbarHandlers = useRef(new Map<string, Set<ToolbarActionHandler>>());
   const [measurementValue, setMeasurementValue] = useState<number | null>(null);
+  const [measurementPoints, setMeasurementPoints] = useState<[Vector3, Vector3] | null>(null);
   const [pickpointValue, setPickpointValue] = useState<Vector3 | null>(null);
 
   const noopSync = useCallback(() => {}, []);
@@ -65,7 +70,10 @@ export const ViewerHarness: React.FC<HarnessProps> = ({
     activeInteractiveToolRef,
     syncMeasurementUi: noopSync,
     syncPickpointUi: noopSync,
-    setPickpointValue
+    setMeasurementValue,
+    measurementPoints,
+    setPickpointValue,
+    pickpointValue
   });
 
   const register = <T,>(set: Set<T>) => (observer: T) => {
@@ -120,8 +128,14 @@ export const ViewerHarness: React.FC<HarnessProps> = ({
         presenter: p
       });
     },
+    completeMeasurement: (pointA, pointB) => {
+      setMeasurementValue(Math.hypot(pointA[0] - pointB[0], pointA[1] - pointB[1], pointA[2] - pointB[2]));
+      setMeasurementPoints([pointA, pointB]);
+    },
     toggleTool: (toolId) => tools.toggleTool(toolId, presenterRef.current),
     getActiveTool: () => activeInteractiveToolRef.current,
+    captureToolState: (toolId) => tools.captureToolState(toolId),
+    restoreToolState: (toolId, state) => tools.restoreToolState(toolId, state),
     toolbarAction: (action) => {
       const p = presenterRef.current;
       if (!p) return false;
@@ -160,6 +174,8 @@ export const ViewerHarness: React.FC<HarnessProps> = ({
       registerInteractiveTool={tools.registerInteractiveTool}
       toggleInteractiveTool={toggleInteractiveTool}
       activeInteractiveTool={tools.activeInteractiveTool}
+      captureToolState={tools.captureToolState}
+      restoreToolState={tools.restoreToolState}
       realignToolbar={() => {}}
       theme={theme}
       hasHotspotContribution={false}

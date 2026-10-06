@@ -86,6 +86,30 @@ describe('AngleControl', () => {
     expect(presenter._scene.entities['angle-wedge']).toBeUndefined();
   });
 
+  it('captures its in-progress points and restores them later, e.g. onto a saved view', () => {
+    const presenter = createMockPresenter();
+    const { controls, container } = mount(presenter, <AngleControl />);
+    const output = () => container.querySelector('[data-hop-sidecar="angle-box"]')?.textContent ?? '';
+
+    act(() => controls().toggleTool('angle'));
+    act(() => controls().pick([1, 0, 0]));
+    act(() => controls().pick([0, 0, 0]));
+    const captured = controls().captureToolState('angle');
+    expect(captured).toEqual({ toolId: 'angle', state: [[1, 0, 0], [0, 0, 0]] });
+
+    // Switch away, losing the in-progress measurement...
+    act(() => controls().toggleTool('pick'));
+    expect(presenter._scene.entities['angle-lines']).toBeUndefined();
+
+    // ...then restore it, as re-opening a saved view would.
+    act(() => controls().restoreToolState('angle', captured!.state));
+    expect(controls().getActiveTool()).toBe('angle');
+    expect(presenter._scene.entities['angle-lines']).toBeDefined();
+
+    act(() => controls().pick([0, 1, 0]));
+    expect(output()).toContain('90.00°');
+  });
+
   it('clears entities when the tool is switched off', () => {
     const presenter = createMockPresenter();
     const { controls } = mount(presenter, <AngleControl />);

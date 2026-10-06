@@ -20,7 +20,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 /*
 MODIFIED from upstream 3DHOP 4.3 (https://github.com/cnr-isti-vclab/3DHOP).
 Carries the "4.3.5" patch set (not an upstream release), adopted into this repository on
-2025-10-25 from the build used by the khm_3dhop_desktop project. See ../PROVENANCE.md.
+2025-10-25 from the build used by the khm_3dhop_desktop project. Local addition 2026-10:
+restoreMeasurement(). See ../PROVENANCE.md.
 */
 
 SpiderGL.openNamespace();
@@ -4002,6 +4003,18 @@ enableMeasurementTool: function(on) {
 
 isMeasurementToolEnabled: function() {
 	return this._isMeasuringDistance;
+},
+
+// Re-displays a previously completed measurement (e.g. restoring a saved view) without requiring
+// the user to re-pick both points. Mirrors the second branch of _measureRefresh, driven by given
+// points instead of a pick event; does not re-fire _onEndMeasurement; call repaint() is included.
+restoreMeasurement: function(pointA, pointB) {
+	this._isMeasuring = this._isMeasuringDistance = true;
+	this._pointA = [pointA[0], pointA[1], pointA[2]];
+	this._pointB = [pointB[0], pointB[1], pointB[2]];
+	this.measurement = SglVec3.length(SglVec3.sub(this._pointA, this._pointB));
+	this._measurementStage = 3;
+	this.repaint();
 },
 
 //-----------------------------------------------------------------------------

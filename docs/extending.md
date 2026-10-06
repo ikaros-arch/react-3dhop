@@ -116,6 +116,39 @@ function useAngleTool() {
   `actionsToolbar` path as well, so tools can be dropped into the stock toolbar markup.
 - `activeInteractiveTool` on the context re-renders when the active tool changes.
 
+### Snapshotting a tool's in-progress state
+
+If you're saving custom "views" (camera position plus whatever the user was in the middle of
+measuring) you need a way to capture and restore a tool's picked points alongside the camera. Add
+`captureState`/`restoreState` to the config:
+
+```tsx
+const config: InteractiveToolConfig = {
+  id: 'angle',
+  enable: (presenter, on) => presenter.enablePickpointMode?.(on),
+  onPick: ({ raw }) => setPoints((current) => [...current, raw].slice(-3)),
+  captureState: () => points,
+  restoreState: (state) => setPoints(Array.isArray(state) ? (state as Vector3[]) : [])
+};
+```
+
+```ts
+const { captureToolState, restoreToolState } = useThreeDHopViewer();
+
+const saved = captureToolState();              // { toolId, state } for the active tool, or null
+const saved2 = captureToolState('angle');       // a specific tool, active or not
+restoreToolState('angle', saved!.state);        // activates 'angle' first if it wasn't already
+```
+
+Only implement these if the tool's state genuinely lives somewhere this wrapper can read. All three
+built-in tools support it: `pick`'s single point is already in `pickpointValue`; `measure`'s two
+points are reported by `presenter._onEndMeasurement(measure, pointA, pointB)` once a measurement
+completes, and restored via `presenter.restoreMeasurement(pointA, pointB)` (added to the vendored
+3DHOP build specifically for this — see `packages/3dhop/PROVENANCE.md`, Layer 3). `measure`'s
+`captureState` reports `null` before any measurement has finished, since there's nothing to restore
+yet — `captureToolState()` still returns `{ toolId: 'measure', state: null }` in that case, not
+`null` itself, so check `.state` rather than the whole result.
+
 ## Light direction: `useLightDirection`
 
 ```ts

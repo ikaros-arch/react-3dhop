@@ -181,3 +181,87 @@ describe('pick dispatch', () => {
     expect(value).toBeNull();
   });
 });
+
+describe('tool state capture/restore', () => {
+  it('captures a custom tool\'s state while it is active, defaulting to the active tool', () => {
+    let points: number[] = [];
+    const config: InteractiveToolConfig = {
+      id: 'angle',
+      captureState: () => points,
+      restoreState: (state) => {
+        points = state as number[];
+      }
+    };
+    const { controls } = setup(<RegisterTool config={config} />);
+
+    points = [1, 2, 3];
+    act(() => controls().toggleTool('angle'));
+    expect(controls().captureToolState()).toEqual({ toolId: 'angle', state: [1, 2, 3] });
+    // An explicit id works the same as defaulting to the active tool.
+    expect(controls().captureToolState('angle')).toEqual({ toolId: 'angle', state: [1, 2, 3] });
+  });
+
+  it('returns null when there is no active tool, or the active tool has no captureState', () => {
+    const { controls } = setup(<RegisterTool config={{ id: 'angle' }} />);
+    expect(controls().captureToolState()).toBeNull();
+    act(() => controls().toggleTool('angle'));
+    expect(controls().captureToolState()).toBeNull();
+  });
+
+  it('restoreToolState activates the tool if needed, then hands it the state', () => {
+    const restoreState = vi.fn();
+    const { controls } = setup(<RegisterTool config={{ id: 'angle', restoreState }} />);
+
+    expect(controls().getActiveTool()).toBeNull();
+    act(() => controls().restoreToolState('angle', [1, 2, 3]));
+    expect(controls().getActiveTool()).toBe('angle');
+    expect(restoreState).toHaveBeenCalledWith([1, 2, 3]);
+  });
+
+  it('round-trips the built-in pick tool\'s point through capture/restore', () => {
+    let value: [number, number, number] | null = null;
+    const Probe: React.FC = () => {
+      value = useThreeDHopViewer().pickpointValue;
+      return null;
+    };
+    const { controls } = setup(<Probe />);
+
+    act(() => controls().toggleTool('pick'));
+    act(() => controls().pick([4, 5, 6]));
+    const captured = controls().captureToolState();
+    expect(captured).toEqual({ toolId: 'pick', state: [4, 5, 6] });
+
+    act(() => controls().toggleTool('pick')); // deactivate, clearing nothing but proving restore re-activates
+    act(() => controls().restoreToolState('pick', captured!.state));
+    expect(controls().getActiveTool()).toBe('pick');
+    expect(value).toEqual([4, 5, 6]);
+  });
+
+  it('round-trips the built-in measure tool\'s points through capture/restore', () => {
+    let value: number | null = null;
+    const Probe: React.FC = () => {
+      value = useThreeDHopViewer().measurementValue;
+      return null;
+    };
+    const { controls, presenter } = setup(<Probe />);
+
+    act(() => controls().toggleTool('measure'));
+    act(() => controls().completeMeasurement([0, 0, 0], [3, 4, 0]));
+    expect(value).toBe(5);
+
+    const captured = controls().captureToolState();
+    expect(captured).toEqual({ toolId: 'measure', state: [[0, 0, 0], [3, 4, 0]] });
+
+    act(() => controls().toggleTool('measure')); // deactivate
+    act(() => controls().restoreToolState('measure', captured!.state));
+    expect(controls().getActiveTool()).toBe('measure');
+    expect(value).toBe(5);
+    expect(presenter.restoreMeasurement).toHaveBeenCalledWith([0, 0, 0], [3, 4, 0]);
+  });
+
+  it('captureToolState reports a null state for measure before any measurement has completed', () => {
+    const { controls } = setup();
+    act(() => controls().toggleTool('measure'));
+    expect(controls().captureToolState()).toEqual({ toolId: 'measure', state: null });
+  });
+});

@@ -145,6 +145,7 @@ export const ThreeDHopViewer: React.FC<ThreeDHopViewerProps> = ({
   const annotationDefinitionsRef = useRef<Map<string, AnnotationDefinition>>(new Map());
   const [hasHotspotContribution, setHasHotspotContribution] = useState(false);
   const [measurementValue, setMeasurementValue] = useState<number | null>(null);
+  const [measurementPoints, setMeasurementPoints] = useState<[Vector3, Vector3] | null>(null);
   const [pickpointValue, setPickpointValue] = useState<[number, number, number] | null>(null);
   const activeInteractiveToolRef = useRef<InteractiveTool | null>(null);
 
@@ -173,14 +174,27 @@ export const ThreeDHopViewer: React.FC<ThreeDHopViewerProps> = ({
     setPickpointValue
   });
 
-  const { toggleTool, deactivateTool, resetActiveTool, reassertActiveTool, registerInteractiveTool, dispatchPick, hasTool, activeInteractiveTool } =
-    useInteractiveTools({
-      presenterRef,
-      activeInteractiveToolRef,
-      syncMeasurementUi,
-      syncPickpointUi,
-      setPickpointValue
-    });
+  const {
+    toggleTool,
+    deactivateTool,
+    resetActiveTool,
+    reassertActiveTool,
+    registerInteractiveTool,
+    dispatchPick,
+    hasTool,
+    activeInteractiveTool,
+    captureToolState,
+    restoreToolState
+  } = useInteractiveTools({
+    presenterRef,
+    activeInteractiveToolRef,
+    syncMeasurementUi,
+    syncPickpointUi,
+    setPickpointValue,
+    pickpointValue,
+    setMeasurementValue,
+    measurementPoints
+  });
 
   /** Context-facing toggle: always targets the live presenter. */
   const toggleInteractiveTool = useCallback(
@@ -492,6 +506,7 @@ export const ThreeDHopViewer: React.FC<ThreeDHopViewerProps> = ({
     syncCameraSwitch,
     syncHotspotSwitch,
     setMeasurementValue,
+    setMeasurementPoints,
     resolvedCoordinateCorrections,
     dispatchAnnotationPick,
     annotationDefinitionsRef,
@@ -572,6 +587,8 @@ export const ThreeDHopViewer: React.FC<ThreeDHopViewerProps> = ({
       registerInteractiveTool={registerInteractiveTool}
       toggleInteractiveTool={toggleInteractiveTool}
       activeInteractiveTool={activeInteractiveTool}
+      captureToolState={captureToolState}
+      restoreToolState={restoreToolState}
       realignToolbar={alignToolbarSidecars}
       theme={resolvedTheme}
       hasHotspotContribution={hasHotspotContribution}

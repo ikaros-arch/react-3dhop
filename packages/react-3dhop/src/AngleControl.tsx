@@ -98,15 +98,23 @@ export const AngleControl: React.FC<AngleControlProps> = ({
     }
   }, []);
 
+  const restorePoints = useCallback((state: unknown) => {
+    const next = Array.isArray(state) ? (state as Vector3[]) : [];
+    pointsRef.current = next;
+    setPoints(next);
+  }, []);
+
   useEffect(
     () =>
       registerInteractiveTool({
         id: ANGLE_TOOL_ID,
         enable: (presenter, enabled) => presenter.enablePickpointMode?.(enabled),
         syncUi,
-        onPick
+        onPick,
+        captureState: () => pointsRef.current,
+        restoreState: restorePoints
       }),
-    [onPick, registerInteractiveTool, syncUi]
+    [onPick, registerInteractiveTool, restorePoints, syncUi]
   );
 
   const entities = angleEntities(points);

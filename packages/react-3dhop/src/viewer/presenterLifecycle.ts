@@ -51,6 +51,8 @@ export type PresenterLifecycleOptions = {
   syncCameraSwitch: (override?: boolean) => boolean;
   syncHotspotSwitch: (override?: boolean) => boolean;
   setMeasurementValue: React.Dispatch<React.SetStateAction<number | null>>;
+  /** Only set when a measurement completes (the second pick); see `restoreMeasurement`. */
+  setMeasurementPoints: React.Dispatch<React.SetStateAction<[Vector3, Vector3] | null>>;
   resolvedCoordinateCorrections: Required<CoordinateCorrections>;
   dispatchAnnotationPick: (event: AnnotationPickEvent) => void;
   annotationDefinitionsRef: React.MutableRefObject<Map<string, AnnotationDefinition>>;
@@ -94,6 +96,7 @@ export function usePresenterLifecycle({
   syncCameraSwitch,
   syncHotspotSwitch,
   setMeasurementValue,
+  setMeasurementPoints,
   resolvedCoordinateCorrections,
   dispatchAnnotationPick,
   annotationDefinitionsRef,
@@ -453,8 +456,11 @@ export function usePresenterLifecycle({
         previousOnEndMeasurementRef.current = presenter._onEndMeasurement;
         previousOnEndPickingPointRef.current = presenter._onEndPickingPoint;
 
-        presenter._onEndMeasurement = (measure: number) => {
+        presenter._onEndMeasurement = (measure: number, pointA?: Vector3, pointB?: Vector3) => {
           setMeasurementValue(measure);
+          if (pointA && pointB) {
+            setMeasurementPoints([pointA, pointB]);
+          }
         };
 
         presenter._onEndPickingPoint = (point: number[]) => {
