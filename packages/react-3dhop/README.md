@@ -249,6 +249,25 @@ export function CustomPlugin() {
 - Pass `showToolbar={false}` to hide it entirely.
 - Render multiple `Toolbar` instances if you need controls in different corners; the viewer keeps the button state in sync across every toolbar. (Planar section sliders still rely on the legacy single-panel markup, so stick to one `SectionsControl` for now.)
 
+`ThreeDHopViewer` recognises your toolbar by checking `children` for a `<Toolbar>` element *of that exact type, as a direct child* — wrapping it in a component of your own defeats that check and silently falls back to the default toolbar instead, with your real controls demoted to ordinary content (wrong icon paths included). This bit us even inside this repo's own IIIF package, one level further out than you'd expect:
+
+```tsx
+// Breaks: ThreeDHopViewer sees `MyToolbar`, not `Toolbar`.
+function MyToolbar() {
+  return <Toolbar><HomeControl /></Toolbar>;
+}
+<ThreeDHopViewer><MyToolbar /></ThreeDHopViewer>;
+
+// Fine: inline the <Toolbar> JSX directly as a child...
+<ThreeDHopViewer><Toolbar><HomeControl /></Toolbar></ThreeDHopViewer>;
+
+// ...or keep the helper, but hand it over explicitly via `toolbar` instead of `children`.
+// This prop accepts any ReactNode — it doesn't need to literally be a <Toolbar> element.
+<ThreeDHopViewer toolbar={<MyToolbar />} />;
+```
+
+Reach for the `toolbar` prop any time something — your own component, a third-party wrapper, anything — sits between `<ThreeDHopViewer>` (or `<IIIFViewer>`/`<IIIFMultiManifestViewer>`, which have the same prop) and the literal `<Toolbar>` element.
+
 Available controls mirror the classic 3DHOP toolbar:
 
 - `HomeControl`

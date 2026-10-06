@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { ThreeDHopViewer, type ThreeDHopViewerProps } from '@ikaros-arch/react-3dhop';
+import { ThreeDHopViewer, extractToolbar, type ThreeDHopViewerProps } from '@ikaros-arch/react-3dhop';
 import { IIIFMultiManifestProvider, type IIIFMultiManifestStatus } from './multiManifestContext.js';
 import { loadManifest, parseManifest } from './iiif/parser.js';
 import { sceneFromManifests, type SceneFromManifests, type ToMultiModelsOptions } from './iiif/toMultiModels.js';
@@ -67,6 +67,7 @@ export const IIIFMultiManifestViewer: React.FC<IIIFMultiManifestViewerProps> = (
   space,
   config,
   trackball,
+  toolbar: toolbarProp,
   children,
   ...viewerProps
 }) => {
@@ -169,6 +170,12 @@ export const IIIFMultiManifestViewer: React.FC<IIIFMultiManifestViewerProps> = (
     return <>{loadingFallback}</>;
   }
 
+  // See the matching comment in IIIFViewer.tsx: `<IIIFMultiManifestProvider>` must stay a descendant
+  // of `<ThreeDHopViewer>`, which would otherwise hide a `<Toolbar>` in `children` from it. An
+  // explicit `toolbar` prop wins over one found in `children`.
+  const { toolbar: extractedToolbar, rest } = extractToolbar(children);
+  const toolbar = toolbarProp ?? extractedToolbar;
+
   return (
     <ThreeDHopViewer
       {...viewerProps}
@@ -177,9 +184,10 @@ export const IIIFMultiManifestViewer: React.FC<IIIFMultiManifestViewerProps> = (
       config={scene.config}
       trackball={scene.trackball}
       measurementUnits={viewerProps.measurementUnits ?? scene.displayUnit}
+      toolbar={toolbar}
     >
       <IIIFMultiManifestProvider status={status} error={error} diagnostics={diagnostics} scene={scene}>
-        {children}
+        {rest}
       </IIIFMultiManifestProvider>
     </ThreeDHopViewer>
   );

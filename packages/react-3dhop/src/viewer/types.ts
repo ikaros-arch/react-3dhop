@@ -402,5 +402,14 @@ export type ThreeDHopViewerProps = {
    * CSS custom properties; `light` sets none so stylesheet overrides of `--r3dhop-*` win.
    */
   theme?: ThemeMode;
+  /**
+   * Supplies the toolbar explicitly instead of inferring it from `children` by element type.
+   * Without this, a `<Toolbar>` is only recognised when it is a *direct* child — anything that
+   * wraps it (a context provider, a layout component) defeats the `child.type === Toolbar` check,
+   * silently falling back to the built-in default toolbar instead. Packages that interpose their
+   * own wrapper between this component and the caller's children (as `@ikaros-arch/react-3dhop-iiif`
+   * does) should extract the toolbar from their own `children` and pass it here.
+   */
+  toolbar?: React.ReactNode;
   children?: React.ReactNode;
 };

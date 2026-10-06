@@ -82,6 +82,7 @@ export {
 	Toolbar,
 	ToolbarAssetsProvider,
 	ToolbarSeparator,
+	extractToolbar,
 	ToggleImagePair,
 	CopyableOutput,
 	useToolbarSidecar,

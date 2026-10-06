@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { ThreeDHopViewer, type ThreeDHopViewerProps } from '@ikaros-arch/react-3dhop';
+import { ThreeDHopViewer, extractToolbar, type ThreeDHopViewerProps } from '@ikaros-arch/react-3dhop';
 import { IIIFProvider, useIIIFManifest, type IIIFStatus } from './context.js';
 import { loadManifest, parseManifest } from './iiif/parser.js';
 import { sceneFromManifest, type SceneFromManifest, type ToModelsOptions } from './iiif/toModels.js';
@@ -50,6 +50,7 @@ export const IIIFViewer: React.FC<IIIFViewerProps> = ({
   space,
   config,
   trackball,
+  toolbar: toolbarProp,
   children,
   ...viewerProps
 }) => {
@@ -151,6 +152,15 @@ export const IIIFViewer: React.FC<IIIFViewerProps> = ({
     return <>{loadingFallback}</>;
   }
 
+  // `<IIIFProvider>` has to sit between `<ThreeDHopViewer>` and `children` (it calls
+  // `useThreeDHopViewer()`, so it must be a descendant), which would otherwise hide any `<Toolbar>`
+  // in `children` from `ThreeDHopViewer`'s own by-type detection. Extracting it here and handing it
+  // over via the `toolbar` prop keeps it working regardless of that wrapping. An explicit `toolbar`
+  // prop (for callers who, in turn, wrap *their* toolbar in a component of their own) wins over one
+  // found in `children`, rather than being silently overwritten by it.
+  const { toolbar: extractedToolbar, rest } = extractToolbar(children);
+  const toolbar = toolbarProp ?? extractedToolbar;
+
   return (
     <ThreeDHopViewer
       {...viewerProps}
@@ -159,6 +169,7 @@ export const IIIFViewer: React.FC<IIIFViewerProps> = ({
       config={scene.config}
       trackball={scene.trackball}
       measurementUnits={viewerProps.measurementUnits ?? scene.displayUnit}
+      toolbar={toolbar}
     >
       <IIIFProvider
         status={status}
@@ -170,7 +181,7 @@ export const IIIFViewer: React.FC<IIIFViewerProps> = ({
         setLanguage={setLanguage}
       >
         {applyInitialCamera && localized.cameras.length > 0 ? <InitialCamera /> : null}
-        {children}
+        {rest}
       </IIIFProvider>
     </ThreeDHopViewer>
   );

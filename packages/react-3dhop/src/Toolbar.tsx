@@ -133,6 +133,32 @@ export const Toolbar: React.FC<ToolbarProps> = ({ position, style, children, ...
   );
 };
 
+/**
+ * Splits `children` into its `<Toolbar>` element (if any) and everything else, by element type.
+ *
+ * For wrapper components that interpose something (a context provider, a layout element) between
+ * `<ThreeDHopViewer>` and the caller's children: extract the toolbar with this and pass it via
+ * `<ThreeDHopViewer toolbar={toolbar}>`, since `ThreeDHopViewer` can only recognise a `<Toolbar>` by
+ * type when it is a *direct* child — any wrapping defeats that check.
+ */
+export function extractToolbar(children: React.ReactNode): { toolbar: React.ReactNode; rest: React.ReactNode[] } {
+  let toolbar: React.ReactNode = null;
+  const rest: React.ReactNode[] = [];
+
+  React.Children.forEach(children, (child) => {
+    if (!child) {
+      return;
+    }
+    if (toolbar === null && React.isValidElement(child) && child.type === Toolbar) {
+      toolbar = child;
+    } else {
+      rest.push(child);
+    }
+  });
+
+  return { toolbar, rest };
+}
+
 type BasicControlProps = {
   title?: string;
   icon?: string;

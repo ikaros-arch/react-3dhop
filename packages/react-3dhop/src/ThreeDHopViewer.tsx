@@ -130,6 +130,7 @@ export const ThreeDHopViewer: React.FC<ThreeDHopViewerProps> = ({
   trackball,
   nexusTargetError,
   theme: themeMode,
+  toolbar,
   children
 }) => {
   const presenterRef = useRef<PresenterInstance | null>(null);
@@ -527,16 +528,27 @@ export const ThreeDHopViewer: React.FC<ThreeDHopViewerProps> = ({
   const toolbarChildren: React.ReactNode[] = [];
   const otherChildren: React.ReactNode[] = [];
 
-  React.Children.forEach(children, (child) => {
-    if (!child) {
-      return;
-    }
-    if (React.isValidElement(child) && child.type === Toolbar) {
-      toolbarChildren.push(child);
-    } else {
-      otherChildren.push(child);
-    }
-  });
+  if (toolbar !== undefined && toolbar !== null) {
+    // An explicit `toolbar` prop always wins: `children` can't be scanned for a wrapped `<Toolbar>`
+    // anyway (see the prop's doc comment), so everything in it is just other content.
+    toolbarChildren.push(toolbar);
+    React.Children.forEach(children, (child) => {
+      if (child) {
+        otherChildren.push(child);
+      }
+    });
+  } else {
+    React.Children.forEach(children, (child) => {
+      if (!child) {
+        return;
+      }
+      if (React.isValidElement(child) && child.type === Toolbar) {
+        toolbarChildren.push(child);
+      } else {
+        otherChildren.push(child);
+      }
+    });
+  }
 
   const hasProvidedToolbar = toolbarChildren.length > 0;
   const toolbarCount = toolbarChildren.length;
@@ -570,30 +582,30 @@ export const ThreeDHopViewer: React.FC<ThreeDHopViewerProps> = ({
       setPickpointValue={setPickpointValue}
       coordinateCorrections={resolvedCoordinateCorrections}
     >
-      <div
-        className={className}
-        data-r3dhop-theme={resolvedTheme}
-        style={{
-          position: 'relative',
-          width,
-          height,
-          overflow: 'hidden',
-          ...themeStyle(resolvedTheme),
-          ...style
-        }}
-      >
+      <ToolbarAssetsProvider assetBaseUrl={normalizedBaseUrl}>
         <div
-          id="3dhop"
-          className="tdhop"
-          onMouseDown={(event: React.MouseEvent<HTMLDivElement>) => {
-            if (event.preventDefault) {
-              event.preventDefault();
-            }
+          className={className}
+          data-r3dhop-theme={resolvedTheme}
+          style={{
+            position: 'relative',
+            width,
+            height,
+            overflow: 'hidden',
+            ...themeStyle(resolvedTheme),
+            ...style
           }}
         >
-          <div id="tdhlg" />
-          {showToolbar ? (
-            <ToolbarAssetsProvider assetBaseUrl={normalizedBaseUrl}>
+          <div
+            id="3dhop"
+            className="tdhop"
+            onMouseDown={(event: React.MouseEvent<HTMLDivElement>) => {
+              if (event.preventDefault) {
+                event.preventDefault();
+              }
+            }}
+          >
+            <div id="tdhlg" />
+            {showToolbar ? (
               <div
                 id="toolbar"
                 data-hop-toolbar-container="true"
@@ -621,17 +633,17 @@ export const ThreeDHopViewer: React.FC<ThreeDHopViewerProps> = ({
                   return React.cloneElement(element, { key: `toolbar-${index}` });
                 })}
               </div>
-            </ToolbarAssetsProvider>
-          ) : null}
-          <canvas
-            id="draw-canvas"
-            style={
-              resolvedBackgroundUrl ? { backgroundImage: `url(${resolvedBackgroundUrl})` } : undefined
-            }
-          />
+            ) : null}
+            <canvas
+              id="draw-canvas"
+              style={
+                resolvedBackgroundUrl ? { backgroundImage: `url(${resolvedBackgroundUrl})` } : undefined
+              }
+            />
+          </div>
+          {otherChildren.length > 0 ? otherChildren : null}
         </div>
-        {otherChildren.length > 0 ? otherChildren : null}
-      </div>
+      </ToolbarAssetsProvider>
     </ThreeDHopViewerProvider>
   );
 };
