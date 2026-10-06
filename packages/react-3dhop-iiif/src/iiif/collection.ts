@@ -50,11 +50,17 @@ export function parseCollection(collection: IIIFCollection, options: ParseCollec
       return;
     }
 
+    const fields = (item.metadata ?? []).map((entry) => ({
+      label: resolve(entry.label),
+      value: resolve(entry.value)
+    }));
+
     items.push({
       id: item.id,
       label: resolve(item.label) || item.id,
       summary: resolve(item.summary) || undefined,
-      thumbnail: firstThumbnail(item)
+      thumbnail: firstThumbnail(item),
+      fields
     });
   });
 

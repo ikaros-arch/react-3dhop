@@ -19,7 +19,33 @@ describe('parseCollection', () => {
     expect(parsed.label).toBe('Demo Collection');
     expect(parsed.summary).toBe('A few objects');
     expect(parsed.items).toEqual([
-      { id: 'https://example.org/manifests/a.json', label: 'Object A', summary: undefined, thumbnail: undefined }
+      {
+        id: 'https://example.org/manifests/a.json',
+        label: 'Object A',
+        summary: undefined,
+        thumbnail: undefined,
+        fields: []
+      }
+    ]);
+  });
+
+  it('resolves an item\'s own metadata into fields, without dereferencing the manifest', () => {
+    const parsed = parseCollection({
+      items: [
+        {
+          id: 'https://example.org/manifests/a.json',
+          label: { en: ['Object A'] },
+          metadata: [
+            { label: { en: ['Period'] }, value: { en: ['Viking age'] } },
+            { label: { en: ['Museum'] }, value: { en: ['KHM'] } }
+          ]
+        }
+      ]
+    });
+
+    expect(parsed.items[0].fields).toEqual([
+      { label: 'Period', value: 'Viking age' },
+      { label: 'Museum', value: 'KHM' }
     ]);
   });
 

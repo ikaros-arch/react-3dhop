@@ -190,6 +190,12 @@ export type IIIFCollectionItem = {
   label?: LocalizableValue;
   summary?: LocalizableValue;
   thumbnail?: IIIFThumbnail | IIIFThumbnail[];
+  /**
+   * The IIIF Cookbook's "Simple Collection" recipe names "minimal metadata" as a property a
+   * Manifest reference may carry for presentation, alongside `thumbnail`, so clients can list and
+   * filter without dereferencing every Manifest: https://iiif.io/api/cookbook/recipe/0032-collection/
+   */
+  metadata?: IIIFMetadataEntry[];
 };
 
 export type IIIFCollection = {
@@ -206,6 +212,8 @@ export type ParsedCollectionItem = {
   summary?: string;
   /** URL of the first thumbnail image, when the item has one. */
   thumbnail?: string;
+  /** The item's own `metadata` entries, resolved into the active language. Empty when absent. */
+  fields: Array<{ label: string; value: string }>;
 };
 
 export type ParsedCollection = {
