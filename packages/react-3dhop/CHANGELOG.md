@@ -1,5 +1,11 @@
 # @ikaros-arch/react-3dhop
 
+## 0.6.0
+
+### Minor Changes
+
+- [`8721916`](https://github.com/ikaros-arch/react-3dhop/commit/8721916072ac8339cbdb756c6620eb3a5bdf995f) Thanks [@hallvard-indgjerd](https://github.com/hallvard-indgjerd)! - `InteractiveToolConfig` gained optional `captureState`/`restoreState`, and the viewer context gained `captureToolState()`/`restoreToolState()`, so an app can snapshot a tool's in-progress picked points (e.g. to persist alongside a saved camera view) and restore them later. Wired up for `AngleControl` and the built-in `pick` and `measure` tools — `measure` needed a small addition to the vendored 3DHOP presenter (`restoreMeasurement(pointA, pointB)`) since it previously had no way to redisplay a completed measurement without the user re-picking both points; see `packages/3dhop/PROVENANCE.md`.
+
 ## 0.5.0
 
 ### Minor Changes
