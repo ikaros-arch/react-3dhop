@@ -1,5 +1,11 @@
 # @ikaros-arch/react-3dhop-iiif
 
+## 0.3.0
+
+### Minor Changes
+
+- [`762dcdf`](https://github.com/ikaros-arch/react-3dhop/commit/762dcdfe48cb29af24c2326b2c928f419af85574) Thanks [@hallvard-indgjerd](https://github.com/hallvard-indgjerd)! - `parseCollection` now resolves each collection item's own `metadata` into `fields`, mirroring the manifest-level metadata parsing. The IIIF Cookbook's "Simple Collection" recipe (https://iiif.io/api/cookbook/recipe/0032-collection/) names "minimal metadata" as a property a Manifest reference may carry for presentation, specifically so a browse/listing UI can filter and display without dereferencing every Manifest — this surfaces that data instead of silently dropping it.
+
 ## 0.2.0
 
 ### Minor Changes

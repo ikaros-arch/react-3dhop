@@ -1,6 +1,6 @@
 {
   "name": "@ikaros-arch/react-3dhop-iiif",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "IIIF Presentation 4.0 / IIIF 3D manifest support for @ikaros-arch/react-3dhop",
   "license": "GPL-3.0-or-later",
   "author": "Hallvard R. Indgjerd",
