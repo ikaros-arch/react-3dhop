@@ -161,13 +161,41 @@ export function extractToolbar(children: React.ReactNode): { toolbar: React.Reac
 
 type BasicControlProps = {
   title?: string;
-  icon?: string;
+  /** A string is resolved as an image URL (legacy skin icons); anything else renders as-is,
+   * e.g. an icon-font `<i>` element. */
+  icon?: React.ReactNode;
   imgProps?: React.ImgHTMLAttributes<HTMLImageElement>;
 };
 
-const ToolbarImage: React.FC<React.ImgHTMLAttributes<HTMLImageElement>> = ({ alt, id, ...rest }) => (
-  <img alt={alt ?? ''} id={id} data-hop-id={id} {...rest} />
-);
+/**
+ * Renders a single toolbar icon slot. A string `icon` resolves to the legacy `<img>` markup;
+ * any other ReactNode renders as-is inside a `<span>`, so icon-font glyphs (e.g. Bootstrap
+ * Icons) work as drop-in replacements for the bundled image skins. Both branches carry
+ * `id`/`data-hop-id` so hover/click wiring (`#toolbar [data-hop-id]` in the vendored 3DHOP
+ * `init.js`) and `queryToolbarElements` visibility syncing work identically either way.
+ */
+const ToolbarIconSlot: React.FC<{
+  id?: string;
+  title?: string;
+  icon: React.ReactNode;
+  style?: React.CSSProperties;
+  imgProps?: React.ImgHTMLAttributes<HTMLImageElement>;
+}> = ({ id, title, icon, style, imgProps }) => {
+  const { style: imgStyle, alt, ...restImgProps } = imgProps ?? {};
+  const mergedStyle: React.CSSProperties = { ...style, ...imgStyle };
+
+  if (typeof icon === 'string') {
+    return (
+      <img alt={alt ?? ''} id={id} data-hop-id={id} title={title} src={icon} style={mergedStyle} {...restImgProps} />
+    );
+  }
+
+  return (
+    <span id={id} data-hop-id={id} title={title} style={{ display: 'inline-block', ...mergedStyle }}>
+      {icon}
+    </span>
+  );
+};
 
 /**
  * Inserts a line break between toolbar icons, mimicking the original 3DHOP layout.
@@ -198,10 +226,28 @@ export function resolveToggleIcon(assetBaseUrl: string, override: string | undef
   return resolveRelativeAssetPath(override, assetBaseUrl, joinAssetPath(assetBaseUrl, fallback));
 }
 
+/**
+ * Resolves a control's icon content, honoring optional overrides while defaulting to bundled
+ * assets. A string `override` (or none) resolves to an image URL exactly like `resolveToggleIcon`;
+ * any other ReactNode `override` passes straight through so consumers can swap in icon-font
+ * content without touching `assetBaseUrl` resolution at all.
+ */
+export function resolveControlIcon(
+  assetBaseUrl: string,
+  override: React.ReactNode | undefined,
+  fallback: string
+): React.ReactNode {
+  if (override !== undefined && typeof override !== 'string') {
+    return override;
+  }
+  return resolveToggleIcon(assetBaseUrl, override, fallback);
+}
+
 export type ToggleImageConfig = {
   id: string;
   title: string;
-  src: string;
+  /** A string is resolved as an image URL (legacy skin icons); anything else renders as-is. */
+  icon: React.ReactNode;
   imgProps?: React.ImgHTMLAttributes<HTMLImageElement>;
   hidden?: boolean;
 };
@@ -218,26 +264,23 @@ export type ToggleImagePairProps = {
  * `hidden: false`; `secondary` is the "off" icon and starts visible unless `hidden: true`.
  */
 export const ToggleImagePair: React.FC<ToggleImagePairProps> = ({ primary, secondary, includeSeparator = true }) => {
-  const { style: primaryStyle, ...restPrimary } = primary.imgProps ?? {};
-  const { style: secondaryStyle, ...restSecondary } = secondary.imgProps ?? {};
-
   // The "on" icon sits on top of the "off" icon (as in 3DHOP's markup) and only its
   // visibility changes, so React-controlled toggles and the DOM sync helpers agree.
   const resolvedPrimaryStyle: React.CSSProperties = {
     position: 'absolute',
-    visibility: primary.hidden === false ? 'visible' : 'hidden',
-    ...(primaryStyle ?? {})
+    visibility: primary.hidden === false ? 'visible' : 'hidden'
   };
-  const resolvedSecondaryStyle: React.CSSProperties | undefined = secondary.hidden === true
-    ? { visibility: 'hidden', ...(secondaryStyle ?? {}) }
-    : secondary.hidden === false
-      ? { visibility: 'visible', ...(secondaryStyle ?? {}) }
-      : secondaryStyle;
+  const resolvedSecondaryStyle: React.CSSProperties | undefined =
+    secondary.hidden === true
+      ? { visibility: 'hidden' }
+      : secondary.hidden === false
+        ? { visibility: 'visible' }
+        : undefined;
 
   return (
     <>
-      <ToolbarImage id={primary.id} title={primary.title} src={primary.src} style={resolvedPrimaryStyle} {...restPrimary} />
-      <ToolbarImage id={secondary.id} title={secondary.title} src={secondary.src} style={resolvedSecondaryStyle} {...restSecondary} />
+      <ToolbarIconSlot id={primary.id} title={primary.title} icon={primary.icon} style={resolvedPrimaryStyle} imgProps={primary.imgProps} />
+      <ToolbarIconSlot id={secondary.id} title={secondary.title} icon={secondary.icon} style={resolvedSecondaryStyle} imgProps={secondary.imgProps} />
       {includeSeparator ? <ToolbarSeparator /> : null}
     </>
   );
@@ -348,11 +391,11 @@ export const CopyableOutput: React.FC<CopyableOutputProps> = ({ id, value }) => 
 export const HomeControl: React.FC<BasicControlProps> = ({ title, icon, imgProps }) => {
   const { assetBaseUrl } = useToolbarAssets();
   const resolvedTitle = title ?? 'Home';
-  const resolvedIcon = resolveRelativeAssetPath(icon, assetBaseUrl, joinAssetPath(assetBaseUrl, 'skins/dark/home.png'));
+  const resolvedIcon = resolveControlIcon(assetBaseUrl, icon, 'skins/dark/home.png');
 
   return (
     <>
-      <ToolbarImage id="home" title={resolvedTitle} src={resolvedIcon} {...imgProps} />
+      <ToolbarIconSlot id="home" title={resolvedTitle} icon={resolvedIcon} imgProps={imgProps} />
       <ToolbarSeparator />
     </>
   );
@@ -364,11 +407,11 @@ export const HomeControl: React.FC<BasicControlProps> = ({ title, icon, imgProps
 export const ZoomInControl: React.FC<BasicControlProps> = ({ title, icon, imgProps }) => {
   const { assetBaseUrl } = useToolbarAssets();
   const resolvedTitle = title ?? 'Zoom In';
-  const resolvedIcon = resolveRelativeAssetPath(icon, assetBaseUrl, joinAssetPath(assetBaseUrl, 'skins/dark/zoomin.png'));
+  const resolvedIcon = resolveControlIcon(assetBaseUrl, icon, 'skins/dark/zoomin.png');
 
   return (
     <>
-      <ToolbarImage id="zoomin" title={resolvedTitle} src={resolvedIcon} {...imgProps} />
+      <ToolbarIconSlot id="zoomin" title={resolvedTitle} icon={resolvedIcon} imgProps={imgProps} />
       <ToolbarSeparator />
     </>
   );
@@ -380,11 +423,11 @@ export const ZoomInControl: React.FC<BasicControlProps> = ({ title, icon, imgPro
 export const ZoomOutControl: React.FC<BasicControlProps> = ({ title, icon, imgProps }) => {
   const { assetBaseUrl } = useToolbarAssets();
   const resolvedTitle = title ?? 'Zoom Out';
-  const resolvedIcon = resolveRelativeAssetPath(icon, assetBaseUrl, joinAssetPath(assetBaseUrl, 'skins/dark/zoomout.png'));
+  const resolvedIcon = resolveControlIcon(assetBaseUrl, icon, 'skins/dark/zoomout.png');
 
   return (
     <>
-      <ToolbarImage id="zoomout" title={resolvedTitle} src={resolvedIcon} {...imgProps} />
+      <ToolbarIconSlot id="zoomout" title={resolvedTitle} icon={resolvedIcon} imgProps={imgProps} />
       <ToolbarSeparator />
     </>
   );
@@ -396,8 +439,9 @@ export type ToggleLabels = {
 };
 
 export type ToggleIcons = {
-  enabled?: string;
-  disabled?: string;
+  /** A string is resolved as an image URL (legacy skin icons); anything else renders as-is. */
+  enabled?: React.ReactNode;
+  disabled?: React.ReactNode;
 };
 
 export type ToggleImgProps = {
@@ -418,13 +462,13 @@ export const LightControl: React.FC<LightControlProps> = ({ title, icon, enabled
   const { assetBaseUrl } = useToolbarAssets();
   const enabledTitle = title?.enabled ?? 'Disable Light Control';
   const disabledTitle = title?.disabled ?? 'Enable Light Control';
-  const enabledIcon = resolveToggleIcon(assetBaseUrl, icon?.enabled, 'skins/dark/lightcontrol_on.png');
-  const disabledIcon = resolveToggleIcon(assetBaseUrl, icon?.disabled, 'skins/dark/lightcontrol.png');
+  const enabledIcon = resolveControlIcon(assetBaseUrl, icon?.enabled, 'skins/dark/lightcontrol_on.png');
+  const disabledIcon = resolveControlIcon(assetBaseUrl, icon?.disabled, 'skins/dark/lightcontrol.png');
 
   return (
     <ToggleImagePair
-      primary={{ id: 'light_on', title: enabledTitle, src: enabledIcon, imgProps: enabledImgProps }}
-      secondary={{ id: 'light', title: disabledTitle, src: disabledIcon, imgProps: disabledImgProps }}
+      primary={{ id: 'light_on', title: enabledTitle, icon: enabledIcon, imgProps: enabledImgProps }}
+      secondary={{ id: 'light', title: disabledTitle, icon: disabledIcon, imgProps: disabledImgProps }}
     />
   );
 };
@@ -447,13 +491,13 @@ export const FullscreenControl: React.FC<FullscreenControlProps> = ({
   const { assetBaseUrl } = useToolbarAssets();
   const enabledTitle = title?.enabled ?? 'Exit Full Screen';
   const disabledTitle = title?.disabled ?? 'Full Screen';
-  const enabledIcon = resolveToggleIcon(assetBaseUrl, icon?.enabled, 'skins/dark/full_on.png');
-  const disabledIcon = resolveToggleIcon(assetBaseUrl, icon?.disabled, 'skins/dark/full.png');
+  const enabledIcon = resolveControlIcon(assetBaseUrl, icon?.enabled, 'skins/dark/full_on.png');
+  const disabledIcon = resolveControlIcon(assetBaseUrl, icon?.disabled, 'skins/dark/full.png');
 
   return (
     <ToggleImagePair
-      primary={{ id: 'full_on', title: enabledTitle, src: enabledIcon, imgProps: enabledImgProps }}
-      secondary={{ id: 'full', title: disabledTitle, src: disabledIcon, imgProps: disabledImgProps }}
+      primary={{ id: 'full_on', title: enabledTitle, icon: enabledIcon, imgProps: enabledImgProps }}
+      secondary={{ id: 'full', title: disabledTitle, icon: disabledIcon, imgProps: disabledImgProps }}
     />
   );
 };
@@ -470,13 +514,13 @@ export const HotspotControl: React.FC<HotspotControlProps> = ({ title, icon, ena
   const { assetBaseUrl } = useToolbarAssets();
   const enabledTitle = title?.enabled ?? 'Hide Hotspots';
   const disabledTitle = title?.disabled ?? 'Show Hotspots';
-  const enabledIcon = resolveToggleIcon(assetBaseUrl, icon?.enabled, 'skins/dark/pin_on.png');
-  const disabledIcon = resolveToggleIcon(assetBaseUrl, icon?.disabled, 'skins/dark/pin.png');
+  const enabledIcon = resolveControlIcon(assetBaseUrl, icon?.enabled, 'skins/dark/pin_on.png');
+  const disabledIcon = resolveControlIcon(assetBaseUrl, icon?.disabled, 'skins/dark/pin.png');
 
   return (
     <ToggleImagePair
-      primary={{ id: 'hotspot_on', title: enabledTitle, src: enabledIcon, imgProps: enabledImgProps }}
-      secondary={{ id: 'hotspot', title: disabledTitle, src: disabledIcon, imgProps: disabledImgProps }}
+      primary={{ id: 'hotspot_on', title: enabledTitle, icon: enabledIcon, imgProps: enabledImgProps }}
+      secondary={{ id: 'hotspot', title: disabledTitle, icon: disabledIcon, imgProps: disabledImgProps }}
     />
   );
 };
@@ -498,13 +542,13 @@ export const LightingControl: React.FC<LightingControlProps> = ({
   const { assetBaseUrl } = useToolbarAssets();
   const enabledTitle = title?.enabled ?? 'Disable Lighting';
   const disabledTitle = title?.disabled ?? 'Enable Lighting';
-  const enabledIcon = resolveToggleIcon(assetBaseUrl, icon?.enabled, 'skins/dark/lighting.png');
-  const disabledIcon = resolveToggleIcon(assetBaseUrl, icon?.disabled, 'skins/dark/lighting_off.png');
+  const enabledIcon = resolveControlIcon(assetBaseUrl, icon?.enabled, 'skins/dark/lighting.png');
+  const disabledIcon = resolveControlIcon(assetBaseUrl, icon?.disabled, 'skins/dark/lighting_off.png');
 
   return (
     <ToggleImagePair
-      primary={{ id: 'lighting_off', title: disabledTitle, src: disabledIcon, imgProps: disabledImgProps }}
-      secondary={{ id: 'lighting', title: enabledTitle, src: enabledIcon, imgProps: enabledImgProps }}
+      primary={{ id: 'lighting_off', title: disabledTitle, icon: disabledIcon, imgProps: disabledImgProps }}
+      secondary={{ id: 'lighting', title: enabledTitle, icon: enabledIcon, imgProps: enabledImgProps }}
     />
   );
 };
@@ -521,13 +565,13 @@ export const ColorControl: React.FC<ColorControlProps> = ({ title, icon, enabled
   const { assetBaseUrl } = useToolbarAssets();
   const enabledTitle = title?.enabled ?? 'Disable Solid Color';
   const disabledTitle = title?.disabled ?? 'Enable Solid Color';
-  const enabledIcon = resolveToggleIcon(assetBaseUrl, icon?.enabled, 'skins/dark/color_on.png');
-  const disabledIcon = resolveToggleIcon(assetBaseUrl, icon?.disabled, 'skins/dark/color.png');
+  const enabledIcon = resolveControlIcon(assetBaseUrl, icon?.enabled, 'skins/dark/color_on.png');
+  const disabledIcon = resolveControlIcon(assetBaseUrl, icon?.disabled, 'skins/dark/color.png');
 
   return (
     <ToggleImagePair
-      primary={{ id: 'color_on', title: enabledTitle, src: enabledIcon, imgProps: enabledImgProps }}
-      secondary={{ id: 'color', title: disabledTitle, src: disabledIcon, imgProps: disabledImgProps }}
+      primary={{ id: 'color_on', title: enabledTitle, icon: enabledIcon, imgProps: enabledImgProps }}
+      secondary={{ id: 'color', title: disabledTitle, icon: disabledIcon, imgProps: disabledImgProps }}
     />
   );
 };
@@ -549,13 +593,13 @@ export const TransparencyControl: React.FC<TransparencyControlProps> = ({
   const { assetBaseUrl } = useToolbarAssets();
   const enabledTitle = title?.enabled ?? 'Disable Transparency';
   const disabledTitle = title?.disabled ?? 'Enable Transparency';
-  const enabledIcon = resolveToggleIcon(assetBaseUrl, icon?.enabled, 'skins/dark/transparency_on.svg');
-  const disabledIcon = resolveToggleIcon(assetBaseUrl, icon?.disabled, 'skins/dark/transparency.svg');
+  const enabledIcon = resolveControlIcon(assetBaseUrl, icon?.enabled, 'skins/dark/transparency_on.svg');
+  const disabledIcon = resolveControlIcon(assetBaseUrl, icon?.disabled, 'skins/dark/transparency.svg');
 
   return (
     <ToggleImagePair
-      primary={{ id: 'transparency_on', title: enabledTitle, src: enabledIcon, imgProps: enabledImgProps }}
-      secondary={{ id: 'transparency', title: disabledTitle, src: disabledIcon, imgProps: disabledImgProps }}
+      primary={{ id: 'transparency_on', title: enabledTitle, icon: enabledIcon, imgProps: enabledImgProps }}
+      secondary={{ id: 'transparency', title: disabledTitle, icon: disabledIcon, imgProps: disabledImgProps }}
     />
   );
 };
@@ -577,13 +621,13 @@ export const SpecularControl: React.FC<SpecularControlProps> = ({
   const { assetBaseUrl } = useToolbarAssets();
   const enabledTitle = title?.enabled ?? 'Disable Specular Highlights';
   const disabledTitle = title?.disabled ?? 'Enable Specular Highlights';
-  const enabledIcon = resolveToggleIcon(assetBaseUrl, icon?.enabled, 'skins/dark/specular_on.svg');
-  const disabledIcon = resolveToggleIcon(assetBaseUrl, icon?.disabled, 'skins/dark/specular.svg');
+  const enabledIcon = resolveControlIcon(assetBaseUrl, icon?.enabled, 'skins/dark/specular_on.svg');
+  const disabledIcon = resolveControlIcon(assetBaseUrl, icon?.disabled, 'skins/dark/specular.svg');
 
   return (
     <ToggleImagePair
-      primary={{ id: 'specular_on', title: enabledTitle, src: enabledIcon, imgProps: enabledImgProps }}
-      secondary={{ id: 'specular', title: disabledTitle, src: disabledIcon, imgProps: disabledImgProps }}
+      primary={{ id: 'specular_on', title: enabledTitle, icon: enabledIcon, imgProps: enabledImgProps }}
+      secondary={{ id: 'specular', title: disabledTitle, icon: disabledIcon, imgProps: disabledImgProps }}
     />
   );
 };
@@ -600,20 +644,21 @@ export const CameraControl: React.FC<CameraControlProps> = ({ title, icon, enabl
   const { assetBaseUrl } = useToolbarAssets();
   const enabledTitle = title?.enabled ?? 'Perspective Camera';
   const disabledTitle = title?.disabled ?? 'Orthographic Camera';
-  const enabledIcon = resolveToggleIcon(assetBaseUrl, icon?.enabled, 'skins/dark/perspective.png');
-  const disabledIcon = resolveToggleIcon(assetBaseUrl, icon?.disabled, 'skins/dark/orthographic.png');
+  const enabledIcon = resolveControlIcon(assetBaseUrl, icon?.enabled, 'skins/dark/perspective.png');
+  const disabledIcon = resolveControlIcon(assetBaseUrl, icon?.disabled, 'skins/dark/orthographic.png');
 
   return (
     <ToggleImagePair
-      primary={{ id: 'perspective', title: enabledTitle, src: enabledIcon, imgProps: enabledImgProps }}
-      secondary={{ id: 'orthographic', title: disabledTitle, src: disabledIcon, imgProps: disabledImgProps }}
+      primary={{ id: 'perspective', title: enabledTitle, icon: enabledIcon, imgProps: enabledImgProps }}
+      secondary={{ id: 'orthographic', title: disabledTitle, icon: disabledIcon, imgProps: disabledImgProps }}
     />
   );
 };
 
 export type ScreenshotControlProps = {
   title?: string;
-  icon?: string;
+  /** A string is resolved as an image URL (legacy skin icons); anything else renders as-is. */
+  icon?: React.ReactNode;
   imgProps?: React.ImgHTMLAttributes<HTMLImageElement>;
   /** Also copy the PNG to the clipboard (where the browser allows image writes). */
   copyToClipboard?: boolean;
@@ -648,7 +693,7 @@ export const ScreenshotControl: React.FC<ScreenshotControlProps> = ({
   const { assetBaseUrl } = useToolbarAssets();
   const { registerToolbarAction } = useThreeDHopViewer();
   const resolvedTitle = title ?? (copyToClipboard && !download ? 'Copy Screenshot' : 'Save Screenshot');
-  const resolvedIcon = resolveRelativeAssetPath(icon, assetBaseUrl, joinAssetPath(assetBaseUrl, 'skins/dark/screenshot.png'));
+  const resolvedIcon = resolveControlIcon(assetBaseUrl, icon, 'skins/dark/screenshot.png');
 
   const takesOver =
     copyToClipboard || !download || onScreenshot !== undefined || baseName !== undefined || withTime !== undefined;
@@ -683,7 +728,7 @@ export const ScreenshotControl: React.FC<ScreenshotControlProps> = ({
 
   return (
     <>
-      <ToolbarImage id="screenshot" title={resolvedTitle} src={resolvedIcon} {...imgProps} />
+      <ToolbarIconSlot id="screenshot" title={resolvedTitle} icon={resolvedIcon} imgProps={imgProps} />
       <ToolbarSeparator />
     </>
   );
@@ -714,8 +759,8 @@ export const MeasureControl: React.FC<MeasureControlProps> = ({
   const { measurementUnits, measurementValue } = useThreeDHopViewer();
   const enabledTitle = title?.enabled ?? 'Disable Measure Tool';
   const disabledTitle = title?.disabled ?? 'Enable Measure Tool';
-  const enabledIcon = resolveToggleIcon(assetBaseUrl, icon?.enabled, 'skins/dark/measure_on.png');
-  const disabledIcon = resolveToggleIcon(assetBaseUrl, icon?.disabled, 'skins/dark/measure.png');
+  const enabledIcon = resolveControlIcon(assetBaseUrl, icon?.enabled, 'skins/dark/measure_on.png');
+  const disabledIcon = resolveControlIcon(assetBaseUrl, icon?.disabled, 'skins/dark/measure.png');
   const unitLabel = (units ?? measurementUnits).trim();
   const formattedUnit = unitLabel ? ` ${unitLabel}` : '';
   const displayValue =
@@ -741,8 +786,8 @@ export const MeasureControl: React.FC<MeasureControlProps> = ({
 
   return (
     <ToggleImagePair
-      primary={{ id: 'measure_on', title: enabledTitle, src: enabledIcon, imgProps: enabledImgProps }}
-      secondary={{ id: 'measure', title: disabledTitle, src: disabledIcon, imgProps: disabledImgProps }}
+      primary={{ id: 'measure_on', title: enabledTitle, icon: enabledIcon, imgProps: enabledImgProps }}
+      secondary={{ id: 'measure', title: disabledTitle, icon: disabledIcon, imgProps: disabledImgProps }}
     />
   );
 };
@@ -770,8 +815,8 @@ export const PickControl: React.FC<PickControlProps> = ({
   const { pickpointValue } = useThreeDHopViewer();
   const enabledTitle = title?.enabled ?? 'Disable PickPoint Mode';
   const disabledTitle = title?.disabled ?? 'Enable PickPoint Mode';
-  const enabledIcon = resolveToggleIcon(assetBaseUrl, icon?.enabled, 'skins/dark/pick_on.png');
-  const disabledIcon = resolveToggleIcon(assetBaseUrl, icon?.disabled, 'skins/dark/pick.png');
+  const enabledIcon = resolveControlIcon(assetBaseUrl, icon?.enabled, 'skins/dark/pick_on.png');
+  const disabledIcon = resolveControlIcon(assetBaseUrl, icon?.disabled, 'skins/dark/pick.png');
   const displayValue =
     pickpointValue != null
       ? `[ ${pickpointValue[0].toFixed(2)} , ${pickpointValue[1].toFixed(2)} , ${pickpointValue[2].toFixed(2)} ]`
@@ -795,8 +840,8 @@ export const PickControl: React.FC<PickControlProps> = ({
 
   return (
     <ToggleImagePair
-      primary={{ id: 'pick_on', title: enabledTitle, src: enabledIcon, imgProps: enabledImgProps }}
-      secondary={{ id: 'pick', title: disabledTitle, src: disabledIcon, imgProps: disabledImgProps }}
+      primary={{ id: 'pick_on', title: enabledTitle, icon: enabledIcon, imgProps: enabledImgProps }}
+      secondary={{ id: 'pick', title: disabledTitle, icon: disabledIcon, imgProps: disabledImgProps }}
     />
   );
 };
@@ -822,8 +867,8 @@ export const InfoControl: React.FC<InfoControlProps> = ({
   const { assetBaseUrl } = useToolbarAssets();
   const enabledTitle = title?.enabled ?? 'Hide Info Panel';
   const disabledTitle = title?.disabled ?? 'Show Info Panel';
-  const enabledIcon = resolveToggleIcon(assetBaseUrl, icon?.enabled, 'skins/dark/help_on.png');
-  const disabledIcon = resolveToggleIcon(assetBaseUrl, icon?.disabled, 'skins/dark/help.png');
+  const enabledIcon = resolveControlIcon(assetBaseUrl, icon?.enabled, 'skins/dark/help_on.png');
+  const disabledIcon = resolveControlIcon(assetBaseUrl, icon?.disabled, 'skins/dark/help.png');
 
   useToolbarSidecar(
     'info-box',
@@ -849,8 +894,8 @@ export const InfoControl: React.FC<InfoControlProps> = ({
 
   return (
     <ToggleImagePair
-      primary={{ id: 'info_on', title: enabledTitle, src: enabledIcon, imgProps: enabledImgProps }}
-      secondary={{ id: 'info', title: disabledTitle, src: disabledIcon, imgProps: disabledImgProps }}
+      primary={{ id: 'info_on', title: enabledTitle, icon: enabledIcon, imgProps: enabledImgProps }}
+      secondary={{ id: 'info', title: disabledTitle, icon: disabledIcon, imgProps: disabledImgProps }}
     />
   );
 };
@@ -883,10 +928,8 @@ export const SectionsControl: React.FC<SectionsControlProps> = ({
   const { assetBaseUrl } = useToolbarAssets();
   const enabledTitle = title?.enabled ?? 'Disable Plane Sections';
   const disabledTitle = title?.disabled ?? 'Enable Plane Sections';
-  const enabledIcon = resolveRelativeAssetPath(icon?.enabled, assetBaseUrl, joinAssetPath(assetBaseUrl, 'skins/dark/sections_on.png'));
-  const disabledIcon = resolveRelativeAssetPath(icon?.disabled, assetBaseUrl, joinAssetPath(assetBaseUrl, 'skins/dark/sections.png'));
-  const { style: enabledStyle, ...restEnabledProps } = enabledImgProps ?? {};
-  const { style: disabledStyle, ...restDisabledProps } = disabledImgProps ?? {};
+  const enabledIcon = resolveControlIcon(assetBaseUrl, icon?.enabled, 'skins/dark/sections_on.png');
+  const disabledIcon = resolveControlIcon(assetBaseUrl, icon?.disabled, 'skins/dark/sections.png');
 
   useToolbarSidecar(
     'sections-box',
@@ -1047,8 +1090,8 @@ export const SectionsControl: React.FC<SectionsControlProps> = ({
 
   return (
     <ToggleImagePair
-      primary={{ id: 'sections_on', title: enabledTitle, src: enabledIcon, imgProps: enabledImgProps }}
-      secondary={{ id: 'sections', title: disabledTitle, src: disabledIcon, imgProps: disabledImgProps }}
+      primary={{ id: 'sections_on', title: enabledTitle, icon: enabledIcon, imgProps: enabledImgProps }}
+      secondary={{ id: 'sections', title: disabledTitle, icon: disabledIcon, imgProps: disabledImgProps }}
     />
   );
 };

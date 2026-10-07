@@ -111,6 +111,16 @@ together with whatever was being measured). It's a small new method alongside ex
 change to any upstream behaviour; `_measureRefresh`'s own completion branch is unmodified and is
 where `restoreMeasurement`'s body was copied from, substituting given points for a pick event.
 
+## Layer 4 — toolbar hover/click wiring matches on `[data-hop-id]` (this repo, 2026-10)
+
+`init.js`'s toolbar hover/mousedown/mouseup/touch handlers and `setToolbarOpacity` previously
+matched `#toolbar img`, hardcoding the assumption that every toolbar icon is an `<img>`. Both
+selectors now match `#toolbar [data-hop-id]` instead. `@ikaros-arch/react-3dhop`'s `ToolbarImage`
+already set `data-hop-id` equal to `id` on every icon it renders, so existing `<img>`-based
+toolbars are unaffected; this only widens what else can sit in that slot, enabling
+`@ikaros-arch/react-3dhop`'s toolbar controls to render arbitrary icon content (e.g. an icon-font
+`<i>` element) instead of only an image URL, while keeping the same hover/click/touch behaviour.
+
 ## Unmodified from upstream 4.3
 
 `js/ply.js`, `js/corto.js`, `js/corto.em.js`, `js/meco.js`, `js/helpers.js`, `js/spidergl.js`,

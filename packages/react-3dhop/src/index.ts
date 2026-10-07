@@ -88,6 +88,7 @@ export {
 	useToolbarSidecar,
 	useToolbarAssets,
 	resolveToggleIcon,
+	resolveControlIcon,
 	HomeControl,
 	ZoomInControl,
 	ZoomOutControl,

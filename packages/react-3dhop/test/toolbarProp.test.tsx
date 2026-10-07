@@ -69,4 +69,50 @@ describe('ThreeDHopViewer toolbar resolution', () => {
     // ...the wrapped children-based <Toolbar> is treated as ordinary content, not a second toolbar.
     expect(container.querySelectorAll('[data-hop-toolbar-container="true"]')).toHaveLength(1);
   });
+
+  it('renders a ReactNode `icon` on a BasicControlProps control as its own element, not an <img>', () => {
+    const { container } = render(
+      <ThreeDHopViewer assetBaseUrl="/3dhop">
+        <Toolbar>
+          <HomeControl icon={<i className="bi bi-house-fill" />} />
+        </Toolbar>
+      </ThreeDHopViewer>
+    );
+    const home = container.querySelector('[data-hop-id="home"]');
+    expect(home).not.toBeNull();
+    expect(home?.tagName).not.toBe('IMG');
+    expect(home?.querySelector('i.bi-house-fill')).not.toBeNull();
+  });
+
+  it('renders a ReactNode `icon` on a ToggleIcons control (both pair members) as non-<img> elements', () => {
+    const { container } = render(
+      <ThreeDHopViewer assetBaseUrl="/3dhop">
+        <Toolbar>
+          <MeasureControl
+            label="Measured length"
+            icon={{ enabled: <i className="bi bi-rulers" />, disabled: <i className="bi bi-rulers" /> }}
+          />
+        </Toolbar>
+      </ThreeDHopViewer>
+    );
+    const measure = container.querySelector('[data-hop-id="measure"]');
+    const measureOn = container.querySelector('[data-hop-id="measure_on"]');
+    expect(measure?.tagName).not.toBe('IMG');
+    expect(measureOn?.tagName).not.toBe('IMG');
+    expect(measure?.querySelector('i.bi-rulers')).not.toBeNull();
+    expect(measureOn?.querySelector('i.bi-rulers')).not.toBeNull();
+  });
+
+  it('still resolves a string `icon` to the legacy <img> markup (backward compatible)', () => {
+    const { container } = render(
+      <ThreeDHopViewer assetBaseUrl="/3dhop">
+        <Toolbar>
+          <HomeControl icon="/custom/home.png" />
+        </Toolbar>
+      </ThreeDHopViewer>
+    );
+    const home = container.querySelector<HTMLImageElement>('[data-hop-id="home"]');
+    expect(home?.tagName).toBe('IMG');
+    expect(home?.src).toContain('/custom/home.png');
+  });
 });

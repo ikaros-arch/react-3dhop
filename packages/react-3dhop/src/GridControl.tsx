@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ToggleImagePair,
-  resolveToggleIcon,
+  resolveControlIcon,
   useToolbarAssets,
   useToolbarSidecar,
   type ToggleIcons,
@@ -146,8 +146,8 @@ export const GridControl: React.FC<GridControlProps> = ({
   const isOn = mode !== 'off';
   const enabledTitle = title?.enabled ?? 'Hide Grid';
   const disabledTitle = title?.disabled ?? 'Show Grid';
-  const enabledIcon = resolveToggleIcon(assetBaseUrl, icon?.enabled, 'skins/dark/grid_on.svg');
-  const disabledIcon = resolveToggleIcon(assetBaseUrl, icon?.disabled, 'skins/dark/grid.svg');
+  const enabledIcon = resolveControlIcon(assetBaseUrl, icon?.enabled, 'skins/dark/grid_on.svg');
+  const disabledIcon = resolveControlIcon(assetBaseUrl, icon?.disabled, 'skins/dark/grid.svg');
   const offeredModes = modes ?? (GRID_MODES.filter((m) => m !== 'off') as Exclude<GridMode, 'off'>[]);
 
   useToolbarSidecar(
@@ -197,8 +197,8 @@ export const GridControl: React.FC<GridControlProps> = ({
     <>
       <GridOverlay mode={mode} step={step} axesOrigin={axesOrigin} />
       <ToggleImagePair
-        primary={{ id: 'grid_on', title: enabledTitle, src: enabledIcon, imgProps: enabledImgProps, hidden: !isOn }}
-        secondary={{ id: 'grid', title: disabledTitle, src: disabledIcon, imgProps: disabledImgProps, hidden: isOn }}
+        primary={{ id: 'grid_on', title: enabledTitle, icon: enabledIcon, imgProps: enabledImgProps, hidden: !isOn }}
+        secondary={{ id: 'grid', title: disabledTitle, icon: disabledIcon, imgProps: disabledImgProps, hidden: isOn }}
       />
     </>
   );

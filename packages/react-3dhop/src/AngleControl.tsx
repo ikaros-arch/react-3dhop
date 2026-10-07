@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   CopyableOutput,
   ToggleImagePair,
-  resolveToggleIcon,
+  resolveControlIcon,
   useToolbarAssets,
   useToolbarSidecar,
   type ToggleIcons,
@@ -56,8 +56,8 @@ export const AngleControl: React.FC<AngleControlProps> = ({
   const isActive = activeInteractiveTool === ANGLE_TOOL_ID;
   const enabledTitle = title?.enabled ?? 'Disable Angle Tool';
   const disabledTitle = title?.disabled ?? 'Enable Angle Tool';
-  const enabledIcon = resolveToggleIcon(assetBaseUrl, icon?.enabled, 'skins/dark/angle_on.png');
-  const disabledIcon = resolveToggleIcon(assetBaseUrl, icon?.disabled, 'skins/dark/angle.png');
+  const enabledIcon = resolveControlIcon(assetBaseUrl, icon?.enabled, 'skins/dark/angle_on.png');
+  const disabledIcon = resolveControlIcon(assetBaseUrl, icon?.disabled, 'skins/dark/angle.png');
 
   const angle = points.length === 3 ? computeAngle(points[0], points[1], points[2]) : null;
   const displayValue = angle != null ? formatAngle(angle, digits) : initialDisplayValue ?? formatAngle(0, digits);
@@ -141,8 +141,8 @@ export const AngleControl: React.FC<AngleControlProps> = ({
 
   return (
     <ToggleImagePair
-      primary={{ id: `${ANGLE_TOOL_ID}_on`, title: enabledTitle, src: enabledIcon, imgProps: enabledImgProps }}
-      secondary={{ id: ANGLE_TOOL_ID, title: disabledTitle, src: disabledIcon, imgProps: disabledImgProps }}
+      primary={{ id: `${ANGLE_TOOL_ID}_on`, title: enabledTitle, icon: enabledIcon, imgProps: enabledImgProps }}
+      secondary={{ id: ANGLE_TOOL_ID, title: disabledTitle, icon: disabledIcon, imgProps: disabledImgProps }}
     />
   );
 };

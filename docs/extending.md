@@ -185,6 +185,23 @@ store the choice yourself and pass it back in.
 In your own components use `themeVar('token')` for inline styles, or `readThemeToken(element,
 'token')` when drawing to a canvas.
 
+## Custom toolbar icons
+
+Every built-in control's `icon` prop accepts `string | React.ReactNode`. A string is resolved as
+an image URL against `assetBaseUrl`, exactly like the bundled skin icons; anything else (e.g. an
+icon-font glyph) renders as-is in the same slot, with the same `id`/`data-hop-id` plumbing so
+hover/click wiring and visibility syncing keep working:
+
+```tsx
+<MeasureControl icon={{ enabled: <i className="bi bi-rulers" />, disabled: <i className="bi bi-rulers" /> }} />
+<HomeControl icon={<i className="bi bi-house-fill" />} />
+```
+
+Building a fully custom control on top of `ToggleImagePair`? `ToggleImageConfig.icon` takes the
+same `string | React.ReactNode`, and `resolveControlIcon(assetBaseUrl, override, fallback)` gives
+you the built-ins' exact fallback behavior (string override resolves against `assetBaseUrl`, a
+ReactNode override passes straight through, `undefined` resolves the bundled default).
+
 ## Testing without WebGL
 
 The package's own tests run against a presenter double (`packages/react-3dhop/test/mockPresenter.ts`)

@@ -20,7 +20,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 /*
 MODIFIED from upstream 3DHOP 4.3 (https://github.com/cnr-isti-vclab/3DHOP).
 October 2025: jQuery removed; rewritten against the plain DOM API by Federico Ponchio
-(Visual Computing Lab, ISTI - CNR). Unmodified since. See ../PROVENANCE.md.
+(Visual Computing Lab, ISTI - CNR).
+October 2026: toolbar hover/click/touch wiring matches `[data-hop-id]` instead of the `img`
+tag, so non-image toolbar icon content works identically. See ../PROVENANCE.md.
 */
 
 function init3dhop() {
@@ -35,8 +37,10 @@ function init3dhop() {
 	var interval, id, ismousedown;
 	var button = 0;
 
-	// Toolbar buttons behavior (hover/click/touch)
-	var toolbarImgs = document.querySelectorAll('#toolbar img');
+	// Toolbar buttons behavior (hover/click/touch). Matched by [data-hop-id] rather than the
+	// `img` tag so toolbar icons rendered as arbitrary content (e.g. icon fonts) wire up
+	// identically to the bundled `<img>` skins.
+	var toolbarImgs = document.querySelectorAll('#toolbar [data-hop-id]');
 	toolbarImgs.forEach(function(img) {
 		img.addEventListener('mouseenter', function(e) {
 			id = e.currentTarget.id;
@@ -83,7 +87,7 @@ function init3dhop() {
 	// Container events (#3dhop id starts with a digit -> use getElementById)
 	var viewer = document.getElementById('3dhop');
 	var setToolbarOpacity = function(val) {
-		document.querySelectorAll('#toolbar img').forEach(function(img) { img.style.opacity = val; });
+		document.querySelectorAll('#toolbar [data-hop-id]').forEach(function(img) { img.style.opacity = val; });
 	};
 	if (viewer) {
 		['touchstart','pointerdown'].forEach(function(evt) {
