@@ -74,4 +74,17 @@ describe('CubeNavigation', () => {
     expect(panel.style.boxShadow).toBe('none');
     expect(panel.style.padding).toBe('0px');
   });
+
+  it('merges faceStyle onto every face uniformly, e.g. for a theme-specific colour', () => {
+    const { container } = mount(
+      createMockPresenter(),
+      <CubeNavigation faceStyle={{ background: '#696968', color: '#d8d8d8' }} />
+    );
+    const faces = container.querySelectorAll('.cube-navigation-face') as NodeListOf<HTMLElement>;
+    expect(faces.length).toBe(6);
+    faces.forEach((face) => {
+      expect(face.style.background).toBe('rgb(105, 105, 104)');
+      expect(face.style.color).toBe('rgb(216, 216, 216)');
+    });
+  });
 });

@@ -30,8 +30,15 @@ export type CubeNavigationProps = {
   className?: string;
   style?: React.CSSProperties;
   /** Merged onto the panel behind the cube (background/padding/shadow) - set `background: 'none'`
-   * etc. here for a bare cube with no backing panel. */
+   * etc. here for a bare cube with no backing panel. Note the panel also carries a plain `panel`
+   * class for consumers who want to hook into it; if your own stylesheet happens to define a
+   * `.panel` utility class too, its rules (e.g. a border) still apply to anything you don't
+   * override here, since inline styles only beat a stylesheet property-by-property. */
   panelStyle?: React.CSSProperties;
+  /** Merged onto every face (background/color/border/...), uniformly - there's no per-face
+   * override. Handy for a theme-specific face colour instead of the default `--r3dhop-control-bg`/
+   * `--r3dhop-overlay-text`. */
+  faceStyle?: React.CSSProperties;
   position?: CubeNavigationPosition;
   cubeSize?: number;
   animationSeconds?: number;
@@ -117,6 +124,7 @@ export const CubeNavigation: React.FC<CubeNavigationProps> = ({
   className,
   style,
   panelStyle,
+  faceStyle,
   position = 'top-right',
   cubeSize = 128,
   animationSeconds = 0.8,
@@ -433,7 +441,7 @@ export const CubeNavigation: React.FC<CubeNavigationProps> = ({
               <div
                 key={face.key}
                 className={`cube-navigation-face cube-navigation-face-${face.key}`}
-                style={{ ...faceBaseStyle, transform: face.transform }}
+                style={{ ...faceBaseStyle, ...faceStyle, transform: face.transform }}
                 onClick={(event) => {
                   event.stopPropagation();
                   handleFaceSelection(face.key);
