@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type React from 'react';
 import { ensureAssets } from './assets.js';
 import { getHopAllTag } from '../utils/hopTags.js';
@@ -64,6 +64,8 @@ export type PresenterLifecycleOptions = {
 
 export type PresenterLifecycleResult = {
   presenterState: PresenterInstance | null;
+  /** Stable reference to the latest `toolbarHandler`; see `triggerToolbarAction` below. */
+  triggerToolbarAction: (action: string) => void;
 };
 
 /**
@@ -125,6 +127,9 @@ export function usePresenterLifecycle({
   const previousSetSceneRef = useRef<PresenterInstance['setScene']>();
   const previousRotateLightRef = useRef<PresenterInstance['rotateLight']>();
   const previousResetTrackballRef = useRef<PresenterInstance['resetTrackball']>();
+  /** Captures the current effect run's `toolbarHandler` so `triggerToolbarAction` stays callable
+   * across re-runs without itself being a dependency of the setup effect below. */
+  const toolbarHandlerRef = useRef<(action: string) => void>();
 
   const [presenterState, setPresenterState] = useState<PresenterInstance | null>(null);
 
@@ -288,6 +293,8 @@ export function usePresenterLifecycle({
         }
       }
     };
+
+    toolbarHandlerRef.current = toolbarHandler;
 
     const fullscreenEvents = [
       'fullscreenchange',
@@ -596,5 +603,9 @@ export function usePresenterLifecycle({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  return { presenterState };
+  const triggerToolbarAction = useCallback((action: string) => {
+    toolbarHandlerRef.current?.(action);
+  }, []);
+
+  return { presenterState, triggerToolbarAction };
 }

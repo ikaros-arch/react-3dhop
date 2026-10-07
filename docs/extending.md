@@ -202,6 +202,42 @@ same `string | React.ReactNode`, and `resolveControlIcon(assetBaseUrl, override,
 you the built-ins' exact fallback behavior (string override resolves against `assetBaseUrl`, a
 ReactNode override passes straight through, `undefined` resolves the bundled default).
 
+## Driving toolbar actions from outside `#toolbar`
+
+`MeasureControl`, `PickControl`, `AngleControl`, `SectionsControl` and `GridControl` have real
+React-level APIs (`registerInteractiveTool`/`toggleInteractiveTool`, or a controlled `mode` prop)
+that work no matter where their icon ends up in the DOM. `LightingControl`, `ColorControl`,
+`SpecularControl`, `TransparencyControl`, `CameraControl` and `HomeControl` don't — they have no
+toggle state of their own, and normally only work because the vendored 3DHOP `init.js` wires a
+native click listener, once, to toolbar icons inside `#toolbar`. Render one of those controls'
+icons somewhere else — a custom sidebar panel instead of the toolbar, say — and clicking it will
+silently do nothing: no error, just no effect, because nothing ever calls that listener for an
+element outside `#toolbar`, or for one that was mounted after the one-time scan that wires it up.
+
+`triggerToolbarAction(action)` on `useThreeDHopViewer()` runs an action exactly as if its icon had
+been clicked in the real toolbar — first any handler registered via `registerToolbarAction`, then
+the built-ins (`'home'`, `'zoomin'`, `'zoomout'`, `'lighting'`, `'color'`, `'specular'`,
+`'transparency'`, `'perspective'`/`'orthographic'`, `'hotspot'`, `'full'`, `'info'`,
+`'screenshot'`). Wire it to your own icon's click handler, using the id the control itself renders:
+
+```tsx
+function SidebarLightingToggle() {
+  const { triggerToolbarAction } = useThreeDHopViewer();
+  return (
+    <LightingControl
+      icon={{
+        enabled: <span onClick={() => triggerToolbarAction('lighting')}><i className="bi bi-lightbulb-fill" /></span>,
+        disabled: <span onClick={() => triggerToolbarAction('lighting')}><i className="bi bi-lightbulb-fill" /></span>
+      }}
+    />
+  );
+}
+```
+
+The resulting visibility sync (which icon of the pair shows) already works regardless of DOM
+location — it's driven by `document.querySelectorAll('[data-hop-id="..."]')`, not scoped to
+`#toolbar` — so this one call is all a custom layout needs.
+
 ## Testing without WebGL
 
 The package's own tests run against a presenter double (`packages/react-3dhop/test/mockPresenter.ts`)

@@ -481,7 +481,7 @@ export const ThreeDHopViewer: React.FC<ThreeDHopViewerProps> = ({
     nexusTargetError
   });
 
-  const { presenterState } = usePresenterLifecycle({
+  const { presenterState, triggerToolbarAction } = usePresenterLifecycle({
     presenterRef,
     normalizedBaseUrl,
     applyScene,
@@ -579,6 +579,7 @@ export const ThreeDHopViewer: React.FC<ThreeDHopViewerProps> = ({
       assetBaseUrl={normalizedBaseUrl}
       registerSceneContribution={registerSceneContribution}
       registerToolbarAction={registerToolbarAction}
+      triggerToolbarAction={triggerToolbarAction}
       registerSceneObserver={registerSceneObserver}
       registerSceneReadyObserver={registerSceneReadyObserver}
       registerTrackballObserver={registerTrackballObserver}

@@ -351,6 +351,20 @@ export type ThreeDHopViewerContextValue = {
   assetBaseUrl: string;
   registerSceneContribution: (key: string, contribution: SceneContribution | null) => () => void;
   registerToolbarAction: (actions: string | string[], handler: ToolbarActionHandler) => () => void;
+  /**
+   * Runs a toolbar action by id, exactly as if its icon had been clicked inside `#toolbar` -
+   * first any handler registered via `registerToolbarAction`/`registerInteractiveTool`, then
+   * the built-in actions (`home`, `zoomin`, `zoomout`, `lighting`, `color`, `specular`,
+   * `transparency`, `perspective`/`orthographic`, `hotspot`, `full`, `info`, `screenshot`).
+   * `LightingControl`, `ColorControl`, `SpecularControl`, `TransparencyControl`, `CameraControl`
+   * and `HomeControl` have no toggle state of their own - normally they only work because the
+   * vendored 3DHOP `init.js` wires a native click listener to toolbar icons inside `#toolbar`.
+   * If you render one of those controls' icons somewhere else (e.g. a custom sidebar instead of
+   * the toolbar), nothing will call that listener, so wire the icon's own click handler to
+   * `triggerToolbarAction('<id>')` yourself, using the id the control renders (e.g. `'lighting'`,
+   * `'color'`). See "Driving toolbar actions from outside `#toolbar`" in docs/extending.md.
+   */
+  triggerToolbarAction: (action: string) => void;
   registerSceneObserver: (observer: SceneObserver) => () => void;
   registerSceneReadyObserver: (observer: SceneReadyObserver) => () => void;
   registerTrackballObserver: (observer: TrackballObserver) => () => void;

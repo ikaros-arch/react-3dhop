@@ -156,6 +156,15 @@ export const ViewerHarness: React.FC<HarnessProps> = ({
     return () => list.forEach((a) => toolbarHandlers.current.get(a)?.delete(handler));
   }, []);
 
+  // Mirrors `controlsRef.current.toolbarAction` (registry dispatch only - this harness has no
+  // presenter-driven built-ins to simulate, same as the real lifecycle's narrow internal dispatch
+  // before its built-in switch statement).
+  const triggerToolbarAction = useCallback((action: string) => {
+    const p = presenterRef.current;
+    if (!p) return;
+    toolbarHandlers.current.get(action)?.forEach((h) => h(p, action));
+  }, []);
+
   const registerSceneObserver = useMemo(() => register(sceneObservers.current), []);
   const registerTrackballObserver = useMemo(() => register(trackballObservers.current), []);
   const toggleInteractiveTool = useCallback((id: InteractiveTool) => tools.toggleTool(id, presenterRef.current), [tools]);
@@ -166,6 +175,7 @@ export const ViewerHarness: React.FC<HarnessProps> = ({
       assetBaseUrl="/3dhop"
       registerSceneContribution={() => () => {}}
       registerToolbarAction={registerToolbarAction}
+      triggerToolbarAction={triggerToolbarAction}
       registerSceneObserver={registerSceneObserver}
       registerSceneReadyObserver={registerSceneReadyObserver}
       registerTrackballObserver={registerTrackballObserver}
