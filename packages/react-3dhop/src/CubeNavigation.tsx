@@ -29,19 +29,29 @@ export type CubeNavigationPosition = 'top-left' | 'top-right' | 'bottom-left' | 
 export type CubeNavigationProps = {
   className?: string;
   style?: React.CSSProperties;
+  /** Merged onto the panel behind the cube (background/padding/shadow) - set `background: 'none'`
+   * etc. here for a bare cube with no backing panel. */
+  panelStyle?: React.CSSProperties;
   position?: CubeNavigationPosition;
   cubeSize?: number;
   animationSeconds?: number;
   preservePanAndDistance?: boolean;
   targetDistance?: number;
   showProjectionToggle?: boolean;
+  /** Shows the Home/reset-view button under the cube (default `true`). */
+  showHomeButton?: boolean;
+  /** Shows the four thin rotate-by-90°-increments strips around each face's edges
+   * (default `true`). Turn off for a plain cube where only whole-face clicks do anything. */
+  showEdgeControls?: boolean;
   labels?: {
-    front?: string;
-    back?: string;
-    left?: string;
-    right?: string;
-    top?: string;
-    bottom?: string;
+    /** A string renders as plain centred text, exactly as before; anything else (e.g. an icon)
+     * renders as-is, and `aria-label` on that face falls back to the English face name. */
+    front?: React.ReactNode;
+    back?: React.ReactNode;
+    left?: React.ReactNode;
+    right?: React.ReactNode;
+    top?: React.ReactNode;
+    bottom?: React.ReactNode;
     home?: string;
     projection?: {
       perspective?: string;
@@ -106,12 +116,15 @@ const EDGE_ORDER: EdgeKey[] = ['top', 'right', 'bottom', 'left'];
 export const CubeNavigation: React.FC<CubeNavigationProps> = ({
   className,
   style,
+  panelStyle,
   position = 'top-right',
   cubeSize = 128,
   animationSeconds = 0.8,
   preservePanAndDistance = true,
   targetDistance = 1.3,
   showProjectionToggle = true,
+  showHomeButton = true,
+  showEdgeControls = true,
   labels,
   edgeLabels
 }) => {
@@ -312,6 +325,10 @@ export const CubeNavigation: React.FC<CubeNavigationProps> = ({
   const perspectiveLabel = labels?.projection?.perspective ?? 'Perspective';
   const orthographicLabel = labels?.projection?.orthographic ?? 'Orthographic';
 
+  /** `aria-label` must be a plain string; a ReactNode face label falls back to the English name. */
+  const faceAriaLabel = (label: React.ReactNode, fallback: string): string =>
+    typeof label === 'string' ? label : fallback;
+
   const edgeUpLabel = edgeLabels?.up ?? '^';
   const edgeDownLabel = edgeLabels?.down ?? 'v';
   const edgeLeftLabel = edgeLabels?.left ?? '<';
@@ -381,7 +398,16 @@ export const CubeNavigation: React.FC<CubeNavigationProps> = ({
     zIndex: 2
   };
 
-  const faces: Array<{ key: keyof typeof FACE_VIEW_TARGETS; label: string; transform: string }> = [
+  const FACE_FALLBACK_NAME: Record<string, string> = {
+    front: 'Front',
+    back: 'Back',
+    left: 'Left',
+    right: 'Right',
+    top: 'Top',
+    bottom: 'Bottom'
+  };
+
+  const faces: Array<{ key: keyof typeof FACE_VIEW_TARGETS; label: React.ReactNode; transform: string }> = [
     { key: 'front', label: frontLabel, transform: `rotateY(0deg) translateZ(${halfSize}px)` },
     { key: 'back', label: backLabel, transform: `rotateY(180deg) translateZ(${halfSize}px)` },
     { key: 'right', label: rightLabel, transform: `rotateY(90deg) translateZ(${halfSize}px)` },
@@ -400,7 +426,7 @@ export const CubeNavigation: React.FC<CubeNavigationProps> = ({
       onMouseDown={(event) => event.stopPropagation()}
       onPointerDown={(event) => event.stopPropagation()}
     >
-      <div className={panelClassName} style={DEFAULT_PANEL_STYLE}>
+      <div className={panelClassName} style={{ ...DEFAULT_PANEL_STYLE, ...panelStyle }}>
         <div className="cube-navigation-scene" style={cubeSceneStyle}>
           <div className="cube-navigation-cube" style={cubeStyle}>
             {faces.map((face) => (
@@ -413,7 +439,7 @@ export const CubeNavigation: React.FC<CubeNavigationProps> = ({
                   handleFaceSelection(face.key);
                 }}
                 onMouseDown={(event) => event.stopPropagation()}
-                aria-label={face.label}
+                aria-label={faceAriaLabel(face.label, FACE_FALLBACK_NAME[face.key])}
                 role="button"
                 tabIndex={0}
                 onKeyDown={(event) => {
@@ -424,57 +450,63 @@ export const CubeNavigation: React.FC<CubeNavigationProps> = ({
                 }}
               >
                 <div style={faceLabelStyle}>{face.label}</div>
-                {EDGE_ORDER.map((edge) => {
-                  const labelByEdge = edge === 'top'
-                    ? edgeUpLabel
-                    : edge === 'bottom'
-                      ? edgeDownLabel
-                      : edge === 'left'
-                        ? edgeLeftLabel
-                        : edgeRightLabel;
+                {showEdgeControls
+                  ? EDGE_ORDER.map((edge) => {
+                      const labelByEdge = edge === 'top'
+                        ? edgeUpLabel
+                        : edge === 'bottom'
+                          ? edgeDownLabel
+                          : edge === 'left'
+                            ? edgeLeftLabel
+                            : edgeRightLabel;
 
-                  return (
-                    <button
-                      key={edge}
-                      type="button"
-                      className={`cube-navigation-face-edge cube-navigation-face-edge-${edge}`}
-                      style={{ ...faceEdgeStyle, ...EDGE_POSITIONS[edge] }}
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        handleEdgeSelection(edge);
-                      }}
-                      onMouseDown={(event) => event.stopPropagation()}
-                      onKeyDown={(event) => {
-                        if (event.key === 'Enter' || event.key === ' ') {
-                          event.preventDefault();
-                          handleEdgeSelection(edge);
-                        }
-                      }}
-                    >
-                      {labelByEdge}
-                    </button>
-                  );
-                })}
+                      return (
+                        <button
+                          key={edge}
+                          type="button"
+                          className={`cube-navigation-face-edge cube-navigation-face-edge-${edge}`}
+                          style={{ ...faceEdgeStyle, ...EDGE_POSITIONS[edge] }}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            handleEdgeSelection(edge);
+                          }}
+                          onMouseDown={(event) => event.stopPropagation()}
+                          onKeyDown={(event) => {
+                            if (event.key === 'Enter' || event.key === ' ') {
+                              event.preventDefault();
+                              handleEdgeSelection(edge);
+                            }
+                          }}
+                        >
+                          {labelByEdge}
+                        </button>
+                      );
+                    })
+                  : null}
               </div>
             ))}
           </div>
         </div>
-        <div className="cube-navigation-actions" style={{ display: 'flex', gap: '8px', justifyContent: 'center', marginTop: '12px' }}>
-          <button type="button" onClick={handleResetView} title={homeLabel} aria-label={homeLabel} style={DEFAULT_BUTTON_STYLE}>
-            {homeLabel}
-          </button>
-          {showProjectionToggle ? (
-            <button
-              type="button"
-              onClick={handleToggleProjection}
-              title={projectionMode === 'perspective' ? orthographicLabel : perspectiveLabel}
-              aria-label={projectionMode === 'perspective' ? orthographicLabel : perspectiveLabel}
-              style={DEFAULT_BUTTON_STYLE}
-            >
-              {projectionMode === 'perspective' ? orthographicLabel : perspectiveLabel}
-            </button>
-          ) : null}
-        </div>
+        {showHomeButton || showProjectionToggle ? (
+          <div className="cube-navigation-actions" style={{ display: 'flex', gap: '8px', justifyContent: 'center', marginTop: '12px' }}>
+            {showHomeButton ? (
+              <button type="button" onClick={handleResetView} title={homeLabel} aria-label={homeLabel} style={DEFAULT_BUTTON_STYLE}>
+                {homeLabel}
+              </button>
+            ) : null}
+            {showProjectionToggle ? (
+              <button
+                type="button"
+                onClick={handleToggleProjection}
+                title={projectionMode === 'perspective' ? orthographicLabel : perspectiveLabel}
+                aria-label={projectionMode === 'perspective' ? orthographicLabel : perspectiveLabel}
+                style={DEFAULT_BUTTON_STYLE}
+              >
+                {projectionMode === 'perspective' ? orthographicLabel : perspectiveLabel}
+              </button>
+            ) : null}
+          </div>
+        ) : null}
       </div>
     </div>
   );

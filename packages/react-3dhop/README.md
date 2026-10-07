@@ -165,7 +165,7 @@ export function WithCube() {
 }
 ```
 
-Face labels default to the cardinal directions plus top/bottom; override them through the `labels` prop. When a face is head-on, directional edge panels remain clickable so you can roll to adjacent sides (left/right) or shift to top/bottom without hunting for hidden faces—tweak their captions with the optional `edgeLabels` prop. Set `cubeSize` to resize the cube, adjust `targetDistance` if you disable `preservePanAndDistance`, and keep the camera projection toggle handy with `showProjectionToggle` (enabled by default).
+Face labels default to the cardinal directions plus top/bottom; override them through the `labels` prop. A string renders as plain centred text; anything else (an icon, say) renders as-is, with `aria-label` on that face falling back to the English face name. When a face is head-on, directional edge panels remain clickable so you can roll to adjacent sides (left/right) or shift to top/bottom without hunting for hidden faces—tweak their captions with the optional `edgeLabels` prop, or turn them off entirely with `showEdgeControls={false}` for a cube where only whole-face clicks do anything. Set `cubeSize` to resize the cube, adjust `targetDistance` if you disable `preservePanAndDistance`, and keep the camera projection toggle handy with `showProjectionToggle` (enabled by default) or the Home/reset-view button with `showHomeButton` (also enabled by default). `panelStyle` merges onto the backing panel if you want to restyle or remove its background/padding/shadow — handy together with blank-string or icon `labels` and both buttons turned off for a bare, minimal cube.
 
 ### Optional Hotspot Annotations
 
