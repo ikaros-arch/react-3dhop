@@ -1,6 +1,6 @@
 {
   "name": "@ikaros-arch/react-3dhop",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "description": "React component wrapper for the 3DHOP viewer (jQuery-free build via @ikaros-arch/3dhop)",
   "license": "GPL-3.0-or-later",
   "author": "Hallvard R. Indgjerd",

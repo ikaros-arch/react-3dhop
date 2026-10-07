@@ -1,5 +1,15 @@
 # @ikaros-arch/react-3dhop
 
+## 0.8.0
+
+### Minor Changes
+
+- [`e783add`](https://github.com/ikaros-arch/react-3dhop/commit/e783add799634e2a152faf8848234ea697f45ec9) Thanks [@hallvard-indgjerd](https://github.com/hallvard-indgjerd)! - Added `triggerToolbarAction(action)` to `useThreeDHopViewer()`.
+
+  `LightingControl`, `ColorControl`, `SpecularControl`, `TransparencyControl`, `CameraControl` and `HomeControl` have no toggle state of their own — they only work because the vendored 3DHOP `init.js` wires a native click listener, once, to toolbar icons inside `#toolbar`. Rendering one of those controls' icons outside the toolbar (e.g. a custom sidebar panel) silently did nothing when clicked, since nothing ever called that listener for an element outside `#toolbar` or mounted after the page's one-time init scan.
+
+  `triggerToolbarAction(action)` runs a toolbar action by id exactly as if its icon had been clicked in the real toolbar — first any handler registered via `registerToolbarAction`, then the built-ins (`home`, `zoomin`, `zoomout`, `lighting`, `color`, `specular`, `transparency`, `perspective`/`orthographic`, `hotspot`, `full`, `info`, `screenshot`) — so these controls can be driven correctly from anywhere in the tree. See "Driving toolbar actions from outside `#toolbar`" in docs/extending.md.
+
 ## 0.7.0
 
 ### Minor Changes
