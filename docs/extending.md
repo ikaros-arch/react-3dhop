@@ -177,6 +177,19 @@ Every colour the viewer's own UI uses is a CSS custom property with the stock lo
 | `--r3dhop-control-bg`, `--r3dhop-control-bg-hover`, `--r3dhop-control-border` | interactive surfaces inside overlays |
 | `--r3dhop-ink`, `--r3dhop-accent` | drawn indicators (compass ring and needle) |
 
+If you alias these to your own design tokens, declare the aliases on the same element your theme
+switch targets — not on `:root` above it. A `var()` is substituted where the property is
+*declared*, so this silently freezes the viewer to the light palette:
+
+```css
+:root        { --r3dhop-panel-bg: var(--app-surface); }  /* resolves here, against the light value */
+body         { --app-surface: white; }
+body.is-dark { --app-surface: #222; }                    /* too late - the alias already resolved */
+```
+
+Moving the alias onto `body` fixes it, because `--app-surface` is then resolved against whichever
+value is in scope on `body`.
+
 Or set the prop: `<ThreeDHopViewer theme="dark" />` (`'light' | 'dark' | 'system'`). The root
 element carries `data-r3dhop-theme="light|dark"` for your own selectors. `dark` is applied as
 inline custom properties; `light` sets none, so stylesheet overrides win. Nothing is persisted —
