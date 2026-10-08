@@ -127,6 +127,7 @@ export type PresenterInstance = {
   _scene?: {
     meshes?: Record<string, SceneMeshRuntime>;
     modelInstances?: Record<string, SceneInstanceRuntime>;
+    spots?: Record<string, SceneSpotRuntime>;
     entities?: Record<string, SceneEntity>;
     space?: SceneSpaceConfig & { transform?: { matrix?: number[] } };
     config?: SceneRenderConfig;
@@ -156,6 +157,23 @@ export type SceneInstanceRuntime = {
   clippable?: boolean;
   useTransparency?: boolean;
   specularColor?: number[];
+  transform?: { matrix?: number[] };
+  [key: string]: unknown;
+};
+
+/**
+ * A spot as 3DHOP holds it at runtime, after `setScene` has parsed it. Unlike meshes/instances,
+ * every one of these fields is read straight off this object on *every draw call* (see
+ * `_drawSceneSpots`/`_drawScenePickingSpots` in presenter.js) rather than baked in once - so
+ * mutating `color`/`alpha`/`transform.matrix` in place and requesting a repaint is enough to
+ * change how a spot looks, with no `setScene` (and the full mesh reload that implies) required.
+ */
+export type SceneSpotRuntime = {
+  mesh?: string;
+  color?: number[];
+  alpha?: number;
+  alphaHigh?: number;
+  visible?: boolean;
   transform?: { matrix?: number[] };
   [key: string]: unknown;
 };
@@ -350,6 +368,13 @@ export type ThreeDHopViewerContextValue = {
   presenter: PresenterInstance | null;
   assetBaseUrl: string;
   registerSceneContribution: (key: string, contribution: SceneContribution | null) => () => void;
+  /**
+   * Updates an already-registered contribution's record for whenever the *next* full rebuild
+   * happens, without forcing one now and without the disposer `registerSceneContribution`
+   * returns - for callers that already pushed an equivalent change straight onto the live
+   * presenter (see `Annotations`' in-place spot patching).
+   */
+  updateSceneContribution: (key: string, contribution: SceneContribution) => void;
   registerToolbarAction: (actions: string | string[], handler: ToolbarActionHandler) => () => void;
   /**
    * Runs a toolbar action by id, exactly as if its icon had been clicked inside `#toolbar` -

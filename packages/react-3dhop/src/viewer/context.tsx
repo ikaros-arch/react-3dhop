@@ -26,6 +26,7 @@ export type ThreeDHopViewerProviderProps = {
   presenter: PresenterInstance | null;
   assetBaseUrl: string;
   registerSceneContribution: (key: string, contribution: SceneContribution | null) => () => void;
+  updateSceneContribution: (key: string, contribution: SceneContribution) => void;
   registerToolbarAction: (actions: string | string[], handler: ToolbarActionHandler) => () => void;
   triggerToolbarAction: (action: string) => void;
   registerSceneObserver: (observer: SceneObserver) => () => void;
@@ -76,6 +77,7 @@ export const ThreeDHopViewerProvider: React.FC<ThreeDHopViewerProviderProps> = (
   presenter,
   assetBaseUrl,
   registerSceneContribution,
+  updateSceneContribution,
   registerToolbarAction,
   triggerToolbarAction,
   registerSceneObserver,
@@ -104,6 +106,7 @@ export const ThreeDHopViewerProvider: React.FC<ThreeDHopViewerProviderProps> = (
       presenter,
       assetBaseUrl,
       registerSceneContribution,
+      updateSceneContribution,
       registerToolbarAction,
       triggerToolbarAction,
       registerSceneObserver,
@@ -130,6 +133,7 @@ export const ThreeDHopViewerProvider: React.FC<ThreeDHopViewerProviderProps> = (
       presenter,
       assetBaseUrl,
       registerSceneContribution,
+      updateSceneContribution,
       registerToolbarAction,
       triggerToolbarAction,
       registerSceneObserver,

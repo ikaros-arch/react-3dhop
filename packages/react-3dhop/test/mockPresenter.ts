@@ -1,9 +1,17 @@
 import { vi } from 'vitest';
-import type { PresenterInstance, SceneEntity, SceneEntityType, SceneMeshRuntime, SceneInstanceRuntime } from '../src/viewer/types.js';
+import type {
+  PresenterInstance,
+  SceneEntity,
+  SceneEntityType,
+  SceneMeshRuntime,
+  SceneInstanceRuntime,
+  SceneSpotRuntime
+} from '../src/viewer/types.js';
 
 export type MockScene = {
   meshes: Record<string, SceneMeshRuntime>;
   modelInstances: Record<string, SceneInstanceRuntime>;
+  spots?: Record<string, SceneSpotRuntime>;
   entities: Record<string, SceneEntity>;
   space?: { transform?: { matrix?: number[] } };
   config: Record<string, unknown>;

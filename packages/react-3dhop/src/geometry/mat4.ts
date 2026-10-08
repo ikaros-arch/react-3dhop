@@ -46,3 +46,20 @@ export function maxScale(m: Mat4): number {
   const sz = Math.hypot(m[8], m[9], m[10]);
   return Math.max(sx, sy, sz);
 }
+
+export function translation([x, y, z]: Vector3): Mat4 {
+  return [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, x, y, z, 1];
+}
+
+export function scaling([x, y, z]: Vector3): Mat4 {
+  return [x, 0, 0, 0, 0, y, 0, 0, 0, 0, z, 0, 0, 0, 0, 1];
+}
+
+/**
+ * The matrix a 3DHOP spot's `transform` resolves to from `{ translation, scale }` - matches
+ * `_parseTransform` in presenter.js (`matrix = T * R * S`, with `R` identity since spots never
+ * rotate). Used to patch an existing spot's position/radius in place without a full `setScene`.
+ */
+export function spotTransform(translationVec: Vector3, scaleVec: Vector3): Mat4 {
+  return multiply(translation(translationVec), scaling(scaleVec));
+}

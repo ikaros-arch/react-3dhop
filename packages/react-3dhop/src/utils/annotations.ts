@@ -15,8 +15,23 @@ export type AnnotationDefinition = {
 	tags?: string[];
 };
 
+/** A spot exactly as `_parseSpot` in 3DHOP's presenter.js expects it on `setScene({ spots })`. */
+export type SpotDescriptor = {
+	mesh: string;
+	color: AnnotationColor;
+	alpha: number;
+	alphaHigh: number;
+	useTransparency: boolean;
+	useStencil: boolean;
+	tags?: string[];
+	transform: {
+		translation: [number, number, number];
+		scale: [number, number, number];
+	};
+};
+
 export type AnnotationBuildResult = {
-	spots?: Record<string, unknown>;
+	spots?: Record<string, SpotDescriptor>;
 	map: Map<string, AnnotationDefinition>;
 };
 
@@ -71,7 +86,7 @@ export function buildAnnotations(
 ): AnnotationBuildResult {
 	const { idPrefix = 'annotation', meshName } = options;
 	const map = new Map<string, AnnotationDefinition>();
-	const spots: Record<string, unknown> = {};
+	const spots: Record<string, SpotDescriptor> = {};
 
 	if (!annotations || annotations.length === 0) {
 		return {

@@ -4,6 +4,7 @@ import { useInteractiveTools } from '../src/viewer/interactiveTools.js';
 import type {
   InteractiveTool,
   LightObserver,
+  SceneContribution,
   SceneObserver,
   SceneReadyObserver,
   ThemeName,
@@ -36,6 +37,10 @@ type HarnessProps = {
   presenter: MockPresenter | null;
   theme?: ThemeName;
   coordinateCorrections?: Vector3;
+  /** Override to spy on scene-contribution registration (default: a no-op disposer). */
+  registerSceneContribution?: (key: string, contribution: SceneContribution | null) => () => void;
+  /** Override to spy on in-place scene-contribution updates (default: a no-op). */
+  updateSceneContribution?: (key: string, contribution: SceneContribution) => void;
   controlsRef: React.MutableRefObject<HarnessControls | null>;
   children: React.ReactNode;
 };
@@ -49,6 +54,8 @@ export const ViewerHarness: React.FC<HarnessProps> = ({
   presenter,
   theme = 'light',
   coordinateCorrections = [0, 0, 0],
+  registerSceneContribution = () => () => {},
+  updateSceneContribution = () => {},
   controlsRef,
   children
 }) => {
@@ -173,7 +180,8 @@ export const ViewerHarness: React.FC<HarnessProps> = ({
     <ThreeDHopViewerProvider
       presenter={presenter}
       assetBaseUrl="/3dhop"
-      registerSceneContribution={() => () => {}}
+      registerSceneContribution={registerSceneContribution}
+      updateSceneContribution={updateSceneContribution}
       registerToolbarAction={registerToolbarAction}
       triggerToolbarAction={triggerToolbarAction}
       registerSceneObserver={registerSceneObserver}

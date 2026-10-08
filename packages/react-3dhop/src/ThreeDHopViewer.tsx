@@ -281,6 +281,21 @@ export const ThreeDHopViewer: React.FC<ThreeDHopViewerProps> = ({
   );
 
   /**
+   * Updates an already-registered contribution's record in place, with no version bump and no
+   * disposer. Exists because a `useEffect`'s cleanup from the *previous* render always runs
+   * before its next invocation, so re-calling `registerSceneContribution` on every dependency
+   * change (even to re-set the same key) triggers that previous run's disposer first - which
+   * deletes-then-bumps unconditionally, defeating any attempt to suppress the bump from the set
+   * side. This sidesteps that: it's a plain function call, not something returned from inside an
+   * effect, so nothing ever tears it down. Callers must have already registered `key` via
+   * `registerSceneContribution`; this only keeps its record fresh for whenever a *later*, full
+   * rebuild happens for an unrelated reason.
+   */
+  const updateSceneContribution = useCallback((key: string, contribution: SceneContribution) => {
+    sceneContributionsRef.current.set(key, contribution);
+  }, []);
+
+  /**
    * Subscribes toolbar actions to presenter callbacks so multiple handlers can respond to
    * the same toolbar event while allowing removal via the returned disposer.
    */
@@ -578,6 +593,7 @@ export const ThreeDHopViewer: React.FC<ThreeDHopViewerProps> = ({
       presenter={presenterState}
       assetBaseUrl={normalizedBaseUrl}
       registerSceneContribution={registerSceneContribution}
+      updateSceneContribution={updateSceneContribution}
       registerToolbarAction={registerToolbarAction}
       triggerToolbarAction={triggerToolbarAction}
       registerSceneObserver={registerSceneObserver}
