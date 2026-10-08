@@ -123,6 +123,19 @@ export type PresenterInstance = {
   ui?: {
     postDrawEvent?: () => void;
     gl?: unknown;
+    /** Canvas size in CSS pixels, as of the last rendered frame. */
+    width?: number;
+    height?: number;
+  };
+  /**
+   * SpiderGL's transformation stack. `modelViewProjectionMatrix` reflects the camera as of the
+   * last rendered frame with the model stack back at its base (identity) - i.e. it maps scene-
+   * space points (already through `_scene.space`'s transform, but not a spot's or instance's own)
+   * straight to clip space. See `getAnnotationScreenPosition` for projecting a spot onto the
+   * canvas with it.
+   */
+  xform?: {
+    modelViewProjectionMatrix?: number[];
   };
   _scene?: {
     meshes?: Record<string, SceneMeshRuntime>;

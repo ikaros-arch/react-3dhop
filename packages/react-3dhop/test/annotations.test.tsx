@@ -10,7 +10,8 @@ function mount(
   presenter: MockPresenter,
   registerSceneContribution: (key: string, contribution: unknown) => () => void,
   updateSceneContribution: (key: string, contribution: unknown) => void,
-  annotations?: AnnotationDefinition[]
+  annotations?: AnnotationDefinition[],
+  onAnnotationPick?: (event: { id: string; annotation: AnnotationDefinition }) => void
 ) {
   const controls: React.MutableRefObject<HarnessControls | null> = { current: null };
   const utils = render(
@@ -20,7 +21,7 @@ function mount(
       registerSceneContribution={registerSceneContribution as never}
       updateSceneContribution={updateSceneContribution as never}
     >
-      <Annotations annotations={annotations} expanded />
+      <Annotations annotations={annotations} expanded onAnnotationPick={onAnnotationPick} />
     </ViewerHarness>
   );
   const rerenderWith = (nextPresenter: MockPresenter, nextAnnotations?: AnnotationDefinition[]) =>
@@ -31,10 +32,10 @@ function mount(
         registerSceneContribution={registerSceneContribution as never}
         updateSceneContribution={updateSceneContribution as never}
       >
-        <Annotations annotations={nextAnnotations} expanded />
+        <Annotations annotations={nextAnnotations} expanded onAnnotationPick={onAnnotationPick} />
       </ViewerHarness>
     );
-  return { ...utils, rerenderWith };
+  return { ...utils, rerenderWith, controls: () => controls.current! };
 }
 
 const ONE_SPOT: AnnotationDefinition[] = [{ id: 'a', position: [1, 2, 3], color: [1, 0, 0], label: 'A spot' }];
@@ -107,5 +108,30 @@ describe('Annotations', () => {
     rerenderWith(presenter, []);
 
     expect(registerSceneContribution.mock.calls.length).toBe(registerCallsAfterMount + 1);
+  });
+
+  it('forwards the current annotation data on pick, not whatever the pick event itself carried', () => {
+    const presenter = createMockPresenter({
+      spots: { a: { mesh: 'spot', color: [1, 0, 0], alpha: 0.5, alphaHigh: 0.8, transform: { matrix: [] } } }
+    });
+    const onAnnotationPick = vi.fn();
+    const { rerenderWith, controls } = mount(
+      presenter,
+      () => () => {},
+      () => {},
+      ONE_SPOT,
+      onAnnotationPick
+    );
+
+    // A label edit takes the fast path and never touches the presenter lifecycle's own
+    // annotationDefinitionsRef - simulate a pick whose event still carries the pre-edit
+    // definition, the way that stale ref would produce one in the real lifecycle.
+    rerenderWith(presenter, [{ id: 'a', position: [1, 2, 3], color: [1, 0, 0], label: 'Edited label' }]);
+    controls().dispatchAnnotationPick({ id: 'a', annotation: ONE_SPOT[0] });
+
+    expect(onAnnotationPick).toHaveBeenCalledWith({
+      id: 'a',
+      annotation: { id: 'a', position: [1, 2, 3], color: [1, 0, 0], label: 'Edited label' }
+    });
   });
 });

@@ -2,6 +2,8 @@ import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { ThreeDHopViewerProvider } from '../src/viewer/context.js';
 import { useInteractiveTools } from '../src/viewer/interactiveTools.js';
 import type {
+  AnnotationPickEvent,
+  AnnotationPickHandler,
   InteractiveTool,
   LightObserver,
   SceneContribution,
@@ -23,6 +25,11 @@ export type HarnessControls = {
   emitLight: () => void;
   /** The presenter's pick callback as the lifecycle would install it. */
   pick: (raw: Vector3) => void;
+  /** Simulates a spot pick reaching `registerAnnotationHandler`'s listeners, exactly as the real
+   * lifecycle's `_onPickedSpot` wrapper would dispatch it (including a possibly-stale
+   * `annotation`, sourced from its own `annotationDefinitionsRef` rather than whatever a
+   * consumer's own bookkeeping thinks is current). */
+  dispatchAnnotationPick: (event: AnnotationPickEvent) => void;
   /** Simulates the presenter's `_onEndMeasurement(measure, pointA, pointB)` callback. */
   completeMeasurement: (pointA: Vector3, pointB: Vector3) => void;
   toggleTool: (toolId: InteractiveTool) => void;
@@ -67,6 +74,7 @@ export const ViewerHarness: React.FC<HarnessProps> = ({
   const trackballObservers = useRef(new Set<TrackballObserver>());
   const lightObservers = useRef(new Set<LightObserver>());
   const toolbarHandlers = useRef(new Map<string, Set<ToolbarActionHandler>>());
+  const annotationHandlers = useRef(new Set<AnnotationPickHandler>());
   const [measurementValue, setMeasurementValue] = useState<number | null>(null);
   const [measurementPoints, setMeasurementPoints] = useState<[Vector3, Vector3] | null>(null);
   const [pickpointValue, setPickpointValue] = useState<Vector3 | null>(null);
@@ -151,8 +159,16 @@ export const ViewerHarness: React.FC<HarnessProps> = ({
         if (h(p, action) === true) handled = true;
       });
       return handled;
-    }
+    },
+    dispatchAnnotationPick: (event) => annotationHandlers.current.forEach((h) => h(event))
   };
+
+  const registerAnnotationHandler = useCallback((handler: AnnotationPickHandler) => {
+    annotationHandlers.current.add(handler);
+    return () => {
+      annotationHandlers.current.delete(handler);
+    };
+  }, []);
 
   const registerToolbarAction = useCallback((actions: string | string[], handler: ToolbarActionHandler) => {
     const list = Array.isArray(actions) ? actions : [actions];
@@ -188,7 +204,7 @@ export const ViewerHarness: React.FC<HarnessProps> = ({
       registerSceneReadyObserver={registerSceneReadyObserver}
       registerTrackballObserver={registerTrackballObserver}
       registerLightObserver={registerLightObserver}
-      registerAnnotationHandler={() => () => {}}
+      registerAnnotationHandler={registerAnnotationHandler}
       registerInteractiveTool={tools.registerInteractiveTool}
       toggleInteractiveTool={toggleInteractiveTool}
       activeInteractiveTool={tools.activeInteractiveTool}

@@ -74,6 +74,8 @@ export type { ThemeToken } from './theme.js';
 
 export { Annotations } from './Annotations.js';
 export type { AnnotationDefinition, AnnotationsProps } from './Annotations.js';
+export { getAnnotationScreenPosition } from './utils/screenPosition.js';
+export type { AnnotationScreenPosition } from './utils/screenPosition.js';
 export { CompassNavigation } from './CompassNavigation.js';
 export type { CompassNavigationProps, CompassNavigationPosition } from './CompassNavigation.js';
 export { CubeNavigation } from './CubeNavigation.js';

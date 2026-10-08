@@ -231,10 +231,17 @@ export const Annotations: React.FC<AnnotationsProps> = ({
 
   useEffect(() => {
     const cleanup = registerAnnotationHandler((event: AnnotationPickEvent) => {
-      if (!annotationMapRef.current.has(event.id)) {
+      // Looked up fresh here rather than trusting `event.annotation`: that field is filled in by
+      // the presenter lifecycle from its own `annotationDefinitionsRef`, which - like the scene
+      // contribution above - is only refreshed by a full `setScene`. A property-only edit (e.g.
+      // retyping a spot's label) takes the fast path above and never touches it, so by the time a
+      // pick fires, that field can be one or more edits behind this component's own `.map`, which
+      // this effect's dependency keeps current regardless of which path was taken.
+      const annotation = annotationMapRef.current.get(event.id);
+      if (!annotation) {
         return;
       }
-      onAnnotationPickRef.current?.(event);
+      onAnnotationPickRef.current?.({ id: event.id, annotation });
     });
 
     return cleanup;
