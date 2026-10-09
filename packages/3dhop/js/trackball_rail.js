@@ -97,7 +97,11 @@ RailTrackball.prototype = {
 		this._animationTime = opt.animationTime;
 
 		// limits
-		this._minMaxTheta = opt.minMaxTheta;
+		// Copied rather than aliased: converted to radians in place below, and callers (e.g.
+		// react-3dhop) may reuse the same trackOptions object - and its nested arrays - across
+		// repeated `setup()` calls. Mutating the caller's array would re-convert already-converted
+		// radians on the next call, shrinking the clamp range every time.
+		this._minMaxTheta = opt.minMaxTheta.slice();
 		this._minMaxTheta[0] = sglDegToRad(this._minMaxTheta[0]);
 		this._minMaxTheta[1] = sglDegToRad(this._minMaxTheta[1]);
 

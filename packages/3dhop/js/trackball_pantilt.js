@@ -100,10 +100,14 @@ PanTiltTrackball.prototype = {
 		this._minMaxDist  = opt.minMaxDist;
 		this._minMaxPanX   = opt.minMaxPanX;
 		this._minMaxPanY   = opt.minMaxPanY;
-		this._minMaxAngleX = opt.minMaxAngleX;
+		// Copied rather than aliased: converted to radians in place below, and callers (e.g.
+		// react-3dhop) may reuse the same trackOptions object - and its nested arrays - across
+		// repeated `setup()` calls. Mutating the caller's array would re-convert already-converted
+		// radians on the next call, shrinking the clamp range every time.
+		this._minMaxAngleX = opt.minMaxAngleX.slice();
 		this._minMaxAngleX[0] = sglDegToRad(this._minMaxAngleX[0]);
 		this._minMaxAngleX[1] = sglDegToRad(this._minMaxAngleX[1]);
-		this._minMaxAngleY = opt.minMaxAngleY;
+		this._minMaxAngleY = opt.minMaxAngleY.slice();
 		this._minMaxAngleY[0] = sglDegToRad(this._minMaxAngleY[0]);
 		this._minMaxAngleY[1] = sglDegToRad(this._minMaxAngleY[1]);
 

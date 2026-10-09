@@ -88,10 +88,14 @@ TurnTableTrackball.prototype = {
 			this._limitPhi = false;
 		else
 			this._limitPhi = true;
-		this._minMaxPhi   = opt.minMaxPhi;
+		// Copied rather than aliased: converted to radians in place below, and callers (e.g.
+		// react-3dhop) may reuse the same trackOptions object - and its nested arrays - across
+		// repeated `setup()` calls. Mutating the caller's array would re-convert already-converted
+		// radians on the next call, shrinking the clamp range every time.
+		this._minMaxPhi   = opt.minMaxPhi.slice();
 		this._minMaxPhi[0] = sglDegToRad(this._minMaxPhi[0]);
 		this._minMaxPhi[1] = sglDegToRad(this._minMaxPhi[1]);
-		this._minMaxTheta = opt.minMaxTheta;
+		this._minMaxTheta = opt.minMaxTheta.slice();
 		this._minMaxTheta[0] = sglDegToRad(this._minMaxTheta[0]);
 		this._minMaxTheta[1] = sglDegToRad(this._minMaxTheta[1]);
 

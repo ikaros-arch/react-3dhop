@@ -121,6 +121,25 @@ toolbars are unaffected; this only widens what else can sit in that slot, enabli
 `@ikaros-arch/react-3dhop`'s toolbar controls to render arbitrary icon content (e.g. an icon-font
 `<i>` element) instead of only an image URL, while keeping the same hover/click/touch behaviour.
 
+## Layer 5 — stop trackball `setup()` from mutating caller-owned clamp arrays (this repo, 2026-10)
+
+`trackball_turntable.js`, `trackball_turntable_pan.js`, `trackball_rail.js`, and
+`trackball_pantilt.js` each convert their angular clamp options (`minMaxPhi`/`minMaxTheta`, or
+`minMaxAngleX`/`minMaxAngleY` for pan-tilt) from degrees to radians by assigning the caller's
+array directly (`this._minMaxPhi = opt.minMaxPhi;`) and then overwriting its elements in place
+(`this._minMaxPhi[0] = sglDegToRad(...)`). Upstream this is harmless because `setup()` only ever
+runs once per page load. `@ikaros-arch/react-3dhop` calls `presenter.setScene()` - which
+reconstructs the trackball via `setup()` - on every structural scene change (e.g. adding an
+annotation spot), and passes a memoised `trackOptions` object whose clamp arrays are the same
+object across those calls. The result: the first `setup()` correctly converts degrees to radians
+in place, but a second `setup()` call sees already-converted radians and converts them *again*,
+shrinking the clamp range by a factor of `180/π` each time (and, for phi, permanently flipping
+`_limitPhi` from unconstrained to constrained, since the `-180`/`180` sentinel check no longer
+matches once the array holds radians). After a few scene reloads rotation becomes clamped to a
+near-zero range, which reads as "rotation barely works" with the view stuck near the trackball's
+start position. Fixed by copying the array (`opt.minMaxPhi.slice()`) before converting in place,
+in all four files.
+
 ## Unmodified from upstream 4.3
 
 `js/ply.js`, `js/corto.js`, `js/corto.em.js`, `js/meco.js`, `js/helpers.js`, `js/spidergl.js`,
