@@ -10,7 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@ikaros-arch/3dhop": "^0.5.0",
+    "@ikaros-arch/3dhop": "^0.5.1",
     "@ikaros-arch/react-3dhop": "^0.12.0",
     "@ikaros-arch/react-3dhop-iiif": "^0.3.1",
     "react": "^18.3.1",
