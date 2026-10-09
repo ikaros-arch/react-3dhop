@@ -1,5 +1,11 @@
 # @ikaros-arch/react-3dhop-iiif
 
+## 0.4.0
+
+### Minor Changes
+
+- [`1aa74d3`](https://github.com/ikaros-arch/react-3dhop/commit/1aa74d3d4da13e15d67641de8c615275c59469d3) Thanks [@hallvard-indgjerd](https://github.com/hallvard-indgjerd)! - `useIIIFManifest()` now exposes `sceneRadius` (the scene's characteristic size in the model's own space units, `null` until `isSceneReady`), so consumers can scale something - e.g. an annotation spot's radius - proportionally to the object itself without needing to know whether its declared unit is millimetres or metres.
+
 ## 0.3.1
 
 ### Patch Changes
