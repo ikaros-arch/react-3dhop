@@ -28,6 +28,13 @@ export type IIIFContextValue = {
    * no-ops until this is true, because there is nothing to convert against yet.
    */
   isSceneReady: boolean;
+  /**
+   * The scene's characteristic size (reciprocal of the presenter's `sceneRadiusInv`), in the
+   * model's own space units. `null` until `isSceneReady`. Useful for anything that needs to scale
+   * proportionally to the object itself - e.g. an annotation spot's radius - regardless of
+   * whether the model's declared unit is millimetres or metres.
+   */
+  sceneRadius: number | null;
   /** Animates the camera to the manifest camera at `index`. */
   goToCamera: (index: number, durationSeconds?: number) => void;
   /** Captures the current camera as an IIIF annotation, or `null` if the scene is not ready. */
@@ -214,6 +221,7 @@ export const IIIFProvider: React.FC<IIIFProviderProps> = ({
       measureUnit: scene?.measureUnit ?? 'mm',
       displayUnit: scene?.displayUnit ?? 'mm',
       isSceneReady: framing !== null,
+      sceneRadius: framing && framing.sceneRadiusInv > 0 ? 1 / framing.sceneRadiusInv : null,
       goToCamera,
       saveCurrentView,
       setModelVisible,
