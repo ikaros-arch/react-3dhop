@@ -247,7 +247,7 @@ export function CustomPlugin() {
 - Omit children to render the default toolbar.
 - Use the provided `Toolbar` and control components to choose layout, icons, and titles.
 - Pass `showToolbar={false}` to hide it entirely.
-- Render multiple `Toolbar` instances if you need controls in different corners; the viewer keeps the button state in sync across every toolbar. (Planar section sliders still rely on the legacy single-panel markup, so stick to one `SectionsControl` for now.)
+- Render multiple `Toolbar` instances if you need controls in different corners; the viewer keeps the button state in sync across every toolbar.
 
 `ThreeDHopViewer` recognises your toolbar by checking `children` for a `<Toolbar>` element *of that exact type, as a direct child* — wrapping it in a component of your own defeats that check and silently falls back to the default toolbar instead, with your real controls demoted to ordinary content (wrong icon paths included). This bit us even inside this repo's own IIIF package, one level further out than you'd expect:
 
@@ -282,7 +282,7 @@ Available controls mirror the classic 3DHOP toolbar:
 - `PickControl` (includes the XYZ pick panel)
 - `AngleControl` (three-point angle measurement; see below)
 - `GridControl` (floor / box / fixed / axes grid overlay; see below)
-- `SectionsControl` (includes the planar section UI)
+- `SectionsControl` (per-axis planar clipping; see below)
 - `InfoControl` (toggles a static info panel with custom content)
 - `ScreenshotControl` (downloads a PNG; can also copy it to the clipboard, rename it or hand it to a callback — see below)
 - `HotspotControl`
@@ -332,6 +332,27 @@ The cell size defaults to 1 cm expressed in the viewer's `measurementUnits` (`mm
 It works uncontrolled (`defaultMode`) or controlled (`mode` + `onModeChange`). `GridOverlay`
 (`mode`, `step`, `axesOrigin`) is the headless geometry on its own, for when you want to drive the
 grid from your own UI — don't mount both.
+
+#### `SectionsControl`
+
+A toolbar toggle for 3DHOP's per-axis clipping planes — slice through the model along X/Y/Z,
+independently flip each plane's direction, and show the cut as filled planes and/or outlined
+edges. Calls the presenter's `setClipping*` methods directly from React state; unlike the classic
+3DHOP sidecar it doesn't depend on fixed DOM ids, so multiple `SectionsControl` instances (e.g. one
+per `Toolbar` corner) no longer fight over the same markup.
+
+```tsx
+<Toolbar position="top-left">
+	<SectionsControl axisLabels={{ x: 'Width', y: 'Height', z: 'Depth' }} />
+</Toolbar>
+```
+
+Works uncontrolled (`defaultOpen` / `defaultState`) or controlled (`open` + `onOpenChange`,
+`state` + `onStateChange`). `state` is `{ x, y, z, showPlanes, showEdges }`, where each axis is
+`{ enabled, position, flip }` (`position` is 0..1 along the scene bounds). Closing zeroes every
+axis on the presenter without discarding the stored slider/flip values, so reopening picks up
+exactly where you left off — including across a scene rebuild (e.g. adding an annotation), which
+the legacy sidecar couldn't do; it reset every slider to the midpoint on every reload.
 
 #### `LightDirectionWidget`
 

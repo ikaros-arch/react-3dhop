@@ -58,12 +58,6 @@ declare global {
     fullscreenSwitch?: () => void;
     actionsToolbar?: (action: string) => void;
     presenter: PresenterInstance | null | undefined;
-    sectiontoolSwitch?: (on?: boolean) => void;
-    sectiontoolReset?: () => void;
-    sectiontoolInit?: () => void;
-    sectionxSwitch?: (on?: boolean) => void;
-    sectionySwitch?: (on?: boolean) => void;
-    sectionzSwitch?: (on?: boolean) => void;
     onTrackballUpdate?: (trackState: number[]) => void;
   }
   const HOP_ALL: unknown;
@@ -153,7 +147,6 @@ export const ThreeDHopViewer: React.FC<ThreeDHopViewerProps> = ({
     alignToolbarSidecars,
     syncMeasurementUi,
     syncPickpointUi,
-    syncSectionsUi,
     syncLightSwitch,
     syncLightingSwitch,
     syncColorSwitch,
@@ -489,7 +482,6 @@ export const ThreeDHopViewer: React.FC<ThreeDHopViewerProps> = ({
     sceneObserversRef,
     syncTransparencySwitch,
     syncSpecularUi,
-    syncSectionsUi,
     space: stableSpace,
     config: stableConfig,
     trackball: stableTrackball,
@@ -512,7 +504,6 @@ export const ThreeDHopViewer: React.FC<ThreeDHopViewerProps> = ({
     syncFullscreenUi,
     syncMeasurementUi,
     syncPickpointUi,
-    syncSectionsUi,
     syncLightSwitch,
     syncLightingSwitch,
     syncColorSwitch,

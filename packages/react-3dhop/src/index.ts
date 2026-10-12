@@ -102,7 +102,6 @@ export {
 	CameraControl,
 	MeasureControl,
 	PickControl,
-	SectionsControl,
 	ScreenshotControl,
 	FullscreenControl,
 	HotspotControl,
@@ -124,7 +123,6 @@ export type {
 	CameraControlProps,
 	MeasureControlProps,
 	PickControlProps,
-	SectionsControlProps,
 	ScreenshotControlProps,
 	FullscreenControlProps,
 	HotspotControlProps,
@@ -134,6 +132,8 @@ export { AngleControl, ANGLE_TOOL_ID } from './AngleControl.js';
 export type { AngleControlProps } from './AngleControl.js';
 export { GridControl, GridOverlay, GRID_MODE_LABELS } from './GridControl.js';
 export type { GridControlProps, GridOverlayProps } from './GridControl.js';
+export { SectionsControl, DEFAULT_SECTIONS_STATE } from './SectionsControl.js';
+export type { SectionsControlProps, SectionsState, SectionPlaneState, SectionAxis } from './SectionsControl.js';
 export { LightDirectionWidget } from './LightDirectionWidget.js';
 export type { LightDirectionWidgetProps, LightDirectionWidgetPosition } from './LightDirectionWidget.js';
 export { ViewPresetButtons } from './ViewPresetButtons.js';

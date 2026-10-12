@@ -26,6 +26,9 @@ export type MockPresenter = PresenterInstance & {
   __pickEnabled: boolean;
   __trackball: number[];
   __measurementPoints?: [number[], number[]];
+  __clipAxis: [number, number, number];
+  __clipPoint: [number, number, number];
+  __clipRendermode: [boolean, boolean];
 };
 
 /**
@@ -46,6 +49,9 @@ export function createMockPresenter(scene?: Partial<MockScene>): MockPresenter {
     __measureEnabled: false,
     __pickEnabled: false,
     __trackball: [35, 15, 0, 0, 0, 2.5],
+    __clipAxis: [0, 0, 0],
+    __clipPoint: [0.5, 0.5, 0.5],
+    __clipRendermode: [true, true],
     _lightDirection: [0, 0, -1],
     ui: { postDrawEvent: vi.fn(), gl: {} },
 
@@ -133,6 +139,46 @@ export function createMockPresenter(scene?: Partial<MockScene>): MockPresenter {
     }),
     isAnyMeasurementEnabled: vi.fn(function (this: MockPresenter) {
       return this.__measureEnabled || this.__pickEnabled;
+    }),
+
+    setClippingXYZ: vi.fn(function (this: MockPresenter, x: number, y: number, z: number) {
+      this.__clipAxis = [x, y, z];
+    }),
+    setClippingX: vi.fn(function (this: MockPresenter, x: number) {
+      this.__clipAxis[0] = x;
+    }),
+    setClippingY: vi.fn(function (this: MockPresenter, y: number) {
+      this.__clipAxis[1] = y;
+    }),
+    setClippingZ: vi.fn(function (this: MockPresenter, z: number) {
+      this.__clipAxis[2] = z;
+    }),
+    getClippingX: vi.fn(function (this: MockPresenter) {
+      return this.__clipAxis[0];
+    }),
+    getClippingY: vi.fn(function (this: MockPresenter) {
+      return this.__clipAxis[1];
+    }),
+    getClippingZ: vi.fn(function (this: MockPresenter) {
+      return this.__clipAxis[2];
+    }),
+    setClippingPointXYZ: vi.fn(function (this: MockPresenter, x: number, y: number, z: number) {
+      this.__clipPoint = [x, y, z];
+    }),
+    setClippingPointX: vi.fn(function (this: MockPresenter, x: number) {
+      this.__clipPoint[0] = x;
+    }),
+    setClippingPointY: vi.fn(function (this: MockPresenter, y: number) {
+      this.__clipPoint[1] = y;
+    }),
+    setClippingPointZ: vi.fn(function (this: MockPresenter, z: number) {
+      this.__clipPoint[2] = z;
+    }),
+    setClippingRendermode: vi.fn(function (this: MockPresenter, showPlanes: boolean, showEdges: boolean) {
+      this.__clipRendermode = [showPlanes, showEdges];
+    }),
+    getClippingRendermode: vi.fn(function (this: MockPresenter) {
+      return [...this.__clipRendermode];
     })
   } as unknown as MockPresenter;
 

@@ -94,6 +94,22 @@ export type PresenterInstance = {
    */
   rotateLight?: (x: number, y: number) => void;
   _lightDirection?: number[];
+  /** Clipping-plane direction per axis: `0` off, `1` normal, `-1` flipped. */
+  setClippingX?: (direction: -1 | 0 | 1) => void;
+  setClippingY?: (direction: -1 | 0 | 1) => void;
+  setClippingZ?: (direction: -1 | 0 | 1) => void;
+  setClippingXYZ?: (x: -1 | 0 | 1, y: -1 | 0 | 1, z: -1 | 0 | 1) => void;
+  getClippingX?: () => -1 | 0 | 1;
+  getClippingY?: () => -1 | 0 | 1;
+  getClippingZ?: () => -1 | 0 | 1;
+  /** Clipping-plane position per axis, `0`..`1` of the scene bounds along that axis. */
+  setClippingPointX?: (position: number) => void;
+  setClippingPointY?: (position: number) => void;
+  setClippingPointZ?: (position: number) => void;
+  setClippingPointXYZ?: (x: number, y: number, z: number) => void;
+  /** `[showPlanes, showEdges]`. */
+  setClippingRendermode?: (showPlanes: boolean, showEdges: boolean) => void;
+  getClippingRendermode?: () => [boolean, boolean, number?, [number, number, number]?];
   /** Set by `saveScreenshot()`; the PNG data URL is written to `screenshotData` on the next draw. */
   screenshotData?: string | null;
   isCapturingScreenshot?: boolean;

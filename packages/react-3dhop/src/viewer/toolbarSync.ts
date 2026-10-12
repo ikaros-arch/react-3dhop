@@ -22,7 +22,6 @@ export type ToolbarSync = {
   alignToolbarSidecars: () => void;
   syncMeasurementUi: (override?: boolean) => void;
   syncPickpointUi: (override?: boolean) => void;
-  syncSectionsUi: () => void;
   syncLightSwitch: (override?: boolean) => boolean;
   syncLightingSwitch: (override?: boolean) => boolean;
   syncColorSwitch: (override?: boolean) => boolean;
@@ -268,24 +267,6 @@ export function useToolbarSync({
     ]
   );
 
-  const syncSectionsUi = useCallback(() => {
-    if (typeof document === 'undefined') {
-      return;
-    }
-
-    const reference = document.querySelector<HTMLElement>('[data-hop-id="sections_on"]');
-    const isActive = reference ? getComputedStyle(reference).visibility !== 'hidden' : false;
-
-    setTogglePairVisibility('sections_on', 'sections', isActive);
-
-    const sectionBoxes = queryToolbarSidecars<HTMLDivElement>('sections-box');
-    sectionBoxes.forEach((element) => {
-      element.style.display = isActive ? 'table' : 'none';
-    });
-
-    alignToolbarSidecars();
-  }, [alignToolbarSidecars, setTogglePairVisibility]);
-
   const syncLightSwitch = useCallback(
     (override?: boolean) => {
       const presenter = presenterRef.current;
@@ -489,7 +470,6 @@ export function useToolbarSync({
     alignToolbarSidecars,
     syncMeasurementUi,
     syncPickpointUi,
-    syncSectionsUi,
     syncLightSwitch,
     syncLightingSwitch,
     syncColorSwitch,

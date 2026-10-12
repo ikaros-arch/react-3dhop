@@ -2,7 +2,6 @@ import { useCallback } from 'react';
 import type React from 'react';
 import { joinAssetPath, resolveRelativeAssetPath } from '../utils/assetPaths.js';
 import { buildAnnotations, type AnnotationDefinition } from '../utils/annotations.js';
-import { queryToolbarSidecars } from './dom.js';
 import type {
   ModelDefinition,
   ModelInstanceConfiguration,
@@ -352,7 +351,6 @@ export type UseSceneConfigurationOptions = {
   sceneObserversRef: React.MutableRefObject<Set<SceneObserver>>;
   syncTransparencySwitch: (override?: boolean) => boolean;
   syncSpecularUi: (override?: boolean) => boolean;
-  syncSectionsUi: () => void;
   space?: SceneSpaceConfig;
   config?: SceneRenderConfig;
   trackball?: TrackballConfig;
@@ -379,7 +377,6 @@ export function useSceneConfiguration({
   sceneObserversRef,
   syncTransparencySwitch,
   syncSpecularUi,
-  syncSectionsUi,
   space,
   config,
   trackball,
@@ -435,12 +432,6 @@ export function useSceneConfiguration({
 
       sceneObserversRef.current.forEach((observer) => observer(presenter));
 
-      if (queryToolbarSidecars('sections-box').length > 0) {
-        window.sectiontoolInit?.();
-        window.sectiontoolReset?.();
-        syncSectionsUi();
-      }
-
       syncTransparencySwitch();
       syncSpecularUi();
     },
@@ -451,7 +442,6 @@ export function useSceneConfiguration({
       notifyTrackballObservers,
       sceneObserversRef,
       setHasHotspotContribution,
-      syncSectionsUi,
       syncSpecularUi,
       syncTransparencySwitch
     ]

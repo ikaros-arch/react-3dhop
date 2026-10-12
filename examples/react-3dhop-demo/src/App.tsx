@@ -222,7 +222,7 @@ function App() {
             <HotspotControl />
             <SectionsControl
               title={{ enabled: 'Skru av snitt', disabled: 'Skru på snitt' }}
-              planeLabels={{ x: 'X-akse', y: 'Y-akse', z: 'Z-akse' }}
+              axisLabels={{ x: 'X-akse', y: 'Y-akse', z: 'Z-akse' }}
               showPlanesLabel="Vis plan"
               showEdgesLabel="Vis kant"
             />

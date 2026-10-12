@@ -42,7 +42,6 @@ export type PresenterLifecycleOptions = {
   syncFullscreenUi: (isFullscreen: boolean) => void;
   syncMeasurementUi: (override?: boolean) => void;
   syncPickpointUi: (override?: boolean) => void;
-  syncSectionsUi: () => void;
   syncLightSwitch: (override?: boolean) => boolean;
   syncLightingSwitch: (override?: boolean) => boolean;
   syncColorSwitch: (override?: boolean) => boolean;
@@ -89,7 +88,6 @@ export function usePresenterLifecycle({
   syncFullscreenUi,
   syncMeasurementUi,
   syncPickpointUi,
-  syncSectionsUi,
   syncLightSwitch,
   syncLightingSwitch,
   syncColorSwitch,
@@ -112,7 +110,6 @@ export function usePresenterLifecycle({
   const previousOnTrackballUpdateRef = useRef<typeof window.onTrackballUpdate>();
   const previousMeasureSwitchRef = useRef<typeof window.measureSwitch>();
   const previousPickpointSwitchRef = useRef<typeof window.pickpointSwitch>();
-  const previousSectiontoolSwitchRef = useRef<typeof window.sectiontoolSwitch>();
   const previousLightSwitchRef = useRef<typeof window.lightSwitch>();
   const previousLightingSwitchRef = useRef<typeof window.lightingSwitch>();
   const previousCameraSwitchRef = useRef<typeof window.cameraSwitch>();
@@ -266,11 +263,6 @@ export function usePresenterLifecycle({
           toggleTool('pick', presenter);
           break;
         }
-        case 'sections':
-        case 'sections_on':
-          window.sectiontoolReset?.();
-          window.sectiontoolSwitch?.();
-          break;
         case 'screenshot':
           presenter.saveScreenshot?.();
           break;
@@ -315,13 +307,6 @@ export function usePresenterLifecycle({
       syncFullscreenUi(isActive);
     };
 
-    const sectiontoolSwitchProxy = (state?: boolean) => {
-      const previous = previousSectiontoolSwitchRef.current;
-      const result = previous?.(state);
-      syncSectionsUi();
-      return result;
-    };
-
     const setup = async () => {
       try {
         previousActionsRef.current = window.actionsToolbar;
@@ -336,9 +321,6 @@ export function usePresenterLifecycle({
         previousPickpointSwitchRef.current = window.pickpointSwitch;
         window.measureSwitch = syncMeasurementUi;
         window.pickpointSwitch = syncPickpointUi;
-
-        previousSectiontoolSwitchRef.current = window.sectiontoolSwitch;
-        window.sectiontoolSwitch = sectiontoolSwitchProxy;
 
         previousLightSwitchRef.current = window.lightSwitch;
         previousLightingSwitchRef.current = window.lightingSwitch;
@@ -383,7 +365,6 @@ export function usePresenterLifecycle({
         syncSpecularUi();
         syncCameraSwitch();
         syncHotspotSwitch();
-        syncSectionsUi();
 
         fullscreenEvents.forEach((eventName) => {
           document.addEventListener(
@@ -571,10 +552,6 @@ export function usePresenterLifecycle({
 
       if (window.pickpointSwitch === syncPickpointUi) {
         window.pickpointSwitch = previousPickpointSwitchRef.current;
-      }
-
-      if (window.sectiontoolSwitch === sectiontoolSwitchProxy) {
-        window.sectiontoolSwitch = previousSectiontoolSwitchRef.current;
       }
 
       window.lightSwitch = previousLightSwitchRef.current;
