@@ -1,5 +1,16 @@
 # @ikaros-arch/react-3dhop-iiif
 
+## 0.5.0
+
+### Minor Changes
+
+- [`52696b5`](https://github.com/ikaros-arch/react-3dhop/commit/52696b546524ff84f7ae94a3a6c1a1265609309e) Thanks [@hallvard-indgjerd](https://github.com/hallvard-indgjerd)! - Added support for user-authored comment annotations (IIIF/W3C Web Annotation `motivation: "commenting"`, `"describing"` or `"tagging"`, with a `TextualBody`), as a first-class feature alongside models and cameras:
+
+  - `parseManifest`/`loadManifest` now also return `comments: ParsedComment[]`.
+  - `useIIIFManifest()` exposes the live `comments` list plus `addComment`/`updateComment`/`removeComment` for session-local edits.
+  - New standalone helpers `commentsToAnnotationPage`/`annotationPageToComments` round-trip comments as a standard IIIF `AnnotationPage`, for exporting or persisting them.
+  - New optional `<IIIFAnnotationsPanel>` lists comments and provides a minimal add form.
+
 ## 0.4.0
 
 ### Minor Changes
