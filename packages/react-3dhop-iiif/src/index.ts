@@ -37,6 +37,8 @@ export { IIIFMultiManifestModelsPanel } from './panels/IIIFMultiManifestModelsPa
 export type { IIIFMultiManifestModelsPanelProps } from './panels/IIIFMultiManifestModelsPanel.js';
 export { IIIFSavedViewsPanel } from './panels/IIIFSavedViewsPanel.js';
 export type { IIIFSavedViewsPanelProps } from './panels/IIIFSavedViewsPanel.js';
+export { IIIFAnnotationsPanel } from './panels/IIIFAnnotationsPanel.js';
+export type { IIIFAnnotationsPanelProps } from './panels/IIIFAnnotationsPanel.js';
 export { IIIFLanguageSwitcher, LANGUAGE_NAMES } from './panels/IIIFLanguageSwitcher.js';
 export type { IIIFLanguageSwitcherProps } from './panels/IIIFLanguageSwitcher.js';
 
@@ -46,6 +48,9 @@ export type { LoadManifestOptions, ParseOptions } from './iiif/parser.js';
 
 export { loadCollection, parseCollection } from './iiif/collection.js';
 export type { LoadCollectionOptions, ParseCollectionOptions } from './iiif/collection.js';
+
+export { commentsToAnnotationPage, annotationPageToComments, createCommentId } from './iiif/comments.js';
+export type { AnnotationPageOptions, NewComment } from './iiif/comments.js';
 
 export { sceneFromManifest, DEFAULT_MEASURE_UNIT } from './iiif/toModels.js';
 export type { SceneFromManifest, ToModelsOptions } from './iiif/toModels.js';
@@ -85,6 +90,7 @@ export type {
   ParsedCamera,
   ParsedCollection,
   ParsedCollectionItem,
+  ParsedComment,
   ParsedManifest,
   ParsedMetadata,
   ParsedModel,

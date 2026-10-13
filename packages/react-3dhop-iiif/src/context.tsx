@@ -1,8 +1,9 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { useThreeDHopViewer } from '@ikaros-arch/react-3dhop';
 import { cameraToView, track2view, view2track, viewToCameraAnnotation, type SceneFraming, type TrackballState } from './iiif/camera.js';
+import { createCommentId, type NewComment } from './iiif/comments.js';
 import { resolveLanguageMap } from './iiif/language.js';
-import type { Diagnostic, LocalizableValue, ParsedCamera, ParsedManifest, ParsedMetadata, ParsedModel } from './iiif/types.js';
+import type { Diagnostic, LocalizableValue, ParsedCamera, ParsedComment, ParsedManifest, ParsedMetadata, ParsedModel } from './iiif/types.js';
 import type { SceneFromManifest } from './iiif/toModels.js';
 
 export type IIIFStatus = 'idle' | 'loading' | 'ready' | 'error';
@@ -16,6 +17,17 @@ export type IIIFContextValue = {
   metadata: ParsedMetadata | null;
   models: ParsedModel[];
   cameras: ParsedCamera[];
+  /**
+   * The manifest's comment annotations, plus any added in this session. Edits are local to the
+   * viewer instance — persisting them (to a file export or a backend) is a consumer concern; see
+   * `commentsToAnnotationPage`/`annotationPageToComments` for round-tripping them as IIIF JSON.
+   */
+  comments: ParsedComment[];
+  /** Adds a comment to the live list and returns its id. */
+  addComment: (comment: NewComment) => string;
+  /** Patches an existing comment by id. Unset fields are left unchanged. */
+  updateComment: (id: string, patch: Partial<Omit<NewComment, 'id'>>) => void;
+  removeComment: (id: string) => void;
   languages: string[];
   language: string;
   setLanguage: (language: string) => void;
@@ -90,6 +102,16 @@ export const IIIFProvider: React.FC<IIIFProviderProps> = ({
   // produce a new context value or the consumers never re-render and React reverts the checkbox.
   const [visibility, setVisibility] = useState<Record<string, boolean>>({});
   const [transparency, setTransparency] = useState<Record<string, boolean>>({});
+  const [comments, setComments] = useState<ParsedComment[]>(() => parsed?.comments ?? []);
+
+  // Keyed on the raw manifest, not `parsed`: switching language re-parses into a new `parsed`
+  // object on every call (see IIIFViewer's `localized`), which would otherwise wipe out
+  // session-added comments on every language switch even though their content hasn't changed.
+  const manifestIdentity = parsed?.manifest ?? null;
+  useEffect(() => {
+    setComments(parsed?.comments ?? []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [manifestIdentity]);
 
   // The presenter only derives sceneCenter/sceneRadiusInv once a scene has been set, so read them
   // when the viewer tells us the scene changed rather than on mount.
@@ -205,6 +227,31 @@ export const IIIFProvider: React.FC<IIIFProviderProps> = ({
     [instanceKeyFor, presenter]
   );
 
+  const addComment = useCallback((comment: NewComment) => {
+    const id = comment.id ?? createCommentId();
+    setComments((current) => [...current, { id, rawLabel: comment.label, text: comment.text, position: comment.position }]);
+    return id;
+  }, []);
+
+  const updateComment = useCallback((id: string, patch: Partial<Omit<NewComment, 'id'>>) => {
+    setComments((current) =>
+      current.map((comment) =>
+        comment.id === id
+          ? {
+              ...comment,
+              ...(patch.text !== undefined ? { text: patch.text } : {}),
+              ...(patch.position !== undefined ? { position: patch.position } : {}),
+              ...(patch.label !== undefined ? { rawLabel: patch.label } : {})
+            }
+          : comment
+      )
+    );
+  }, []);
+
+  const removeComment = useCallback((id: string) => {
+    setComments((current) => current.filter((comment) => comment.id !== id));
+  }, []);
+
   const value = useMemo<IIIFContextValue>(
     () => ({
       status,
@@ -214,6 +261,10 @@ export const IIIFProvider: React.FC<IIIFProviderProps> = ({
       metadata: parsed?.metadata ?? null,
       models: parsed?.models ?? [],
       cameras: parsed?.cameras ?? [],
+      comments,
+      addComment,
+      updateComment,
+      removeComment,
       languages: parsed?.languages ?? [],
       language,
       setLanguage,
@@ -230,6 +281,8 @@ export const IIIFProvider: React.FC<IIIFProviderProps> = ({
       isModelTransparent
     }),
     [
+      addComment,
+      comments,
       diagnostics,
       error,
       framing,
@@ -239,12 +292,14 @@ export const IIIFProvider: React.FC<IIIFProviderProps> = ({
       language,
       localize,
       parsed,
+      removeComment,
       saveCurrentView,
       scene,
       setLanguage,
       setModelVisible,
       status,
-      toggleModelTransparency
+      toggleModelTransparency,
+      updateComment
     ]
   );
 

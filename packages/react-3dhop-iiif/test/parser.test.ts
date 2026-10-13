@@ -273,6 +273,84 @@ describe('parseManifest — cameras', () => {
   });
 });
 
+describe('parseManifest — comments', () => {
+  it('reads a TextualBody comment by body type alone', () => {
+    const parsed = parseManifest(
+      manifestWith([
+        {
+          id: 'https://example.org/anno/comment-1',
+          type: 'Annotation',
+          label: { en: ['Note'] },
+          body: { type: 'TextualBody', format: 'text/plain', value: 'Chip on the rim' },
+          target: { type: 'SpecificResource', selector: [{ type: 'PointSelector', x: 1, y: 2, z: 3 }] }
+        }
+      ])
+    );
+
+    expect(parsed.comments).toHaveLength(1);
+    expect(parsed.comments[0]).toMatchObject({
+      id: 'https://example.org/anno/comment-1',
+      text: 'Chip on the rim',
+      position: [1, 2, 3]
+    });
+    expect(parsed.models).toEqual([]);
+    expect(parsed.cameras).toEqual([]);
+  });
+
+  it.each(['commenting', 'describing', 'tagging'])('recognises motivation "%s" without a TextualBody type', (motivation) => {
+    const parsed = parseManifest(
+      manifestWith([
+        {
+          id: 'c',
+          type: 'Annotation',
+          motivation: [motivation],
+          body: { value: 'Untyped body' } as never
+        }
+      ])
+    );
+    expect(parsed.comments).toHaveLength(1);
+    expect(parsed.comments[0].text).toBe('Untyped body');
+  });
+
+  it('falls back to an index-based id when the annotation has none', () => {
+    const parsed = parseManifest(
+      manifestWith([
+        { type: 'Annotation', body: { type: 'TextualBody', value: 'first' } },
+        { type: 'Annotation', body: { type: 'TextualBody', value: 'second' } }
+      ])
+    );
+    expect(parsed.comments.map((c) => c.id)).toEqual(['comment-0', 'comment-1']);
+  });
+
+  it('defaults to an empty string when the body has no value', () => {
+    const parsed = parseManifest(manifestWith([{ id: 'c', type: 'Annotation', body: { type: 'TextualBody' } }]));
+    expect(parsed.comments[0].text).toBe('');
+  });
+
+  it('keeps comments, models and cameras separate in one manifest', () => {
+    const parsed = parseManifest(
+      manifestWith([
+        modelAnnotation(),
+        { id: 'cam', type: 'Annotation', body: { type: 'PerspectiveCamera', fov: 50 } },
+        { id: 'note', type: 'Annotation', body: { type: 'TextualBody', value: 'hello' } }
+      ])
+    );
+    expect(parsed.models).toHaveLength(1);
+    expect(parsed.cameras).toHaveLength(1);
+    expect(parsed.comments).toHaveLength(1);
+  });
+
+  it('still reports an unrelated body type as unsupported', () => {
+    const { diagnostics, onDiagnostic } = collect();
+    const parsed = parseManifest(
+      manifestWith([{ id: 'x', type: 'Annotation', body: { type: 'Light' } }]),
+      { onDiagnostic }
+    );
+    expect(parsed.comments).toEqual([]);
+    expect(diagnostics.some((d) => d.message.includes('"Light"'))).toBe(true);
+  });
+});
+
 describe('parseManifest — multi-model', () => {
   it('keeps every model in manifest order', () => {
     const parsed = parseManifest(

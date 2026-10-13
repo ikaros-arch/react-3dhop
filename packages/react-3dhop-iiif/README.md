@@ -215,10 +215,71 @@ demo's [`IIIFDemo.css`](https://github.com/ikaros-arch/react-3dhop/blob/main/exa
 | `<IIIFMetadataPanel>` | Recognised fields first, then the rest in manifest order |
 | `<IIIFModelsPanel>` | Per-model visibility and transparency toggles |
 | `<IIIFSavedViewsPanel>` | The manifest's cameras, plus "save current view" |
+| `<IIIFAnnotationsPanel>` | The manifest's comment annotations, plus a form to add more (position entered by hand — see [Comments](#comments)) |
 | `<IIIFLanguageSwitcher>` | Language selector; hidden when the manifest has one language |
 | `<IIIFCollectionPicker>` | A `<select>` of every manifest in a collection |
 | `<IIIFCollectionCarousel>` | A thumbnail strip of every manifest in a collection, with prev/next |
 | `<IIIFMultiManifestModelsPanel>` | Visibility/transparency toggles grouped by manifest; reads `useIIIFMultiManifest()`, for use inside `<IIIFMultiManifestViewer>` instead of `<IIIFViewer>` |
+
+---
+
+## Comments
+
+A comment is a user-authored annotation — a note placed somewhere in the scene — represented the
+way IIIF already represents this: the W3C Web Annotation shape Presentation API builds on, with
+`motivation: "commenting"` and a `TextualBody`, rather than the `painting` motivation `Model`/
+`Camera` annotations use:
+
+```json
+{
+  "id": "https://example.org/iiif/3d/annotations/comment_1",
+  "type": "Annotation",
+  "motivation": ["commenting"],
+  "label": { "en": ["Surface damage"] },
+  "body": { "type": "TextualBody", "format": "text/plain", "value": "Chip on the rim" },
+  "target": {
+    "type": "SpecificResource",
+    "source": [{ "id": "…/scene/1", "type": "Scene" }],
+    "selector": [{ "type": "PointSelector", "x": 1.0, "y": 0.0, "z": 0.2 }]
+  }
+}
+```
+
+`motivation: "describing"` and `"tagging"` are recognised too, and a bare `TextualBody` is enough
+on its own — the motivation and the body type are both sufficient, independently, for an annotation
+to be read as a comment. Comments authored in a manifest are parsed into `useIIIFManifest().comments`
+alongside `models` and `cameras`.
+
+```tsx
+const { comments, addComment, updateComment, removeComment } = useIIIFManifest();
+```
+
+`addComment({ text, position, label? })` appends a comment to the live list and returns its id;
+`updateComment(id, patch)` and `removeComment(id)` edit or drop one. These edits are local to the
+viewer instance — nothing is written back to the manifest automatically. A comment's text is a
+plain string rather than a language map: a comment is authored once, in one language, unlike
+manifest-authored labels and metadata.
+
+To persist comments — as a file export or to a future backend — convert them to and from a
+standalone IIIF `AnnotationPage` with the standalone helpers:
+
+```ts
+import { commentsToAnnotationPage, annotationPageToComments } from '@ikaros-arch/react-3dhop-iiif';
+
+const page = commentsToAnnotationPage(comments, { sceneId: manifestSceneId });
+// … save `page` as JSON, or merge its `items` into the manifest's own AnnotationPage …
+const restored = annotationPageToComments(page);
+```
+
+This is the package's canonical, IIIF-shaped export format. An app with its own legacy annotation
+format (e.g. one it used before adopting this package) is free to maintain a separate converter
+alongside this one and let users choose between them — the live `comments` array is a plain,
+format-agnostic list either converter can read.
+
+`<IIIFAnnotationsPanel>` is an optional, bare-bones UI over this: a list of comments with a form to
+add more. Position is entered by hand, since this package has no notion of a "picked point" (that
+lives in `@ikaros-arch/react-3dhop`'s pick tool) — an app wanting comments placed by clicking the
+model should build its own UI on `addComment`/`updateComment`/`removeComment` instead.
 
 ---
 
@@ -350,6 +411,7 @@ Against the [draft specification](https://github.com/IIIF/3d/blob/main/temp-draf
 | Several sources per annotation | ✅ | ✅ | Best supported format wins |
 | `PerspectiveCamera` | ✅ | ✅ | Position, `lookAt`, `fieldOfView` |
 | `OrthographicCamera` | ✅ | ✅ | Position, `lookAt` |
+| `TextualBody` comment (`commenting`/`describing`/`tagging`) | ✅ | ⚠️ | Listed in `<IIIFAnnotationsPanel>`/`useIIIFManifest().comments`; not drawn as an in-viewport marker |
 | **Lights** (`Ambient`/`Directional`/`Point`/`Spot`) | ❌ | ❌ | 3DHOP has one directional light, controlled by the viewer |
 | **Transforms** |
 | `ScaleTransform` | ✅ | ✅ | |

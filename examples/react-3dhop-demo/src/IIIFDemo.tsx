@@ -22,6 +22,7 @@ import {
   IIIFMetadataPanel,
   IIIFModelsPanel,
   IIIFSavedViewsPanel,
+  IIIFAnnotationsPanel,
   IIIFLanguageSwitcher,
   IIIFCollectionProvider,
   IIIFCollectionPicker,
@@ -91,6 +92,7 @@ function Sidebar({ host }: { host: HTMLElement | null }) {
       <IIIFSummary />
       <IIIFModelsPanel />
       <IIIFSavedViewsPanel />
+      <IIIFAnnotationsPanel />
       <IIIFMetadataPanel />
       <Diagnostics />
     </>,

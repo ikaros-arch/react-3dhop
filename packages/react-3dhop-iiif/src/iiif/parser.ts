@@ -9,6 +9,7 @@ import type {
   IIIFPointSelector,
   LocalizableValue,
   ParsedCamera,
+  ParsedComment,
   ParsedManifest,
   ParsedMetadata,
   ParsedModel,
@@ -70,6 +71,28 @@ function isModelBody(body: IIIFAnnotationBody | undefined): boolean {
 
 function isCameraBody(body: IIIFAnnotationBody | undefined): boolean {
   return body?.type === 'PerspectiveCamera' || body?.type === 'OrthographicCamera';
+}
+
+function hasMotivation(annotation: IIIFAnnotation, motivation: string): boolean {
+  const value = annotation.motivation;
+  if (!value) {
+    return false;
+  }
+  return Array.isArray(value) ? value.includes(motivation) : value === motivation;
+}
+
+/**
+ * A user-authored comment: the W3C Web Annotation shape IIIF Presentation API already builds on
+ * (`motivation: "commenting"`/`"describing"`/`"tagging"` with a `TextualBody`), rather than the
+ * `painting` motivation `Model`/`Camera` annotations use to place scene content.
+ */
+function isCommentBody(body: IIIFAnnotationBody | undefined, annotation: IIIFAnnotation): boolean {
+  return (
+    body?.type === 'TextualBody' ||
+    hasMotivation(annotation, 'commenting') ||
+    hasMotivation(annotation, 'describing') ||
+    hasMotivation(annotation, 'tagging')
+  );
 }
 
 /** Picks the source this viewer can make the best use of. See {@link FORMAT_PREFERENCE}. */
@@ -243,6 +266,16 @@ function parseCameraAnnotation(annotation: IIIFAnnotation, body: IIIFAnnotationB
   return camera;
 }
 
+/** A comment falls back to its position among the manifest's other comments when it has no `id`. */
+function parseCommentAnnotation(annotation: IIIFAnnotation, body: IIIFAnnotationBody, fallbackIndex: number): ParsedComment {
+  return {
+    id: annotation.id ?? `comment-${fallbackIndex}`,
+    rawLabel: annotation.label,
+    text: typeof body.value === 'string' ? body.value : '',
+    position: toVector3(readPointSelector(annotation.target))
+  };
+}
+
 /**
  * Parses an already-fetched IIIF manifest into the viewer-ready shape.
  *
@@ -254,6 +287,7 @@ export function parseManifest(manifest: IIIFManifest, options: ParseOptions = {}
 
   const models: ParsedModel[] = [];
   const cameras: ParsedCamera[] = [];
+  const comments: ParsedComment[] = [];
 
   const scenes = (manifest.items ?? []).filter((item) => item?.type === 'Scene');
 
@@ -293,6 +327,11 @@ export function parseManifest(manifest: IIIFManifest, options: ParseOptions = {}
           return;
         }
 
+        if (isCommentBody(body, annotation)) {
+          comments.push(parseCommentAnnotation(annotation, body as IIIFAnnotationBody, comments.length));
+          return;
+        }
+
         onDiagnostic?.({
           level: 'info',
           message: `Skipping annotation ${annotation?.id ?? '(no id)'} of unsupported body type "${
@@ -308,6 +347,7 @@ export function parseManifest(manifest: IIIFManifest, options: ParseOptions = {}
     metadata: parseMetadata(manifest, language),
     models,
     cameras,
+    comments,
     languages: Array.from(collectLanguages(manifest)).sort()
   };
 }

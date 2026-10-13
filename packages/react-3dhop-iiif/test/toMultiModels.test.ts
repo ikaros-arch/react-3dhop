@@ -12,6 +12,7 @@ function makeManifest(id: string, models: ParsedModel[]): ParsedManifest {
     metadata: { label: id, measureUnit: 'mm', displayUnit: 'mm', fields: [] },
     models,
     cameras: [],
+    comments: [],
     languages: []
   };
 }

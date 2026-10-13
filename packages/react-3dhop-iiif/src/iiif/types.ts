@@ -54,6 +54,8 @@ export type IIIFAnnotationBody = {
   fieldOfView?: number;
   fov?: number;
   lookAt?: IIIFPointSelector & { id?: string };
+  /** `TextualBody`-only field (W3C Web Annotation): the comment's text. */
+  value?: string;
 };
 
 export type IIIFAnnotationTarget = {
@@ -116,6 +118,21 @@ export type ParsedModel = {
   transforms: IIIFTransform[];
 };
 
+/**
+ * A user-authored comment annotation (IIIF/W3C Web Annotation `motivation: "commenting"`), placed
+ * in the scene like a model or camera but carrying text rather than geometry.
+ */
+export type ParsedComment = {
+  /** The annotation id. Stable for manifest-authored comments; generated for new ones (see `createCommentId`). */
+  id: string;
+  /** Raw language map for the annotation label; resolve with the active language. */
+  rawLabel?: LocalizableValue;
+  /** The comment text. Not a language map — a comment is authored in one language at a time. */
+  text: string;
+  /** World-space placement from the target `PointSelector`. */
+  position: Vector3;
+};
+
 export type ParsedCamera = {
   id?: string;
   type: 'PerspectiveCamera' | 'OrthographicCamera';
@@ -153,6 +170,7 @@ export type ParsedManifest = {
   metadata: ParsedMetadata;
   models: ParsedModel[];
   cameras: ParsedCamera[];
+  comments: ParsedComment[];
   /** Every language tag appearing anywhere in the manifest's language maps. */
   languages: string[];
 };

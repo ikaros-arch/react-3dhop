@@ -185,6 +185,65 @@
   color: #9a9a9a;
 }
 
+.iiif-annotations__item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding-bottom: 0.4rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.iiif-annotations__text {
+  margin: 0;
+}
+
+.iiif-annotations__form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.iiif-annotations__field,
+.iiif-annotations__position {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.iiif-annotations__field textarea {
+  background: #2a2a2a;
+  color: inherit;
+  border: 1px solid #444;
+  border-radius: 6px;
+  padding: 0.4rem 0.5rem;
+  resize: vertical;
+}
+
+.iiif-annotations__position {
+  border: none;
+  padding: 0;
+  flex-direction: row;
+  gap: 0.75rem;
+}
+
+.iiif-annotations__axis {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  font-size: 0.82rem;
+  color: #9a9a9a;
+}
+
+.iiif-annotations__axis input {
+  width: 4.5rem;
+  background: #2a2a2a;
+  color: inherit;
+  border: 1px solid #444;
+  border-radius: 6px;
+  padding: 0.3rem 0.4rem;
+}
+
 .iiif-views__output {
   max-height: 12rem;
   overflow: auto;
