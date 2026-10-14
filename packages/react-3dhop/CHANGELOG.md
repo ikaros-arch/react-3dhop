@@ -1,5 +1,11 @@
 # @ikaros-arch/react-3dhop
 
+## 0.15.0
+
+### Minor Changes
+
+- [`878faa0`](https://github.com/ikaros-arch/react-3dhop/commit/878faa074cc7503baef6bd27f26e574ea8dd76a8) Thanks [@hallvard-indgjerd](https://github.com/hallvard-indgjerd)! - `PresenterInstance` gains `isInstanceSpecularEnabled?(tag?)`, matching the new `@ikaros-arch/3dhop` method. `toolbarSync.ts`'s internal `syncSpecularUi` now calls it instead of duplicating the same non-zero-`specularColor` check inline — no behaviour change, just one source of truth for the check.
+
 ## 0.14.0
 
 ### Minor Changes
