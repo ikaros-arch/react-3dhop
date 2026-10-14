@@ -1,5 +1,11 @@
 # @ikaros-arch/react-3dhop-iiif
 
+## 0.8.0
+
+### Minor Changes
+
+- [`878faa0`](https://github.com/ikaros-arch/react-3dhop/commit/878faa074cc7503baef6bd27f26e574ea8dd76a8) Thanks [@hallvard-indgjerd](https://github.com/hallvard-indgjerd)! - `ViewerState`/saved views now also carry scene-wide transparency and specular-highlight state (distinct from `modelTransparency`, which is per-model). Both have real getter+setter pairs on the presenter (`isInstanceTransparencyEnabled`/`setInstanceTransparency`, and the newly-exposed `isInstanceSpecularEnabled`/`setInstanceSpecularity` from `@ikaros-arch/3dhop` 0.6.0+), so — like lighting — they're always read live rather than session-tracked. New context methods: `isSceneTransparencyEnabled`/`setSceneTransparency`, `isSceneSpecularEnabled`/`setSceneSpecular`. `captureViewerState`/`applyViewerState`/`saveCurrentView`/`goToCamera` all pick these up automatically.
+
 ## 0.7.0
 
 ### Minor Changes

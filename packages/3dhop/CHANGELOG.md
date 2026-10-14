@@ -1,5 +1,11 @@
 # @ikaros-arch/3dhop
 
+## 0.6.0
+
+### Minor Changes
+
+- [`878faa0`](https://github.com/ikaros-arch/react-3dhop/commit/878faa074cc7503baef6bd27f26e574ea8dd76a8) Thanks [@hallvard-indgjerd](https://github.com/hallvard-indgjerd)! - Added `presenter.isInstanceSpecularEnabled(tag)`, alongside `setInstanceSpecularity`, mirroring `isInstanceTransparencyEnabled`'s tag-scoped structure but checking `specularColor` for a non-zero RGB instead of `useTransparency`. There was previously no way to read current specular state; this exposes logic `@ikaros-arch/react-3dhop` already computed inline for its own toolbar icon sync.
+
 ## 0.5.1
 
 ### Patch Changes
