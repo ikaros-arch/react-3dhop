@@ -70,6 +70,10 @@ export type IIIFAnnotationBody = {
   solidColor?: boolean;
   /** Scene-wide lighting: on/off, plus the light's direction when it isn't the default. */
   lighting?: { enabled: boolean; direction?: Vector3 };
+  /** Scene-wide transparency toggle, distinct from `modelTransparency` (per-model). */
+  transparency?: boolean;
+  /** Scene-wide specular-highlight toggle. */
+  specular?: boolean;
 };
 
 export type IIIFAnnotationTarget = {
@@ -165,6 +169,13 @@ export type ViewerState = {
   solidColor?: boolean;
   /** Scene-wide lighting: on/off, plus the light's direction when it isn't the default. */
   lighting?: { enabled: boolean; direction?: Vector3 };
+  /**
+   * Scene-wide transparency toggle — distinct from `modelTransparency`, which is per-model. 3DHOP
+   * exposes a real getter for this one, so it's always read live rather than session-tracked.
+   */
+  transparency?: boolean;
+  /** Scene-wide specular-highlight toggle. Also read live, same as `transparency`. */
+  specular?: boolean;
 };
 
 export type ParsedCamera = {

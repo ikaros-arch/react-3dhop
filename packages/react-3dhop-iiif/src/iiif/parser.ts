@@ -83,6 +83,12 @@ function parseViewerStateBody(bodies: IIIFAnnotationBody[]): ViewerState | undef
   if (extension.lighting) {
     viewerState.lighting = extension.lighting;
   }
+  if (typeof extension.transparency === 'boolean') {
+    viewerState.transparency = extension.transparency;
+  }
+  if (typeof extension.specular === 'boolean') {
+    viewerState.specular = extension.specular;
+  }
   return Object.keys(viewerState).length > 0 ? viewerState : undefined;
 }
 

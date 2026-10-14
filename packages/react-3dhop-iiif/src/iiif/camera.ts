@@ -163,7 +163,9 @@ function hasViewerState(viewerState: ViewerState | undefined): viewerState is Vi
     Object.keys(viewerState.modelTransparency ?? {}).length > 0 ||
     viewerState.sections !== undefined ||
     viewerState.solidColor !== undefined ||
-    viewerState.lighting !== undefined
+    viewerState.lighting !== undefined ||
+    viewerState.transparency !== undefined ||
+    viewerState.specular !== undefined
   );
 }
 

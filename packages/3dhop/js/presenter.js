@@ -3451,6 +3451,33 @@ setInstanceSpecularity : function (tag, color, hardness, redraw) {
 		this.repaint();
 },
 
+isInstanceSpecularEnabled : function (tag) {
+	var specular = false;
+	var instances = this._scene.modelInstances;
+
+	for (var inst in instances) {
+		if(!tag || tag==HOP_ALL){
+			var color = instances[inst].specularColor;
+			if(Array.isArray(color) && (Math.abs(color[0]||0) > 1e-3 || Math.abs(color[1]||0) > 1e-3 || Math.abs(color[2]||0) > 1e-3)){
+				specular = true;
+				return specular;
+			}
+		}
+		else{
+			for (var tg in instances[inst].tags){
+				if(instances[inst].tags[tg] == tag){
+					var color = instances[inst].specularColor;
+					if(Array.isArray(color) && (Math.abs(color[0]||0) > 1e-3 || Math.abs(color[1]||0) > 1e-3 || Math.abs(color[2]||0) > 1e-3)){
+						specular = true;
+						return specular;
+					}
+				 }
+			}
+		}
+	}
+	return specular;
+},
+
 //----backface
 
 setInstanceBackfaceByName : function (name, color, mode, redraw) {

@@ -209,7 +209,9 @@ second, non-standard body entry alongside the camera:
       "modelTransparency": { "…/anno/2": true },
       "sections": { "x": { "enabled": true, "position": 0.5, "flip": false }, "y": { "enabled": false, "position": 0.5, "flip": false }, "z": { "enabled": false, "position": 0.5, "flip": false }, "showPlanes": true, "showEdges": true },
       "solidColor": false,
-      "lighting": { "enabled": true, "direction": [0, -1, 0] }
+      "lighting": { "enabled": true, "direction": [0, -1, 0] },
+      "transparency": false,
+      "specular": true
     }
   ],
   "target": { "...": "as above" }
@@ -220,21 +222,23 @@ The first body entry is a plain, spec-compliant camera — any IIIF 3D viewer re
 second is an app-defined extension a non-aware consumer simply never finds, same as the package's
 own non-standard per-source `measureUnit`. `modelVisibility`/`modelTransparency` key by IIIF
 annotation id, matching `setModelVisible`/`isModelTransparent`; `sections` is
-`@ikaros-arch/react-3dhop`'s own `SectionsState` verbatim; `solidColor` is the scene-wide
-texture/solid-colour toggle (3DHOP has no per-model version of this one, unlike visibility and
-transparency); `lighting.direction` is 3DHOP's own `_lightDirection` unit vector.
+`@ikaros-arch/react-3dhop`'s own `SectionsState` verbatim; `solidColor`/`transparency`/`specular`
+are scene-wide toggles 3DHOP has no per-model version of (`transparency` here is distinct from
+`modelTransparency` — one scene-wide switch, one per-model); `lighting.direction` is 3DHOP's own
+`_lightDirection` unit vector.
 
 `saveCurrentView(label?, { sections })` captures this session's visibility/transparency/solid-colour
 overrides automatically (it already tracks them for
 `setModelVisible`/`toggleModelTransparency`/`setSolidColor`) — `sections` has to be passed in, since
 clipping planes are owned by whichever component renders `<SectionsControl>`, not this context.
-`lighting` needs nothing passed in: unlike solid colour, 3DHOP exposes a real
-`isSceneLightingEnabled()` getter, so it's always read fresh rather than tracked. The body entry is
+`lighting`/`transparency`/`specular` need nothing passed in: unlike solid colour, 3DHOP exposes real
+getters for all three (`isSceneLightingEnabled()`, `isInstanceTransparencyEnabled()`,
+`isInstanceSpecularEnabled()`), so they're always read fresh rather than tracked. The body entry is
 omitted entirely when there's nothing to carry, so a plain saved view stays a plain, single-body
 camera annotation.
 
-`goToCamera()` applies a view's `modelVisibility`/`modelTransparency`/`solidColor`/`lighting`
-automatically — `lighting.direction` round-trips through `@ikaros-arch/react-3dhop`'s
+`goToCamera()` applies every field on a view's `viewerState` automatically, except `sections` —
+`lighting.direction` round-trips through `@ikaros-arch/react-3dhop`'s
 `lightDirectionToDisc`/`discToRotateLightArgs`, since 3DHOP's own `rotateLight(x, y)` setter takes a
 disc point rather than the vector. `sections` is left for the caller: read
 `cameras[index].viewerState?.sections` and apply it to your own `<SectionsControl>` state.
@@ -484,7 +488,7 @@ Against the [draft specification](https://github.com/IIIF/3d/blob/main/temp-draf
 | `PerspectiveCamera` | ✅ | ✅ | Position, `lookAt`, `fieldOfView` |
 | `OrthographicCamera` | ✅ | ✅ | Position, `lookAt` |
 | `TextualBody` comment (`commenting`/`describing`/`tagging`) | ✅ | ⚠️ | Listed in `<IIIFAnnotationsPanel>`/`useIIIFManifest().comments`; not drawn as an in-viewport marker. `PointSelector` on the target is optional (a note vs. a positioned spot) |
-| `ThreeDHopViewerState` (non-standard) | ✅ | ✅ | Model visibility/transparency, `SectionsState`, solid-colour and lighting, as a second body alongside a saved view's camera — see [Full saved views](#full-saved-views-camera--visibilitytransparency--sections--lighting) |
+| `ThreeDHopViewerState` (non-standard) | ✅ | ✅ | Model visibility/transparency, `SectionsState`, solid-colour, lighting, and scene-wide transparency/specularity, as a second body alongside a saved view's camera — see [Full saved views](#full-saved-views-camera--visibilitytransparency--sections--lighting) |
 | **Lights** (`Ambient`/`Directional`/`Point`/`Spot`) | ❌ | ❌ | 3DHOP has one directional light, controlled by the viewer |
 | **Transforms** |
 | `ScaleTransform` | ✅ | ✅ | |

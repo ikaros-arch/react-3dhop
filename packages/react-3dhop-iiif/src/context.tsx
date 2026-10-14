@@ -64,18 +64,18 @@ export type IIIFContextValue = {
    */
   sceneRadius: number | null;
   /**
-   * Animates the camera to the manifest camera at `index`. Also applies that camera's
-   * `viewerState.modelVisibility`/`modelTransparency`/`solidColor`/`lighting`, if it carries any —
-   * `sections` is left for the caller to apply (see `ParsedCamera.viewerState`), since clipping
-   * planes are owned by whichever component renders `<SectionsControl>`, not this context.
+   * Animates the camera to the manifest camera at `index`. Also applies every field on that
+   * camera's `viewerState` except `sections` (see `ParsedCamera.viewerState`/`ViewerState`) —
+   * `sections` is left for the caller to apply, since clipping planes are owned by whichever
+   * component renders `<SectionsControl>`, not this context.
    */
   goToCamera: (index: number, durationSeconds?: number) => void;
   /**
    * Captures the current camera as an IIIF annotation, or `null` if the scene is not ready. Also
    * captures this session's model visibility/transparency/solid-colour overrides and the current
-   * lighting state automatically, plus `sections` when passed in — the caller supplies that one
-   * because this context doesn't own `<SectionsControl>`'s state. See
-   * `ParsedCamera.viewerState`/`ViewerState`.
+   * lighting/scene-wide-transparency/specularity state automatically, plus `sections` when passed
+   * in — the caller supplies that one because this context doesn't own `<SectionsControl>`'s
+   * state. See `ParsedCamera.viewerState`/`ViewerState`.
    */
   saveCurrentView: (label?: string, options?: { sections?: SectionsState }) => Record<string, unknown> | null;
   /** Shows or hides one model. Pass the IIIF annotation id. */
@@ -92,17 +92,27 @@ export type IIIFContextValue = {
   isSolidColorEnabled: () => boolean;
   setSolidColor: (enabled: boolean) => void;
   /**
-   * Captures model visibility/transparency/solid-colour/lighting as a `ViewerState`, or `undefined`
-   * when there's nothing to capture (nothing overridden this session, and no lighting API on the
-   * presenter). Doesn't include `sections` — merge that in yourself, same as `saveCurrentView`,
-   * since this context doesn't own `<SectionsControl>`'s state. For consumers with their own saved
+   * Scene-wide transparency toggle, distinct from `setModelTransparent`/`isModelTransparent`
+   * (per-model). Unlike solid colour, 3DHOP exposes a real getter for this, so it's always read
+   * live rather than tracked locally.
+   */
+  isSceneTransparencyEnabled: () => boolean;
+  setSceneTransparency: (enabled: boolean) => void;
+  /** Scene-wide specular-highlight toggle. Also read live, same as `isSceneTransparencyEnabled`. */
+  isSceneSpecularEnabled: () => boolean;
+  setSceneSpecular: (enabled: boolean) => void;
+  /**
+   * Captures model visibility/transparency/solid-colour/lighting/scene-wide
+   * transparency/specularity as a `ViewerState`, or `undefined` when there's nothing to capture
+   * (nothing overridden this session, and none of the live-getter APIs available on the presenter).
+   * Doesn't include `sections` — merge that in yourself, same as `saveCurrentView`, since this
+   * context doesn't own `<SectionsControl>`'s state. For consumers with their own saved
    * view/camera concept that isn't `saveCurrentView`'s IIIF annotation shape.
    */
   captureViewerState: () => ViewerState | undefined;
   /**
-   * Applies `modelVisibility`/`modelTransparency`/`solidColor`/`lighting` from a `ViewerState`.
-   * `sections` is ignored — apply it to your own `<SectionsControl>` state instead. The inverse of
-   * `captureViewerState`.
+   * Applies every field on a `ViewerState` except `sections` — apply that to your own
+   * `<SectionsControl>` state instead. The inverse of `captureViewerState`.
    */
   applyViewerState: (viewerState: ViewerState | undefined) => void;
 };
@@ -264,6 +274,33 @@ export const IIIFProvider: React.FC<IIIFProviderProps> = ({
     [presenter, solidColor]
   );
 
+  // Unlike solid colour, 3DHOP exposes real getter+setter pairs for both of these, so neither
+  // needs local tracking or an idempotency guard - they're read fresh and set directly every time.
+  const isSceneTransparencyEnabled = useCallback(
+    () => presenter?.isInstanceTransparencyEnabled?.(getHopAllTag()) ?? false,
+    [presenter]
+  );
+
+  const setSceneTransparency = useCallback(
+    (enabled: boolean) => {
+      presenter?.setInstanceTransparency?.(getHopAllTag(), enabled, true);
+    },
+    [presenter]
+  );
+
+  const isSceneSpecularEnabled = useCallback(
+    () => presenter?.isInstanceSpecularEnabled?.(getHopAllTag()) ?? false,
+    [presenter]
+  );
+
+  const setSceneSpecular = useCallback(
+    (enabled: boolean) => {
+      // Matches the values 3DHOP's own "specular" toolbar action uses when turning highlights on.
+      presenter?.setInstanceSpecularity?.(getHopAllTag(), enabled ? [0.3, 0.3, 0.3] : [0, 0, 0], 256.0, true);
+    },
+    [presenter]
+  );
+
   const captureViewerState = useCallback((): ViewerState | undefined => {
     if (!presenter) {
       return undefined;
@@ -289,8 +326,14 @@ export const IIIFProvider: React.FC<IIIFProviderProps> = ({
           : {})
       };
     }
+    if (typeof presenter.isInstanceTransparencyEnabled === 'function') {
+      viewerState.transparency = isSceneTransparencyEnabled();
+    }
+    if (typeof presenter.isInstanceSpecularEnabled === 'function') {
+      viewerState.specular = isSceneSpecularEnabled();
+    }
     return Object.keys(viewerState).length > 0 ? viewerState : undefined;
-  }, [presenter, visibility, transparency, solidColor]);
+  }, [presenter, visibility, transparency, solidColor, isSceneTransparencyEnabled, isSceneSpecularEnabled]);
 
   const applyViewerState = useCallback(
     (viewerState: ViewerState | undefined) => {
@@ -312,8 +355,14 @@ export const IIIFProvider: React.FC<IIIFProviderProps> = ({
           presenter.rotateLight?.(...discToRotateLightArgs(disc));
         }
       }
+      if (viewerState.transparency !== undefined) {
+        setSceneTransparency(viewerState.transparency);
+      }
+      if (viewerState.specular !== undefined) {
+        setSceneSpecular(viewerState.specular);
+      }
     },
-    [presenter, setModelVisible, setModelTransparent, setSolidColor]
+    [presenter, setModelVisible, setModelTransparent, setSolidColor, setSceneTransparency, setSceneSpecular]
   );
 
   const goToCamera = useCallback(
@@ -434,6 +483,10 @@ export const IIIFProvider: React.FC<IIIFProviderProps> = ({
       isModelTransparent,
       isSolidColorEnabled,
       setSolidColor,
+      isSceneTransparencyEnabled,
+      setSceneTransparency,
+      isSceneSpecularEnabled,
+      setSceneSpecular,
       captureViewerState,
       applyViewerState
     }),
@@ -448,6 +501,8 @@ export const IIIFProvider: React.FC<IIIFProviderProps> = ({
       goToCamera,
       isModelTransparent,
       isModelVisible,
+      isSceneSpecularEnabled,
+      isSceneTransparencyEnabled,
       isSolidColorEnabled,
       language,
       localize,
@@ -458,6 +513,8 @@ export const IIIFProvider: React.FC<IIIFProviderProps> = ({
       setLanguage,
       setModelTransparent,
       setModelVisible,
+      setSceneSpecular,
+      setSceneTransparency,
       setSolidColor,
       status,
       toggleModelTransparency,

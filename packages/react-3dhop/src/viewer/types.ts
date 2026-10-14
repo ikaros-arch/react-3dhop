@@ -61,6 +61,7 @@ export type PresenterInstance = {
   setInstanceTransparency?: (tag: unknown, newState: boolean, redraw?: boolean, newAlpha?: number) => void;
   isInstanceTransparencyEnabled?: (tag?: unknown) => boolean;
   setInstanceSpecularity?: (tag: unknown, color: [number, number, number], hardness: number, redraw?: boolean) => void;
+  isInstanceSpecularEnabled?: (tag?: unknown) => boolean;
   enableMeasurementTool?: (enabled: boolean) => void;
   isMeasurementToolEnabled?: () => boolean;
   /** Re-displays a previously completed measurement without requiring the two points be re-picked. */

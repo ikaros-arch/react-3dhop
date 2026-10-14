@@ -397,23 +397,10 @@ export function useToolbarSync({
   const syncSpecularUi = useCallback(
     (override?: boolean) => {
       const presenter = presenterRef.current;
-      const instances = presenter?._scene?.modelInstances as
-        | Record<string, { specularColor?: number[] }>
-        | undefined;
-
-      const presenterState = instances
-        ? Object.values(instances).some((instance) => {
-            if (!instance) {
-              return false;
-            }
-            const specular = instance.specularColor;
-            if (!Array.isArray(specular) || specular.length < 3) {
-              return false;
-            }
-            const [r = 0, g = 0, b = 0] = specular;
-            return Math.abs(r) > 1e-3 || Math.abs(g) > 1e-3 || Math.abs(b) > 1e-3;
-          })
-        : undefined;
+      const presenterState =
+        typeof presenter?.isInstanceSpecularEnabled === 'function'
+          ? presenter.isInstanceSpecularEnabled(getHopAllTag())
+          : undefined;
 
       const enabled =
         typeof override === 'boolean'

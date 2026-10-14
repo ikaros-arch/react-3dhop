@@ -140,6 +140,18 @@ near-zero range, which reads as "rotation barely works" with the view stuck near
 start position. Fixed by copying the array (`opt.minMaxPhi.slice()`) before converting in place,
 in all four files.
 
+## Layer 6 — `isInstanceSpecularEnabled()` (this repo, 2026-10)
+
+Added `presenter.isInstanceSpecularEnabled(tag)` to `js/presenter.js`, next to
+`setInstanceSpecularity`, mirroring `isInstanceTransparencyEnabled`'s tag-scoped structure exactly
+but checking `specularColor` for a non-zero RGB instead of `useTransparency`. The check itself
+isn't new: `@ikaros-arch/react-3dhop`'s `toolbarSync.ts` already computed it inline (to decide which
+toolbar icon to show) by walking `_scene.modelInstances` and testing each one's `specularColor`.
+This extracts that into a public method so `@ikaros-arch/react-3dhop-iiif` can read specular state
+when capturing a saved view, the same way it already reads transparency via the existing
+`isInstanceTransparencyEnabled`. A small new method alongside an existing one, not a change to any
+upstream behaviour.
+
 ## Unmodified from upstream 4.3
 
 `js/ply.js`, `js/corto.js`, `js/corto.em.js`, `js/meco.js`, `js/helpers.js`, `js/spidergl.js`,

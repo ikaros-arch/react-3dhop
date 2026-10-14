@@ -287,6 +287,13 @@ describe('viewToCameraAnnotation', () => {
     expect(bodies).toHaveLength(2);
     expect(bodies[1]).toEqual({ type: 'ThreeDHopViewerState', lighting });
   });
+
+  it('appends a ThreeDHopViewerState body for scene-wide transparency/specular, including when false', () => {
+    const annotation = viewToCameraAnnotation(view, { viewerState: { transparency: false, specular: false } });
+    const bodies = annotation.body as Record<string, unknown>[];
+    expect(bodies).toHaveLength(2);
+    expect(bodies[1]).toEqual({ type: 'ThreeDHopViewerState', transparency: false, specular: false });
+  });
 });
 
 /**

@@ -438,6 +438,15 @@ describe('parseManifest — camera viewer-state extension', () => {
     );
     expect(parsed.cameras[0].viewerState).toEqual({ lighting: { enabled: false } });
   });
+
+  it('reads transparency and specular, including when both are false', () => {
+    const parsed = parseManifest(
+      manifestWith([
+        cameraAnnotation([{ type: 'PerspectiveCamera' }, { type: 'ThreeDHopViewerState', transparency: false, specular: false }])
+      ])
+    );
+    expect(parsed.cameras[0].viewerState).toEqual({ transparency: false, specular: false });
+  });
 });
 
 describe('parseManifest — multi-model', () => {
