@@ -1,5 +1,11 @@
 # @ikaros-arch/react-3dhop-iiif
 
+## 0.7.0
+
+### Minor Changes
+
+- [`d8b89d8`](https://github.com/ikaros-arch/react-3dhop/commit/d8b89d8a00e5ff2e4cf0a557590fc13c74e283d1) Thanks [@hallvard-indgjerd](https://github.com/hallvard-indgjerd)! - `useIIIFManifest()` gains `captureViewerState()`/`applyViewerState()`, the model visibility/transparency/solid-colour/lighting logic `saveCurrentView`/`goToCamera` already used internally, now exposed directly for apps with their own saved-view concept that isn't `saveCurrentView`'s IIIF annotation shape. `saveCurrentView`/`goToCamera` are refactored to use these themselves — no behaviour change for existing callers.
+
 ## 0.6.0
 
 ### Minor Changes
