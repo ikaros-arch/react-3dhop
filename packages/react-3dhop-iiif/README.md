@@ -190,6 +190,57 @@ the scene centre.
 `saveCurrentView()` returns an annotation in exactly this shape, ready to paste back into a
 manifest.
 
+#### Full saved views (camera + visibility/transparency + sections + lighting)
+
+IIIF has a vocabulary for the camera, but none for renderer state like per-model visibility,
+transparency, clipping planes, or lighting — that's inherently out of scope for a
+content-description standard. `saveCurrentView()`/`goToCamera()` carry that state anyway, as a
+second, non-standard body entry alongside the camera:
+
+```json
+{
+  "type": "Annotation",
+  "motivation": ["painting"],
+  "body": [
+    { "type": "PerspectiveCamera", "lookAt": { "type": "PointSelector", "x": 0, "y": 0.5, "z": 0 } },
+    {
+      "type": "ThreeDHopViewerState",
+      "modelVisibility": { "…/anno/1": false },
+      "modelTransparency": { "…/anno/2": true },
+      "sections": { "x": { "enabled": true, "position": 0.5, "flip": false }, "y": { "enabled": false, "position": 0.5, "flip": false }, "z": { "enabled": false, "position": 0.5, "flip": false }, "showPlanes": true, "showEdges": true },
+      "solidColor": false,
+      "lighting": { "enabled": true, "direction": [0, -1, 0] }
+    }
+  ],
+  "target": { "...": "as above" }
+}
+```
+
+The first body entry is a plain, spec-compliant camera — any IIIF 3D viewer reads it fine. The
+second is an app-defined extension a non-aware consumer simply never finds, same as the package's
+own non-standard per-source `measureUnit`. `modelVisibility`/`modelTransparency` key by IIIF
+annotation id, matching `setModelVisible`/`isModelTransparent`; `sections` is
+`@ikaros-arch/react-3dhop`'s own `SectionsState` verbatim; `solidColor` is the scene-wide
+texture/solid-colour toggle (3DHOP has no per-model version of this one, unlike visibility and
+transparency); `lighting.direction` is 3DHOP's own `_lightDirection` unit vector.
+
+`saveCurrentView(label?, { sections })` captures this session's visibility/transparency/solid-colour
+overrides automatically (it already tracks them for
+`setModelVisible`/`toggleModelTransparency`/`setSolidColor`) — `sections` has to be passed in, since
+clipping planes are owned by whichever component renders `<SectionsControl>`, not this context.
+`lighting` needs nothing passed in: unlike solid colour, 3DHOP exposes a real
+`isSceneLightingEnabled()` getter, so it's always read fresh rather than tracked. The body entry is
+omitted entirely when there's nothing to carry, so a plain saved view stays a plain, single-body
+camera annotation.
+
+`goToCamera()` applies a view's `modelVisibility`/`modelTransparency`/`solidColor`/`lighting`
+automatically — `lighting.direction` round-trips through `@ikaros-arch/react-3dhop`'s
+`lightDirectionToDisc`/`discToRotateLightArgs`, since 3DHOP's own `rotateLight(x, y)` setter takes a
+disc point rather than the vector. `sections` is left for the caller: read
+`cameras[index].viewerState?.sections` and apply it to your own `<SectionsControl>` state.
+`<IIIFSavedViewsPanel sections={sections} onApplySections={setSections}>` wires both directions for
+you when you already hold `SectionsControl`'s state yourself.
+
 ### Language
 
 Any IIIF language map is resolved against the active language, falling back through `en`, `no`,
@@ -250,11 +301,16 @@ on its own — the motivation and the body type are both sufficient, independent
 to be read as a comment. Comments authored in a manifest are parsed into `useIIIFManifest().comments`
 alongside `models` and `cameras`.
 
+The target's `PointSelector` is optional. A comment with one describes a point in the scene (a
+"spot"); a comment with no selector at all describes the whole object (a general note) — its
+`position` is `undefined`, not `[0, 0, 0]`, so the two are never confused with each other.
+
 ```tsx
 const { comments, addComment, updateComment, removeComment } = useIIIFManifest();
 ```
 
-`addComment({ text, position, label? })` appends a comment to the live list and returns its id;
+`addComment({ text, position?, label? })` appends a comment to the live list and returns its id —
+omit `position` for a general note rather than a spot;
 `updateComment(id, patch)` and `removeComment(id)` edit or drop one. These edits are local to the
 viewer instance — nothing is written back to the manifest automatically. A comment's text is a
 plain string rather than a language map: a comment is authored once, in one language, unlike
@@ -411,7 +467,8 @@ Against the [draft specification](https://github.com/IIIF/3d/blob/main/temp-draf
 | Several sources per annotation | ✅ | ✅ | Best supported format wins |
 | `PerspectiveCamera` | ✅ | ✅ | Position, `lookAt`, `fieldOfView` |
 | `OrthographicCamera` | ✅ | ✅ | Position, `lookAt` |
-| `TextualBody` comment (`commenting`/`describing`/`tagging`) | ✅ | ⚠️ | Listed in `<IIIFAnnotationsPanel>`/`useIIIFManifest().comments`; not drawn as an in-viewport marker |
+| `TextualBody` comment (`commenting`/`describing`/`tagging`) | ✅ | ⚠️ | Listed in `<IIIFAnnotationsPanel>`/`useIIIFManifest().comments`; not drawn as an in-viewport marker. `PointSelector` on the target is optional (a note vs. a positioned spot) |
+| `ThreeDHopViewerState` (non-standard) | ✅ | ✅ | Model visibility/transparency, `SectionsState`, solid-colour and lighting, as a second body alongside a saved view's camera — see [Full saved views](#full-saved-views-camera--visibilitytransparency--sections--lighting) |
 | **Lights** (`Ambient`/`Directional`/`Point`/`Spot`) | ❌ | ❌ | 3DHOP has one directional light, controlled by the viewer |
 | **Transforms** |
 | `ScaleTransform` | ✅ | ✅ | |

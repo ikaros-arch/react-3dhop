@@ -1,3 +1,5 @@
+import type { SectionsState } from '@ikaros-arch/react-3dhop';
+
 /**
  * Types for the subset of IIIF Presentation API 4.0 / IIIF 3D that this package understands.
  *
@@ -56,6 +58,18 @@ export type IIIFAnnotationBody = {
   lookAt?: IIIFPointSelector & { id?: string };
   /** `TextualBody`-only field (W3C Web Annotation): the comment's text. */
   value?: string;
+  /**
+   * `ThreeDHopViewerState`-only fields: a non-standard extension body (see {@link ViewerState})
+   * carried alongside a camera body so a saved view can restore renderer state IIIF has no
+   * vocabulary for. A consumer that doesn't recognise this `type` simply ignores it.
+   */
+  modelVisibility?: Record<string, boolean>;
+  modelTransparency?: Record<string, boolean>;
+  sections?: SectionsState;
+  /** Scene-wide texture/solid-colour toggle — 3DHOP has no per-model equivalent. */
+  solidColor?: boolean;
+  /** Scene-wide lighting: on/off, plus the light's direction when it isn't the default. */
+  lighting?: { enabled: boolean; direction?: Vector3 };
 };
 
 export type IIIFAnnotationTarget = {
@@ -129,8 +143,28 @@ export type ParsedComment = {
   rawLabel?: LocalizableValue;
   /** The comment text. Not a language map — a comment is authored in one language at a time. */
   text: string;
-  /** World-space placement from the target `PointSelector`. */
-  position: Vector3;
+  /**
+   * World-space placement from the target `PointSelector`, when the annotation has one. `undefined`
+   * for a comment that describes the whole scene rather than a point in it (e.g. a general note) —
+   * distinct from a comment actually placed at the origin.
+   */
+  position?: Vector3;
+};
+
+/**
+ * Renderer state IIIF has no vocabulary for — which models are hidden/transparent, and the
+ * clipping-plane ("sections") configuration — carried as a non-standard extension alongside a
+ * saved view's camera body. `sections` mirrors `@ikaros-arch/react-3dhop`'s own `SectionsState`
+ * exactly, since that's the shape a consumer already has in hand to save or apply it.
+ */
+export type ViewerState = {
+  modelVisibility?: Record<string, boolean>;
+  modelTransparency?: Record<string, boolean>;
+  sections?: SectionsState;
+  /** Scene-wide texture/solid-colour toggle — 3DHOP has no per-model equivalent. */
+  solidColor?: boolean;
+  /** Scene-wide lighting: on/off, plus the light's direction when it isn't the default. */
+  lighting?: { enabled: boolean; direction?: Vector3 };
 };
 
 export type ParsedCamera = {
@@ -144,6 +178,8 @@ export type ParsedCamera = {
   target?: Vector3;
   /** Annotation id the camera looks at, when `lookAt` is a reference. */
   lookAtId?: string;
+  /** Non-standard extension (see {@link ViewerState}), when this view's annotation carries one. */
+  viewerState?: ViewerState;
 };
 
 /**

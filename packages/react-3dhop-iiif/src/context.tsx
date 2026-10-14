@@ -1,9 +1,25 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { useThreeDHopViewer } from '@ikaros-arch/react-3dhop';
+import {
+  discToRotateLightArgs,
+  getHopAllTag,
+  lightDirectionToDisc,
+  useThreeDHopViewer,
+  type SectionsState
+} from '@ikaros-arch/react-3dhop';
 import { cameraToView, track2view, view2track, viewToCameraAnnotation, type SceneFraming, type TrackballState } from './iiif/camera.js';
 import { createCommentId, type NewComment } from './iiif/comments.js';
 import { resolveLanguageMap } from './iiif/language.js';
-import type { Diagnostic, LocalizableValue, ParsedCamera, ParsedComment, ParsedManifest, ParsedMetadata, ParsedModel } from './iiif/types.js';
+import type {
+  Diagnostic,
+  LocalizableValue,
+  ParsedCamera,
+  ParsedComment,
+  ParsedManifest,
+  ParsedMetadata,
+  ParsedModel,
+  Vector3,
+  ViewerState
+} from './iiif/types.js';
 import type { SceneFromManifest } from './iiif/toModels.js';
 
 export type IIIFStatus = 'idle' | 'loading' | 'ready' | 'error';
@@ -47,15 +63,34 @@ export type IIIFContextValue = {
    * whether the model's declared unit is millimetres or metres.
    */
   sceneRadius: number | null;
-  /** Animates the camera to the manifest camera at `index`. */
+  /**
+   * Animates the camera to the manifest camera at `index`. Also applies that camera's
+   * `viewerState.modelVisibility`/`modelTransparency`/`solidColor`/`lighting`, if it carries any —
+   * `sections` is left for the caller to apply (see `ParsedCamera.viewerState`), since clipping
+   * planes are owned by whichever component renders `<SectionsControl>`, not this context.
+   */
   goToCamera: (index: number, durationSeconds?: number) => void;
-  /** Captures the current camera as an IIIF annotation, or `null` if the scene is not ready. */
-  saveCurrentView: (label?: string) => Record<string, unknown> | null;
+  /**
+   * Captures the current camera as an IIIF annotation, or `null` if the scene is not ready. Also
+   * captures this session's model visibility/transparency/solid-colour overrides and the current
+   * lighting state automatically, plus `sections` when passed in — the caller supplies that one
+   * because this context doesn't own `<SectionsControl>`'s state. See
+   * `ParsedCamera.viewerState`/`ViewerState`.
+   */
+  saveCurrentView: (label?: string, options?: { sections?: SectionsState }) => Record<string, unknown> | null;
   /** Shows or hides one model. Pass the IIIF annotation id. */
   setModelVisible: (modelId: string, visible: boolean) => void;
   isModelVisible: (modelId: string) => boolean;
   toggleModelTransparency: (modelId: string) => void;
+  /** Sets a model's transparency to a specific state, unlike `toggleModelTransparency`. */
+  setModelTransparent: (modelId: string, transparent: boolean) => void;
   isModelTransparent: (modelId: string) => boolean;
+  /**
+   * Scene-wide texture/solid-colour toggle — 3DHOP has no per-model equivalent, unlike visibility
+   * and transparency.
+   */
+  isSolidColorEnabled: () => boolean;
+  setSolidColor: (enabled: boolean) => void;
 };
 
 const IIIFContext = createContext<IIIFContextValue | null>(null);
@@ -102,6 +137,10 @@ export const IIIFProvider: React.FC<IIIFProviderProps> = ({
   // produce a new context value or the consumers never re-render and React reverts the checkbox.
   const [visibility, setVisibility] = useState<Record<string, boolean>>({});
   const [transparency, setTransparency] = useState<Record<string, boolean>>({});
+  // Scene-wide, unlike visibility/transparency: 3DHOP's solid-colour toggle has no per-model
+  // variant, only `toggleInstanceSolidColor(getHopAllTag())`. `undefined` means "not touched this
+  // session" - there's no getter to read the real initial state from.
+  const [solidColor, setSolidColorState] = useState<boolean | undefined>(undefined);
   const [comments, setComments] = useState<ParsedComment[]>(() => parsed?.comments ?? []);
 
   // Keyed on the raw manifest, not `parsed`: switching language re-parses into a new `parsed`
@@ -125,63 +164,13 @@ export const IIIFProvider: React.FC<IIIFProviderProps> = ({
       // A new scene resets every instance to its declared state.
       setVisibility({});
       setTransparency({});
+      setSolidColorState(undefined);
     });
   }, [registerSceneObserver]);
 
   const localize = useCallback(
     (value: LocalizableValue | undefined) => resolveLanguageMap(value, language),
     [language]
-  );
-
-  const goToCamera = useCallback(
-    (index: number, durationSeconds = 0.5) => {
-      if (!parsed || !framing || !presenter) {
-        return;
-      }
-      const camera = parsed.cameras[index];
-      if (!camera) {
-        return;
-      }
-
-      const view = cameraToView(camera, framing, parsed.models);
-      const trackState = view2track(view, framing);
-
-      // The presenter treats a zero duration as "unspecified" and animates over its own default,
-      // so jumping straight to the view has to bypass the animation entirely.
-      if (durationSeconds > 0 && typeof presenter.animateToTrackballPosition === 'function') {
-        presenter.animateToTrackballPosition(trackState, durationSeconds);
-      } else {
-        presenter.setTrackballPosition?.(trackState);
-        presenter.repaint?.();
-      }
-
-      if (camera.type === 'OrthographicCamera') {
-        presenter.setCameraOrthographic?.();
-      } else {
-        presenter.setCameraPerspective?.();
-      }
-    },
-    [framing, parsed, presenter]
-  );
-
-  const saveCurrentView = useCallback(
-    (label?: string) => {
-      if (!presenter || !framing) {
-        return null;
-      }
-
-      const trackState = presenter.getTrackballPosition?.();
-      if (!Array.isArray(trackState) || trackState.length < 6) {
-        return null;
-      }
-
-      const isOrthographic = presenter.getCameraType?.() === 'orthographic';
-      const fov = isOrthographic ? 0 : presenter._scene?.space?.cameraFOV ?? 60;
-
-      const view = track2view(trackState as TrackballState, framing, fov);
-      return viewToCameraAnnotation(view, { label, sceneId: parsed?.manifest.items?.[0]?.id });
-    },
-    [framing, parsed, presenter]
   );
 
   const instanceKeyFor = useCallback(
@@ -215,6 +204,22 @@ export const IIIFProvider: React.FC<IIIFProviderProps> = ({
     [transparency]
   );
 
+  const setModelTransparent = useCallback(
+    (modelId: string, transparent: boolean) => {
+      const key = instanceKeyFor(modelId);
+      if (!key || !presenter) {
+        return;
+      }
+      // Mirrors setModelVisible's idempotency guard: the presenter only offers a toggle.
+      if ((transparency[modelId] ?? false) === transparent) {
+        return;
+      }
+      presenter.toggleInstanceTransparencyByName?.(key, true);
+      setTransparency((current) => ({ ...current, [modelId]: transparent }));
+    },
+    [instanceKeyFor, presenter, transparency]
+  );
+
   const toggleModelTransparency = useCallback(
     (modelId: string) => {
       const key = instanceKeyFor(modelId);
@@ -225,6 +230,122 @@ export const IIIFProvider: React.FC<IIIFProviderProps> = ({
       setTransparency((current) => ({ ...current, [modelId]: !(current[modelId] ?? false) }));
     },
     [instanceKeyFor, presenter]
+  );
+
+  const isSolidColorEnabled = useCallback(() => solidColor ?? false, [solidColor]);
+
+  const setSolidColor = useCallback(
+    (enabled: boolean) => {
+      if (!presenter) {
+        return;
+      }
+      // Mirrors setModelVisible/setModelTransparent's idempotency guard: the presenter only offers
+      // a toggle, scoped to every instance via getHopAllTag() rather than one model's name.
+      if ((solidColor ?? false) === enabled) {
+        return;
+      }
+      presenter.toggleInstanceSolidColor?.(getHopAllTag(), true);
+      setSolidColorState(enabled);
+    },
+    [presenter, solidColor]
+  );
+
+  const goToCamera = useCallback(
+    (index: number, durationSeconds = 0.5) => {
+      if (!parsed || !framing || !presenter) {
+        return;
+      }
+      const camera = parsed.cameras[index];
+      if (!camera) {
+        return;
+      }
+
+      const view = cameraToView(camera, framing, parsed.models);
+      const trackState = view2track(view, framing);
+
+      // The presenter treats a zero duration as "unspecified" and animates over its own default,
+      // so jumping straight to the view has to bypass the animation entirely.
+      if (durationSeconds > 0 && typeof presenter.animateToTrackballPosition === 'function') {
+        presenter.animateToTrackballPosition(trackState, durationSeconds);
+      } else {
+        presenter.setTrackballPosition?.(trackState);
+        presenter.repaint?.();
+      }
+
+      if (camera.type === 'OrthographicCamera') {
+        presenter.setCameraOrthographic?.();
+      } else {
+        presenter.setCameraPerspective?.();
+      }
+
+      // `sections` is deliberately not applied here - see this function's doc comment.
+      Object.entries(camera.viewerState?.modelVisibility ?? {}).forEach(([modelId, visible]) =>
+        setModelVisible(modelId, visible)
+      );
+      Object.entries(camera.viewerState?.modelTransparency ?? {}).forEach(([modelId, transparent]) =>
+        setModelTransparent(modelId, transparent)
+      );
+      if (camera.viewerState?.solidColor !== undefined) {
+        setSolidColor(camera.viewerState.solidColor);
+      }
+      if (camera.viewerState?.lighting) {
+        presenter.enableSceneLighting?.(camera.viewerState.lighting.enabled);
+        if (camera.viewerState.lighting.direction) {
+          const disc = lightDirectionToDisc(camera.viewerState.lighting.direction);
+          presenter.rotateLight?.(...discToRotateLightArgs(disc));
+        }
+      }
+    },
+    [framing, parsed, presenter, setModelVisible, setModelTransparent, setSolidColor]
+  );
+
+  const saveCurrentView = useCallback(
+    (label?: string, options?: { sections?: SectionsState }) => {
+      if (!presenter || !framing) {
+        return null;
+      }
+
+      const trackState = presenter.getTrackballPosition?.();
+      if (!Array.isArray(trackState) || trackState.length < 6) {
+        return null;
+      }
+
+      const isOrthographic = presenter.getCameraType?.() === 'orthographic';
+      const fov = isOrthographic ? 0 : presenter._scene?.space?.cameraFOV ?? 60;
+
+      const view = track2view(trackState as TrackballState, framing, fov);
+      const viewerState: ViewerState = {};
+      if (Object.keys(visibility).length > 0) {
+        viewerState.modelVisibility = { ...visibility };
+      }
+      if (Object.keys(transparency).length > 0) {
+        viewerState.modelTransparency = { ...transparency };
+      }
+      if (options?.sections) {
+        viewerState.sections = options.sections;
+      }
+      if (solidColor !== undefined) {
+        viewerState.solidColor = solidColor;
+      }
+      // Unlike solid colour, lighting has a real getter - no need to track it ourselves, so this
+      // reflects whatever is actually on screen rather than only what was touched this session.
+      if (typeof presenter.isSceneLightingEnabled === 'function') {
+        const direction = presenter._lightDirection;
+        viewerState.lighting = {
+          enabled: presenter.isSceneLightingEnabled(),
+          ...(Array.isArray(direction) && direction.length >= 3
+            ? { direction: [direction[0], direction[1], direction[2]] as Vector3 }
+            : {})
+        };
+      }
+
+      return viewToCameraAnnotation(view, {
+        label,
+        sceneId: parsed?.manifest.items?.[0]?.id,
+        viewerState
+      });
+    },
+    [framing, parsed, presenter, visibility, transparency, solidColor]
   );
 
   const addComment = useCallback((comment: NewComment) => {
@@ -278,7 +399,10 @@ export const IIIFProvider: React.FC<IIIFProviderProps> = ({
       setModelVisible,
       isModelVisible,
       toggleModelTransparency,
-      isModelTransparent
+      setModelTransparent,
+      isModelTransparent,
+      isSolidColorEnabled,
+      setSolidColor
     }),
     [
       addComment,
@@ -289,6 +413,7 @@ export const IIIFProvider: React.FC<IIIFProviderProps> = ({
       goToCamera,
       isModelTransparent,
       isModelVisible,
+      isSolidColorEnabled,
       language,
       localize,
       parsed,
@@ -296,7 +421,9 @@ export const IIIFProvider: React.FC<IIIFProviderProps> = ({
       saveCurrentView,
       scene,
       setLanguage,
+      setModelTransparent,
       setModelVisible,
+      setSolidColor,
       status,
       toggleModelTransparency,
       updateComment

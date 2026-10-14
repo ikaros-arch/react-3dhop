@@ -13,7 +13,8 @@ import type {
   ParsedManifest,
   ParsedMetadata,
   ParsedModel,
-  Vector3
+  Vector3,
+  ViewerState
 } from './types.js';
 
 /**
@@ -45,6 +46,44 @@ function first<T>(value: T | T[] | undefined | null): T | undefined {
 
 function toVector3(selector: IIIFPointSelector | undefined): Vector3 {
   return [selector?.x ?? 0, selector?.y ?? 0, selector?.z ?? 0];
+}
+
+/** Every body an annotation carries, singular or array, in authored order. */
+function allBodies(annotation: IIIFAnnotation): IIIFAnnotationBody[] {
+  if (Array.isArray(annotation.body)) {
+    return annotation.body;
+  }
+  return annotation.body ? [annotation.body] : [];
+}
+
+/**
+ * Reads the `ThreeDHopViewerState` extension body from a camera annotation's body array, if
+ * present. This is the non-standard half of a saved view (see {@link ViewerState}): any IIIF 3D
+ * consumer that doesn't know this `type` just never finds it, and still renders the camera fine.
+ */
+function parseViewerStateBody(bodies: IIIFAnnotationBody[]): ViewerState | undefined {
+  const extension = bodies.find((candidate) => candidate?.type === 'ThreeDHopViewerState');
+  if (!extension) {
+    return undefined;
+  }
+
+  const viewerState: ViewerState = {};
+  if (extension.modelVisibility) {
+    viewerState.modelVisibility = extension.modelVisibility;
+  }
+  if (extension.modelTransparency) {
+    viewerState.modelTransparency = extension.modelTransparency;
+  }
+  if (extension.sections) {
+    viewerState.sections = extension.sections;
+  }
+  if (typeof extension.solidColor === 'boolean') {
+    viewerState.solidColor = extension.solidColor;
+  }
+  if (extension.lighting) {
+    viewerState.lighting = extension.lighting;
+  }
+  return Object.keys(viewerState).length > 0 ? viewerState : undefined;
 }
 
 /** Reads the first `PointSelector` reachable from an annotation target. */
@@ -240,7 +279,12 @@ function parseModelAnnotation(
   };
 }
 
-function parseCameraAnnotation(annotation: IIIFAnnotation, body: IIIFAnnotationBody): ParsedCamera {
+/**
+ * `body` is the camera entry (already picked out as the annotation's first/dispatching body by the
+ * caller); `bodies` is every body the annotation carries, so a `ThreeDHopViewerState` extension
+ * entry alongside it can be found too (see {@link parseViewerStateBody}).
+ */
+function parseCameraAnnotation(annotation: IIIFAnnotation, body: IIIFAnnotationBody, bodies: IIIFAnnotationBody[]): ParsedCamera {
   const camera: ParsedCamera = {
     id: body.id,
     type: body.type === 'OrthographicCamera' ? 'OrthographicCamera' : 'PerspectiveCamera',
@@ -263,16 +307,22 @@ function parseCameraAnnotation(annotation: IIIFAnnotation, body: IIIFAnnotationB
     }
   }
 
+  const viewerState = parseViewerStateBody(bodies);
+  if (viewerState) {
+    camera.viewerState = viewerState;
+  }
+
   return camera;
 }
 
 /** A comment falls back to its position among the manifest's other comments when it has no `id`. */
 function parseCommentAnnotation(annotation: IIIFAnnotation, body: IIIFAnnotationBody, fallbackIndex: number): ParsedComment {
+  const selector = readPointSelector(annotation.target);
   return {
     id: annotation.id ?? `comment-${fallbackIndex}`,
     rawLabel: annotation.label,
     text: typeof body.value === 'string' ? body.value : '',
-    position: toVector3(readPointSelector(annotation.target))
+    position: selector ? toVector3(selector) : undefined
   };
 }
 
@@ -323,7 +373,7 @@ export function parseManifest(manifest: IIIFManifest, options: ParseOptions = {}
         }
 
         if (isCameraBody(body)) {
-          cameras.push(parseCameraAnnotation(annotation, body as IIIFAnnotationBody));
+          cameras.push(parseCameraAnnotation(annotation, body as IIIFAnnotationBody, allBodies(annotation)));
           return;
         }
 

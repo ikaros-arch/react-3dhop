@@ -349,6 +349,95 @@ describe('parseManifest — comments', () => {
     expect(parsed.comments).toEqual([]);
     expect(diagnostics.some((d) => d.message.includes('"Light"'))).toBe(true);
   });
+
+  it('leaves position undefined for a comment with no selector, rather than defaulting to the origin', () => {
+    const parsed = parseManifest(manifestWith([{ id: 'c', type: 'Annotation', body: { type: 'TextualBody', value: 'A general note' } }]));
+    expect(parsed.comments[0].position).toBeUndefined();
+  });
+
+  it('still reads a position when a selector is present', () => {
+    const parsed = parseManifest(
+      manifestWith([
+        {
+          id: 'c',
+          type: 'Annotation',
+          body: { type: 'TextualBody', value: 'A spot' },
+          target: { type: 'SpecificResource', selector: [{ type: 'PointSelector', x: 1, y: 2, z: 3 }] }
+        }
+      ])
+    );
+    expect(parsed.comments[0].position).toEqual([1, 2, 3]);
+  });
+});
+
+describe('parseManifest — camera viewer-state extension', () => {
+  function cameraAnnotation(bodies: unknown[]): IIIFAnnotation {
+    return { id: 'c', type: 'Annotation', body: bodies as never };
+  }
+
+  it('reads modelVisibility/modelTransparency/sections from a ThreeDHopViewerState sibling body', () => {
+    const sections = { x: { enabled: true, position: 0.5, flip: false }, y: { enabled: false, position: 0.5, flip: false }, z: { enabled: false, position: 0.5, flip: false }, showPlanes: true, showEdges: true };
+    const parsed = parseManifest(
+      manifestWith([
+        cameraAnnotation([
+          { type: 'PerspectiveCamera', fov: 50 },
+          {
+            type: 'ThreeDHopViewerState',
+            modelVisibility: { a: false },
+            modelTransparency: { b: true },
+            sections
+          }
+        ])
+      ])
+    );
+
+    expect(parsed.cameras[0].viewerState).toEqual({
+      modelVisibility: { a: false },
+      modelTransparency: { b: true },
+      sections
+    });
+  });
+
+  it('leaves viewerState undefined for a plain single-body camera', () => {
+    const parsed = parseManifest(manifestWith([cameraAnnotation([{ type: 'PerspectiveCamera' }])]));
+    expect(parsed.cameras[0].viewerState).toBeUndefined();
+  });
+
+  it('ignores a ThreeDHopViewerState body with none of the fields set', () => {
+    const parsed = parseManifest(
+      manifestWith([cameraAnnotation([{ type: 'PerspectiveCamera' }, { type: 'ThreeDHopViewerState' }])])
+    );
+    expect(parsed.cameras[0].viewerState).toBeUndefined();
+  });
+
+  it('reads solidColor on its own', () => {
+    const parsed = parseManifest(
+      manifestWith([cameraAnnotation([{ type: 'PerspectiveCamera' }, { type: 'ThreeDHopViewerState', solidColor: true }])])
+    );
+    expect(parsed.cameras[0].viewerState).toEqual({ solidColor: true });
+  });
+
+  it('reads a false solidColor rather than treating it as unset', () => {
+    const parsed = parseManifest(
+      manifestWith([cameraAnnotation([{ type: 'PerspectiveCamera' }, { type: 'ThreeDHopViewerState', solidColor: false }])])
+    );
+    expect(parsed.cameras[0].viewerState).toEqual({ solidColor: false });
+  });
+
+  it('reads lighting with a direction', () => {
+    const lighting = { enabled: true, direction: [0, -1, 0] };
+    const parsed = parseManifest(
+      manifestWith([cameraAnnotation([{ type: 'PerspectiveCamera' }, { type: 'ThreeDHopViewerState', lighting }])])
+    );
+    expect(parsed.cameras[0].viewerState).toEqual({ lighting });
+  });
+
+  it('reads lighting with no direction', () => {
+    const parsed = parseManifest(
+      manifestWith([cameraAnnotation([{ type: 'PerspectiveCamera' }, { type: 'ThreeDHopViewerState', lighting: { enabled: false } }])])
+    );
+    expect(parsed.cameras[0].viewerState).toEqual({ lighting: { enabled: false } });
+  });
 });
 
 describe('parseManifest — multi-model', () => {

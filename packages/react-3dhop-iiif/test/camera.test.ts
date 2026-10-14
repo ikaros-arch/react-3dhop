@@ -238,6 +238,55 @@ describe('viewToCameraAnnotation', () => {
     // Coordinates are rounded to three decimals on the way out, so this is not exact.
     expectStateClose_loose(view2track(reparsed, framing), state);
   });
+
+  it('stays a single-entry body when no viewerState is given', () => {
+    const annotation = viewToCameraAnnotation(view);
+    expect(annotation.body).toHaveLength(1);
+  });
+
+  it('stays a single-entry body when viewerState has nothing set', () => {
+    const annotation = viewToCameraAnnotation(view, { viewerState: {} });
+    expect(annotation.body).toHaveLength(1);
+  });
+
+  it('appends a ThreeDHopViewerState body when viewerState is non-empty', () => {
+    const sections = { x: { enabled: true, position: 0.3, flip: false }, y: { enabled: false, position: 0.5, flip: false }, z: { enabled: false, position: 0.5, flip: false }, showPlanes: true, showEdges: false };
+    const annotation = viewToCameraAnnotation(view, {
+      viewerState: { modelVisibility: { a: false }, modelTransparency: { b: true }, sections }
+    });
+
+    const bodies = annotation.body as Record<string, unknown>[];
+    expect(bodies).toHaveLength(2);
+    expect(bodies[0].type).toBe('PerspectiveCamera');
+    expect(bodies[1]).toEqual({
+      type: 'ThreeDHopViewerState',
+      modelVisibility: { a: false },
+      modelTransparency: { b: true },
+      sections
+    });
+  });
+
+  it('appends a ThreeDHopViewerState body with only modelVisibility set', () => {
+    const annotation = viewToCameraAnnotation(view, { viewerState: { modelVisibility: { a: false } } });
+    const bodies = annotation.body as Record<string, unknown>[];
+    expect(bodies).toHaveLength(2);
+    expect(bodies[1]).toEqual({ type: 'ThreeDHopViewerState', modelVisibility: { a: false } });
+  });
+
+  it('appends a ThreeDHopViewerState body for solidColor alone, including when false', () => {
+    const annotation = viewToCameraAnnotation(view, { viewerState: { solidColor: false } });
+    const bodies = annotation.body as Record<string, unknown>[];
+    expect(bodies).toHaveLength(2);
+    expect(bodies[1]).toEqual({ type: 'ThreeDHopViewerState', solidColor: false });
+  });
+
+  it('appends a ThreeDHopViewerState body for lighting alone', () => {
+    const lighting = { enabled: true, direction: [0, -1, 0] as [number, number, number] };
+    const annotation = viewToCameraAnnotation(view, { viewerState: { lighting } });
+    const bodies = annotation.body as Record<string, unknown>[];
+    expect(bodies).toHaveLength(2);
+    expect(bodies[1]).toEqual({ type: 'ThreeDHopViewerState', lighting });
+  });
 });
 
 /**

@@ -13,7 +13,8 @@ export type NewComment = {
   id?: string;
   label?: LocalizableValue;
   text: string;
-  position: Vector3;
+  /** Omit for a comment that describes the whole scene rather than a point in it. */
+  position?: Vector3;
 };
 
 let counter = 0;
@@ -44,9 +45,9 @@ export function commentsToAnnotationPage(
       target: {
         type: 'SpecificResource',
         source: [{ id: sceneId, type: 'Scene' }],
-        selector: [
-          { type: 'PointSelector', x: comment.position[0], y: comment.position[1], z: comment.position[2] }
-        ]
+        ...(comment.position
+          ? { selector: [{ type: 'PointSelector', x: comment.position[0], y: comment.position[1], z: comment.position[2] }] }
+          : {})
       }
     }))
   };

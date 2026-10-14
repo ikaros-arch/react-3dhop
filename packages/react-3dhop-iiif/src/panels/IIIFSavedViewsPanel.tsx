@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import type { SectionsState } from '@ikaros-arch/react-3dhop';
 import { useIIIFManifest } from '../context.js';
 
 export type IIIFSavedViewsPanelProps = {
@@ -12,6 +13,14 @@ export type IIIFSavedViewsPanelProps = {
    * shown in the panel so it can be copied into a manifest.
    */
   onSaveView?: (annotation: Record<string, unknown>) => void;
+  /**
+   * The app's current `<SectionsControl>` state, captured into the saved view alongside the
+   * camera and model visibility/transparency. This context doesn't own that control's state, so
+   * it has to be handed in — omit it to save camera-only views.
+   */
+  sections?: SectionsState;
+  /** Called with a saved view's `sections`, if it has one, after jumping to it. */
+  onApplySections?: (sections: SectionsState) => void;
   className?: string;
   headingClassName?: string;
   listClassName?: string;
@@ -25,6 +34,8 @@ export const IIIFSavedViewsPanel: React.FC<IIIFSavedViewsPanelProps> = ({
   hideSaveControl = false,
   saveLabel = 'Save current view',
   onSaveView,
+  sections,
+  onApplySections,
   className = 'iiif-views',
   headingClassName = 'iiif-views__heading',
   listClassName = 'iiif-views__list',
@@ -34,7 +45,7 @@ export const IIIFSavedViewsPanel: React.FC<IIIFSavedViewsPanelProps> = ({
   const [captured, setCaptured] = useState<string | null>(null);
 
   const handleSave = () => {
-    const annotation = saveCurrentView();
+    const annotation = saveCurrentView(undefined, { sections });
     if (!annotation) {
       return;
     }
@@ -43,6 +54,14 @@ export const IIIFSavedViewsPanel: React.FC<IIIFSavedViewsPanelProps> = ({
       return;
     }
     setCaptured(JSON.stringify(annotation, null, 2));
+  };
+
+  const handleGoTo = (index: number) => {
+    goToCamera(index);
+    const viewSections = cameras[index]?.viewerState?.sections;
+    if (viewSections && onApplySections) {
+      onApplySections(viewSections);
+    }
   };
 
   return (
@@ -58,7 +77,7 @@ export const IIIFSavedViewsPanel: React.FC<IIIFSavedViewsPanelProps> = ({
               <button
                 type="button"
                 className={buttonClassName}
-                onClick={() => goToCamera(index)}
+                onClick={() => handleGoTo(index)}
                 disabled={!isSceneReady}
               >
                 {localize(camera.rawLabel) || `View ${index + 1}`}

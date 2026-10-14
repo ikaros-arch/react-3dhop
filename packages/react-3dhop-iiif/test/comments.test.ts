@@ -30,6 +30,15 @@ describe('commentsToAnnotationPage', () => {
   it('returns an empty AnnotationPage for no comments', () => {
     expect(commentsToAnnotationPage([]).items).toEqual([]);
   });
+
+  it('omits the selector entirely for a comment with no position', () => {
+    const comments: ParsedComment[] = [{ id: 'note1', text: 'General note about this object' }];
+    const page = commentsToAnnotationPage(comments, { sceneId: 'https://example.org/scene/1' });
+    const target = page.items![0].target as { source: Array<{ id: string }>; selector?: unknown };
+
+    expect(target.source[0].id).toBe('https://example.org/scene/1');
+    expect(target).not.toHaveProperty('selector');
+  });
 });
 
 describe('annotationPageToComments', () => {
@@ -58,6 +67,15 @@ describe('annotationPageToComments', () => {
       ]
     });
     expect(comments).toEqual([{ id: 'a', rawLabel: undefined, text: 'hand authored', position: [0, 0, 0] }]);
+  });
+
+  it('round-trips a note with no position as position: undefined, not the origin', () => {
+    const original: ParsedComment[] = [{ id: 'note1', text: 'General note about this object' }];
+    const page = commentsToAnnotationPage(original, { sceneId: 'https://example.org/scene/1' });
+    const roundTripped = annotationPageToComments(page);
+
+    expect(roundTripped).toEqual(original);
+    expect(roundTripped[0].position).toBeUndefined();
   });
 });
 

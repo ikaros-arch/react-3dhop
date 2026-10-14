@@ -95,5 +95,6 @@ export type {
   ParsedMetadata,
   ParsedModel,
   Vector3,
-  View
+  View,
+  ViewerState
 } from './iiif/types.js';

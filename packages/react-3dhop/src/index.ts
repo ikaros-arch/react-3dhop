@@ -63,6 +63,7 @@ export {
 export type { GridMode, AxesSpecs } from './geometry/grid.js';
 export { lightDirectionToDisc, discToLightDirection, discToRotateLightArgs } from './geometry/light.js';
 export type { DiscPoint } from './geometry/light.js';
+export { getHopAllTag } from './utils/hopTags.js';
 export { VIEW_PRESETS, VIEW_PRESET_ORDER, VIEW_PRESET_LABELS, viewPresetState, normalizeAngle, clampTheta } from './geometry/presets.js';
 export type { ViewPreset, TrackballState, PartialTrackballState, ViewStateOptions } from './geometry/presets.js';
 export { useViewPresets } from './hooks/useViewPresets.js';

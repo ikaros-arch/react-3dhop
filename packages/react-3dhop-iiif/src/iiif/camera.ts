@@ -1,5 +1,5 @@
 import { degToRad, radToDeg, multiply, rotationAngleAxis, transformPoint } from './mat4.js';
-import type { ParsedCamera, ParsedModel, Vector3, View } from './types.js';
+import type { ParsedCamera, ParsedModel, Vector3, View, ViewerState } from './types.js';
 
 /**
  * 3DHOP's turntable trackball state: `[phi, theta, panX, panY, panZ, distance]`.
@@ -141,11 +141,30 @@ export type CameraAnnotationOptions = {
   label?: string;
   /** Id of the `Scene` the camera annotation targets. */
   sceneId?: string;
+  /**
+   * Renderer state to carry alongside the camera, as a second, non-standard body entry (see
+   * {@link ViewerState}). Omitted entirely — rather than written out empty — when it has nothing in
+   * it, so a plain saved view stays a plain, single-body camera annotation.
+   */
+  viewerState?: ViewerState;
 };
 
 function round(value: number, decimals: number): number {
   const factor = 10 ** decimals;
   return Math.round(value * factor) / factor;
+}
+
+function hasViewerState(viewerState: ViewerState | undefined): viewerState is ViewerState {
+  if (!viewerState) {
+    return false;
+  }
+  return (
+    Object.keys(viewerState.modelVisibility ?? {}).length > 0 ||
+    Object.keys(viewerState.modelTransparency ?? {}).length > 0 ||
+    viewerState.sections !== undefined ||
+    viewerState.solidColor !== undefined ||
+    viewerState.lighting !== undefined
+  );
 }
 
 /**
@@ -154,29 +173,29 @@ function round(value: number, decimals: number): number {
  */
 export function viewToCameraAnnotation(
   view: View,
-  { idBase = 'https://example.org/iiif/3d', label, sceneId = 'https://example.org/iiif/scene/1' }: CameraAnnotationOptions = {}
+  { idBase = 'https://example.org/iiif/3d', label, sceneId = 'https://example.org/iiif/scene/1', viewerState }: CameraAnnotationOptions = {}
 ): Record<string, unknown> {
   const timestamp = Date.now();
   const isOrthographic = view.fov === 0;
+
+  const cameraBody = {
+    id: `${idBase}/cameras/${timestamp}`,
+    type: isOrthographic ? 'OrthographicCamera' : 'PerspectiveCamera',
+    label: { en: [label ?? `Saved View ${new Date().toLocaleString()}`] },
+    lookAt: {
+      type: 'PointSelector',
+      x: round(view.target[0], 3),
+      y: round(view.target[1], 3),
+      z: round(view.target[2], 3)
+    },
+    ...(isOrthographic ? {} : { fieldOfView: round(view.fov, 1) })
+  };
 
   return {
     id: `${idBase}/camera_${timestamp}`,
     type: 'Annotation',
     motivation: ['painting'],
-    body: [
-      {
-        id: `${idBase}/cameras/${timestamp}`,
-        type: isOrthographic ? 'OrthographicCamera' : 'PerspectiveCamera',
-        label: { en: [label ?? `Saved View ${new Date().toLocaleString()}`] },
-        lookAt: {
-          type: 'PointSelector',
-          x: round(view.target[0], 3),
-          y: round(view.target[1], 3),
-          z: round(view.target[2], 3)
-        },
-        ...(isOrthographic ? {} : { fieldOfView: round(view.fov, 1) })
-      }
-    ],
+    body: hasViewerState(viewerState) ? [cameraBody, { type: 'ThreeDHopViewerState', ...viewerState }] : [cameraBody],
     target: [
       {
         type: 'SpecificResource',
