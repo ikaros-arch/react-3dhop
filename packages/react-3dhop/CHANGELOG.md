@@ -1,5 +1,11 @@
 # @ikaros-arch/react-3dhop
 
+## 0.14.0
+
+### Minor Changes
+
+- [`b5e72bd`](https://github.com/ikaros-arch/react-3dhop/commit/b5e72bd456b642cd3ee08a680958fa74af916b2c) Thanks [@hallvard-indgjerd](https://github.com/hallvard-indgjerd)! - Exported `getHopAllTag()`, the reserved tag meaning "every instance" that `toggleInstanceSolidColor`/`setInstanceTransparency`/`setInstanceSpecularity` expect as their scene-wide target. Previously internal; `@ikaros-arch/react-3dhop-iiif` needs it to drive the scene-wide solid-colour toggle from outside this package.
+
 ## 0.13.0
 
 ### Minor Changes
