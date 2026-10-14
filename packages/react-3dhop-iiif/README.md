@@ -241,6 +241,22 @@ disc point rather than the vector. `sections` is left for the caller: read
 `<IIIFSavedViewsPanel sections={sections} onApplySections={setSections}>` wires both directions for
 you when you already hold `SectionsControl`'s state yourself.
 
+An app with its own saved-view concept that isn't `saveCurrentView`'s IIIF annotation shape — e.g.
+one that already stores camera position its own way and just wants the rest — can use the same
+capture/apply logic directly instead of going through an annotation:
+
+```tsx
+const { captureViewerState, applyViewerState } = useIIIFManifest();
+
+const viewerState = captureViewerState(); // ViewerState | undefined, no `sections`
+myOwnSavedView.viewerState = viewerState;
+// ...later:
+applyViewerState(myOwnSavedView.viewerState);
+```
+
+`saveCurrentView`/`goToCamera` are themselves built on exactly these two functions, with the camera
+and `sections` merged in around them.
+
 ### Language
 
 Any IIIF language map is resolved against the active language, falling back through `en`, `no`,

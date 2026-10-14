@@ -91,6 +91,20 @@ export type IIIFContextValue = {
    */
   isSolidColorEnabled: () => boolean;
   setSolidColor: (enabled: boolean) => void;
+  /**
+   * Captures model visibility/transparency/solid-colour/lighting as a `ViewerState`, or `undefined`
+   * when there's nothing to capture (nothing overridden this session, and no lighting API on the
+   * presenter). Doesn't include `sections` — merge that in yourself, same as `saveCurrentView`,
+   * since this context doesn't own `<SectionsControl>`'s state. For consumers with their own saved
+   * view/camera concept that isn't `saveCurrentView`'s IIIF annotation shape.
+   */
+  captureViewerState: () => ViewerState | undefined;
+  /**
+   * Applies `modelVisibility`/`modelTransparency`/`solidColor`/`lighting` from a `ViewerState`.
+   * `sections` is ignored — apply it to your own `<SectionsControl>` state instead. The inverse of
+   * `captureViewerState`.
+   */
+  applyViewerState: (viewerState: ViewerState | undefined) => void;
 };
 
 const IIIFContext = createContext<IIIFContextValue | null>(null);
@@ -250,6 +264,58 @@ export const IIIFProvider: React.FC<IIIFProviderProps> = ({
     [presenter, solidColor]
   );
 
+  const captureViewerState = useCallback((): ViewerState | undefined => {
+    if (!presenter) {
+      return undefined;
+    }
+    const viewerState: ViewerState = {};
+    if (Object.keys(visibility).length > 0) {
+      viewerState.modelVisibility = { ...visibility };
+    }
+    if (Object.keys(transparency).length > 0) {
+      viewerState.modelTransparency = { ...transparency };
+    }
+    if (solidColor !== undefined) {
+      viewerState.solidColor = solidColor;
+    }
+    // Unlike solid colour, lighting has a real getter - no need to track it ourselves, so this
+    // reflects whatever is actually on screen rather than only what was touched this session.
+    if (typeof presenter.isSceneLightingEnabled === 'function') {
+      const direction = presenter._lightDirection;
+      viewerState.lighting = {
+        enabled: presenter.isSceneLightingEnabled(),
+        ...(Array.isArray(direction) && direction.length >= 3
+          ? { direction: [direction[0], direction[1], direction[2]] as Vector3 }
+          : {})
+      };
+    }
+    return Object.keys(viewerState).length > 0 ? viewerState : undefined;
+  }, [presenter, visibility, transparency, solidColor]);
+
+  const applyViewerState = useCallback(
+    (viewerState: ViewerState | undefined) => {
+      if (!viewerState || !presenter) {
+        return;
+      }
+      // `sections` is deliberately not applied here - see this function's doc comment.
+      Object.entries(viewerState.modelVisibility ?? {}).forEach(([modelId, visible]) => setModelVisible(modelId, visible));
+      Object.entries(viewerState.modelTransparency ?? {}).forEach(([modelId, transparent]) =>
+        setModelTransparent(modelId, transparent)
+      );
+      if (viewerState.solidColor !== undefined) {
+        setSolidColor(viewerState.solidColor);
+      }
+      if (viewerState.lighting) {
+        presenter.enableSceneLighting?.(viewerState.lighting.enabled);
+        if (viewerState.lighting.direction) {
+          const disc = lightDirectionToDisc(viewerState.lighting.direction);
+          presenter.rotateLight?.(...discToRotateLightArgs(disc));
+        }
+      }
+    },
+    [presenter, setModelVisible, setModelTransparent, setSolidColor]
+  );
+
   const goToCamera = useCallback(
     (index: number, durationSeconds = 0.5) => {
       if (!parsed || !framing || !presenter) {
@@ -279,24 +345,9 @@ export const IIIFProvider: React.FC<IIIFProviderProps> = ({
       }
 
       // `sections` is deliberately not applied here - see this function's doc comment.
-      Object.entries(camera.viewerState?.modelVisibility ?? {}).forEach(([modelId, visible]) =>
-        setModelVisible(modelId, visible)
-      );
-      Object.entries(camera.viewerState?.modelTransparency ?? {}).forEach(([modelId, transparent]) =>
-        setModelTransparent(modelId, transparent)
-      );
-      if (camera.viewerState?.solidColor !== undefined) {
-        setSolidColor(camera.viewerState.solidColor);
-      }
-      if (camera.viewerState?.lighting) {
-        presenter.enableSceneLighting?.(camera.viewerState.lighting.enabled);
-        if (camera.viewerState.lighting.direction) {
-          const disc = lightDirectionToDisc(camera.viewerState.lighting.direction);
-          presenter.rotateLight?.(...discToRotateLightArgs(disc));
-        }
-      }
+      applyViewerState(camera.viewerState);
     },
-    [framing, parsed, presenter, setModelVisible, setModelTransparent, setSolidColor]
+    [framing, parsed, presenter, applyViewerState]
   );
 
   const saveCurrentView = useCallback(
@@ -314,29 +365,9 @@ export const IIIFProvider: React.FC<IIIFProviderProps> = ({
       const fov = isOrthographic ? 0 : presenter._scene?.space?.cameraFOV ?? 60;
 
       const view = track2view(trackState as TrackballState, framing, fov);
-      const viewerState: ViewerState = {};
-      if (Object.keys(visibility).length > 0) {
-        viewerState.modelVisibility = { ...visibility };
-      }
-      if (Object.keys(transparency).length > 0) {
-        viewerState.modelTransparency = { ...transparency };
-      }
+      const viewerState: ViewerState = { ...captureViewerState() };
       if (options?.sections) {
         viewerState.sections = options.sections;
-      }
-      if (solidColor !== undefined) {
-        viewerState.solidColor = solidColor;
-      }
-      // Unlike solid colour, lighting has a real getter - no need to track it ourselves, so this
-      // reflects whatever is actually on screen rather than only what was touched this session.
-      if (typeof presenter.isSceneLightingEnabled === 'function') {
-        const direction = presenter._lightDirection;
-        viewerState.lighting = {
-          enabled: presenter.isSceneLightingEnabled(),
-          ...(Array.isArray(direction) && direction.length >= 3
-            ? { direction: [direction[0], direction[1], direction[2]] as Vector3 }
-            : {})
-        };
       }
 
       return viewToCameraAnnotation(view, {
@@ -345,7 +376,7 @@ export const IIIFProvider: React.FC<IIIFProviderProps> = ({
         viewerState
       });
     },
-    [framing, parsed, presenter, visibility, transparency, solidColor]
+    [framing, parsed, presenter, captureViewerState]
   );
 
   const addComment = useCallback((comment: NewComment) => {
@@ -402,10 +433,14 @@ export const IIIFProvider: React.FC<IIIFProviderProps> = ({
       setModelTransparent,
       isModelTransparent,
       isSolidColorEnabled,
-      setSolidColor
+      setSolidColor,
+      captureViewerState,
+      applyViewerState
     }),
     [
       addComment,
+      applyViewerState,
+      captureViewerState,
       comments,
       diagnostics,
       error,
